@@ -287,6 +287,19 @@ details.bench h4{margin:14px 0 0;font:600 11px var(--body);letter-spacing:.08em;
 .shiftchips button[aria-pressed="true"] span{color:var(--accent-ink);opacity:.85}
 .shiftchips button.oc{border-style:dashed}
 .covmeta{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between}
+/* stage 4 */
+.sc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.sc-cell{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:2px;background:var(--surface-2)}
+.sc-cell b{font:700 14px var(--display)}
+.sc-cell span{font-size:12px;color:var(--muted)}
+.sc-cell.on{border-color:var(--accent);background:var(--accent-soft)}
+.sc-cell.on b{color:var(--accent)}
+.sc-head{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;font:600 11px var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px;font-size:13px}
+.facts div{display:grid;gap:1px}
+.facts span{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em}
+.facts b{font-weight:600}
+@media (max-width:520px){.facts{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
 <body>
@@ -571,7 +584,81 @@ details.bench h4{margin:14px 0 0;font:600 11px var(--body);letter-spacing:.08em;
       </div>
     </div>
 
-    <div class="stage-nav"><button class="btn" type="button" data-go="2">← Service towers</button><span class="hint">Stage 4, transformation capacity, comes next.</span></div>
+    <div class="stage-nav"><button class="btn" type="button" data-go="2">← Service towers</button><button class="btn primary" type="button" data-go="4">Next: transformation →</button></div>
+  </section>
+
+  <!-- ===================== STAGE 4 ===================== -->
+  <section id="stage4" class="stage" aria-labelledby="s4h" hidden>
+    <div class="stage-head">
+      <span class="eyebrow">Stage 4 of 8</span>
+      <h2 id="s4h">Transformation capacity</h2>
+      <p>The framework scenario is worked out from the client's AI maturity and whether Stage 2 demand came from real volumetrics. The scenario sets two things: a Transformation POD share and an AIOps engineer ratio. AIOps engineers sit inside the Transformation POD, so this stage adds whichever of the two is larger.</p>
+    </div>
+
+    <div class="cols">
+      <div class="panel">
+        <header><h3>Inputs</h3><span class="sub">AI maturity, then optional overrides</span></header>
+        <div class="field">
+          <div class="lbl">Client AI adoption <span class="tag">[F] Part 2</span></div>
+          <div class="seg" id="aiSeg"></div>
+          <div class="hint">Moderate means AI features in observability (Datadog, Dynatrace), some automated runbooks or basic self-healing already in production.</div>
+        </div>
+        <div class="field">
+          <div class="lbl">Volumetrics available <span class="tag">derived from Stage 2</span></div>
+          <div class="derived" id="volDerived"></div>
+        </div>
+        <div class="field">
+          <div class="lbl">Scenario <span class="tag">[F] Part 3 matrix</span></div>
+          <div class="sc-head"><span>Volumetrics unavailable</span><span>Volumetrics available</span></div>
+          <div class="sc-grid" id="scGrid"></div>
+        </div>
+        <div class="divider"></div>
+        <div class="field">
+          <div class="lbl">Transformation POD share</div>
+          <label class="inline" for="transPct"><input id="transPct" type="number" min="0" max="50" step="0.5">% of the team so far</label>
+          <div class="hint" id="transHint"></div>
+        </div>
+        <div class="field">
+          <div class="lbl">AIOps engineer ratio</div>
+          <select id="aiRatio">
+            <option value="auto">Scenario default</option>
+            <option value="4">1 : 4</option>
+            <option value="6">1 : 6</option>
+            <option value="8">1 : 8</option>
+          </select>
+          <div class="hint" id="ratioHint"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <header><h3>How the number is built</h3><span class="sub">POD share against AIOps ratio</span></header>
+        <div class="working" id="steps4"></div>
+        <div class="facts" id="scFacts"></div>
+      </div>
+    </div>
+
+    <div class="cols even" data-stage="s4">
+      <div class="panel">
+        <header><h3>Assumptions</h3><span class="sub">Stage 4</span></header>
+        <ul class="alist" id="auto-s4"></ul>
+        <ul class="alist" id="user-s4"></ul>
+        <form class="addrow" data-addassume="s4">
+          <input type="text" id="ai-s4" placeholder="Add an assumption agreed in the review" aria-label="New assumption">
+          <button class="btn sm" type="submit">Add</button>
+        </form>
+      </div>
+      <div class="panel">
+        <header><h3>Risks &amp; FTE modifiers</h3><span class="sub">Each risk's % is applied to the FTE this stage adds</span></header>
+        <div class="risks" id="risks-s4"></div>
+        <form class="addrow" data-addrisk="s4">
+          <input type="text" id="ri-s4" placeholder="Add a risk" aria-label="New risk">
+          <button class="btn sm" type="submit">Add</button>
+        </form>
+        <div class="risk-sum"><span>Stage 4 risk modifier</span><span class="num" id="rt-s4"></span></div>
+      </div>
+    </div>
+
+    <div class="stage-nav"><button class="btn" type="button" data-go="3">← Skill coverage</button><span class="hint">Stage 5, governance, comes next.</span></div>
   </section>
 
   <div class="upcoming">
@@ -611,7 +698,7 @@ const STAGES=[
   {n:1,t:"Base team",d:"Coverage, location and shifts set the L2 + L3 roster.",built:true},
   {n:2,t:"Service towers",d:"AMS, IMS and DMS demand from volumetrics or complexity, then skill sets.",built:true},
   {n:3,t:"Skill coverage",d:"Live shifts per skill set, on call outside them.",built:true},
-  {n:4,t:"Transformation",d:"Capacity for SRE, automation and AIOps (framework: 10–20% of effort)."},
+  {n:4,t:"Transformation",d:"Transformation POD share and AIOps engineers by scenario.",built:true},
   {n:5,t:"Governance",d:"SDM and governance effort, and reconciliation of coverage-led and effort-led sizing."},
   {n:6,t:"Seniority & risk",d:"Grade mix and overall risk multipliers on the team."},
   {n:7,t:"Term & savings",d:"Cost across 1–5 year commitments and YoY productivity savings."},
@@ -668,6 +755,19 @@ const RISKS_S2=()=>[
   {id:uid(),on:false,pct:5,title:"Niche skill availability",note:"Special or legacy skills are hard to hire in the chosen locations. Mitigation: named bench or partner capacity."},
   {id:uid(),on:true,pct:0,title:"Base team spare capacity overestimated",note:"If quiet time on shifts is lower than assumed, the base team absorbs less. Tracked only; revisit in Stage 5."}
 ];
+/* [F] Part 2 scenarios and Part 3 comparison matrix. pct = Transformation POD share of effort
+   (Sc1 10–15%, Sc2 15–20%, Sc4 20%+; Sc3 not stated, proposed 10–15% like Sc1) */
+const SCENARIOS={
+  1:{name:"Low AI · volumetrics unavailable",pct:12.5,range:"10–15%",ratio:4,conf:"Low",cont:"10%",shape:"Standard pyramid",aiops:"Y2 onwards",comm:"T&M → Fixed Fee",band:"Critical",savings:"12–15%"},
+  2:{name:"Moderate AI · volumetrics unavailable",pct:17.5,range:"15–20%",ratio:8,conf:"Low-Medium",cont:"8–9%",shape:"Diamond from Y1",aiops:"Y1 (faster ramp)",comm:"T&M → Outcome-based",band:"Required",savings:"10–12%"},
+  3:{name:"Low AI · volumetrics available",pct:12.5,range:"10–15% (proposed)",ratio:4,conf:"High",cont:"8%",shape:"Pyramid → Diamond by Y3",aiops:"Y2 onwards",comm:"Fixed Fee from Day 1",band:"Standard",savings:"12–15%"},
+  4:{name:"Moderate AI · volumetrics available",pct:20,range:"20%+",ratio:8,conf:"Highest",cont:"5–6%",shape:"Inverted pyramid from Y1",aiops:"Y1 full deployment",comm:"Fixed Fee + outcome-based",band:"Minimal; still recommended",savings:"15–20%"}
+};
+const RISKS_S4=()=>[
+  {id:uid(),on:true,pct:5,title:"AI tool integration complexity",note:"Client tooling needs more work to integrate than planned. Mitigation: 2-week technical spike during transition ([F] Sc.2 risk log)."},
+  {id:uid(),on:true,pct:0,title:"AI roadmap slippage",note:"Use cases land later than planned. Tracked only: PoC-gated commitments and no AI savings in Y1 pricing ([F] Sc.1 risk log)."},
+  {id:uid(),on:false,pct:3,title:"Incumbent AI lock-in",note:"Proprietary incumbent tooling can't be reused. Mitigation: tooling portability requirements in the SOW assumptions ([F] Sc.2 risk log)."}
+];
 const RISKS_S3=()=>[
   {id:uid(),on:true,pct:5,title:"Skills needed live outside the chosen shifts",note:"P1 incidents out of hours may need the specialist hands-on, not just reachable. Mitigation: on-call response SLA and escalation path in the SOW."},
   {id:uid(),on:true,pct:0,title:"On-call rota too thin",note:"One specialist cannot carry a sustainable on-call rota. Tracked only: at least two people share each on-call rota."},
@@ -695,9 +795,10 @@ function defaults(){
     bench:defaultBench(),
     sparePct:25,
     onCallPct:15,
+    aiMaturity:"low",transPct:null,aiRatio:"auto",
     cov:{},
-    assumptions:{s1:["Service desk (L1) is provided by the client and is out of scope for this team."],s2:[],s3:[]},
-    risks:{s1:RISKS_S1(),s2:RISKS_S2(),s3:RISKS_S3()}
+    assumptions:{s1:["Service desk (L1) is provided by the client and is out of scope for this team."],s2:[],s3:[],s4:[]},
+    risks:{s1:RISKS_S1(),s2:RISKS_S2(),s3:RISKS_S3(),s4:RISKS_S4()}
   };
 }
 function pickLoc(id){const c=LOC_CATALOG.find(l=>l.id===id);return {id:c.id,name:c.name,kind:c.kind,leave:c.leave,hol:c.hol}}
@@ -811,13 +912,35 @@ function compute(){
   const topUp=covSkills.reduce((s3,k)=>s3+k.top,0);
   const s3=topUp*(1+rp3);
   covSkills.forEach(k=>{if(!(k.top>0))return;k.byLoc.forEach(x=>{const l=locs.find(y=>y.id===x.id);const sh=k.floor>0?x.floor/k.floor:0;const v=k.top*(1+rp3)*sh;l.u2+=v*(1-k.l3s);l.u3+=v*k.l3s})});
-  locs.forEach(l=>{l.c2=l.k2+l.t2+l.u2; l.c3=l.k3+l.t3+l.u3; l.fte=l.c2+l.c3});
+  const sub3=s1+s2+s3;
+
+  /* Stage 4: scenario from AI maturity × volumetric availability; Transformation POD % vs AIOps ratio, AIOps inside the POD */
+  const volFte=towers.filter(t=>t.vol).reduce((x,t)=>x+t.fte,0);
+  const volShare=demand>0?volFte/demand:0;
+  const volAvail=towers.length>0&&volShare>=0.5;
+  const mod=S.aiMaturity==="moderate";
+  const sc=volAvail?(mod?4:3):(mod?2:1);
+  const SC=SCENARIOS[sc];
+  const transPct=S.transPct==null?SC.pct:+S.transPct;
+  const pod=sub3*transPct/100;
+  const autoRatio=SC.ratio===8&&sub3>20?6:SC.ratio;
+  const aiRatioN=S.aiRatio==="auto"?autoRatio:+S.aiRatio;
+  const aiops=sub3/aiRatioN;
+  const stage4raw=Math.max(pod,aiops);
+  const otherTrans=stage4raw-aiops;
+  const rp4=riskPctOf("s4");
+  const s4=stage4raw*(1+rp4);
+  locs.forEach(l=>{
+    const sh=roster>0?l.roster/shareBase:1/locs.length;
+    l.v3=s4*sh;
+    l.c2=l.k2+l.t2+l.u2; l.c3=l.k3+l.t3+l.u3+l.v3; l.fte=l.c2+l.c3;
+  });
   towers.filter(t=>t.skills.length&&t.shareSum!==100).forEach(t=>warnings2.push(`${t.name}: skill shares add up to ${fmt(t.shareSum,0)}%. They are scaled to 100%.`));
   towers.filter(t=>!t.skills.length).forEach(t=>warnings2.push(`${t.name} has no skill sets, so its ${fmt(t.fte,2)} FTE is not staffed. Add at least one skill set.`));
 
   /* rounding on the combined team */
   const up=x=>Math.ceil(x-1e-6);
-  const total=s1+s2+s3;
+  const total=s1+s2+s3+s4;
   locs.forEach(l=>{
     if(S.rounding==="cell"){l.p2=up(l.c2);l.p3=up(l.c3);l.people=l.p2+l.p3}
     else if(S.rounding==="loc"){l.p2=l.c2;l.p3=l.c3;l.people=up(l.fte)}
@@ -827,7 +950,8 @@ function compute(){
   return {days,spd,shiftLen,a,b,c,framework,rp1,locs,roster,buffered,s1,warnings,
     u1,utilised,utilAdd:utilised-roster,leaveAdd:buffered-utilised,risk1Add:s1-buffered,
     towers,skills,demand,demAbs,capacity,absorbed,added,add2,add3,rp2,s2,risk2Add:s2-added,warnings2,
-    covSkills,topUp,rp3,s3,risk3Add:s3-topUp,sub2:s1+s2,
+    covSkills,topUp,rp3,s3,risk3Add:s3-topUp,sub2:s1+s2,sub3,
+    volShare,volAvail,sc,SC,transPct,pod,autoRatio,ratio:aiRatioN,aiops,stage4raw,otherTrans,rp4,s4,risk4Add:s4-stage4raw,
     total,people,roundAdd:people-total,
     L2:sum(locs,"c2"),L3:sum(locs,"c3"),L2p:sum(locs,"p2"),L3p:sum(locs,"p3")};
 }
@@ -851,7 +975,7 @@ function renderRail(){
   $("upcoming").innerHTML=STAGES.filter(s=>!s.built).map(s=>`<div class="ucard"><span class="n">STAGE ${s.n}</span><b>${esc(s.t)}</b><span>${esc(s.d)}</span></div>`).join("");
   document.querySelectorAll(".stage").forEach(sec=>{sec.hidden=sec.id!=="stage"+S.active});
 }
-function go(n){S.active=n;if(n===3){renderS3();update();}renderRail();save();window.scrollTo({top:0,behavior:"auto"})}
+function go(n){S.active=n;if(n===3){renderS3();update();}if(n===4){renderS4();update();}renderRail();save();window.scrollTo({top:0,behavior:"auto"})}
 
 /* ---------- stage 1 static render ---------- */
 function renderS1(){
@@ -962,7 +1086,7 @@ function updateRiskDeltas(k,base,add,pct){
 let R;
 function update(){
   R=compute();
-  updateS1(); updateS2(); updateS3(); renderBar(); save();
+  updateS1(); updateS2(); updateS3(); updateS4(); renderBar(); save();
 }
 function updateS1(){
   document.querySelectorAll("[data-cov]").forEach(b=>{const p=COV_PRESETS.find(x=>x[0]===b.dataset.cov);b.setAttribute("aria-pressed",String(S.days===p[1]&&S.hours===p[2]))});
@@ -1073,7 +1197,7 @@ function updateS3(){
   h+=wstep("3","Already staffed from Stage 2",fmt(hv,2),"Each skill set's Stage 2 FTE after absorption and risk");
   h+=wstep("4","Top-up for coverage",`<span class="delta add">${sgn(R.topUp,2)}</span>`,"Sum over skill sets of max(0, floor − Stage 2 FTE)");
   h+=wstep("5","Risk modifiers",`<span class="delta risk">${sgn(R.risk3Add,2)}</span>`,`${fmt(R.topUp,2)} × ${fmt(R.rp3*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
-  h+=wstep("=","Stage 3 adds",`${sgn(R.s3,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team so far: ${fmt(R.sub2,2)} + ${fmt(R.s3,2)} = ${fmt(R.total,2)} FTE`,"total");
+  h+=wstep("=","Stage 3 adds",`${sgn(R.s3,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team so far: ${fmt(R.sub2,2)} + ${fmt(R.s3,2)} = ${fmt(R.sub3,2)} FTE`,"total");
   $("steps3").innerHTML=h;
   $("covCalc").innerHTML=R.covSkills.length?R.covSkills.map(k=>`<tr><td class="loc-name">${esc(k.name)}<small>${esc(k.tower)}</small></td><td class="r num">${k.live.length}</td><td class="r num">${k.onCall}</td><td class="r num">${fmt(k.floor,2)}</td><td class="r num">${fmt(k.have,2)}</td><td class="r num"><b>${fmt(k.top,2)}</b></td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td></td><td></td><td class="r num">${fmt(fl,2)}</td><td class="r num">${fmt(hv,2)}</td><td class="r num"><b>${fmt(R.topUp,2)}</b></td></tr>`
@@ -1088,6 +1212,42 @@ function updateS3(){
   ]);
 }
 
+function renderS4(){
+  $("aiSeg").innerHTML=[["low","Low"],["moderate","Moderate"]].map(([k,l])=>`<button type="button" data-ai="${k}" aria-pressed="${S.aiMaturity===k}">${l}</button>`).join("");
+  $("transPct").value=S.transPct==null?"":S.transPct;
+  $("aiRatio").value=S.aiRatio;
+}
+function updateS4(){
+  const SC=R.SC;
+  document.querySelectorAll("[data-ai]").forEach(b=>b.setAttribute("aria-pressed",String(S.aiMaturity===b.dataset.ai)));
+  $("volDerived").innerHTML=R.towers.length?`${fmt(R.volShare*100,0)}% of tower FTE is sized from ticket history → <b>${R.volAvail?"available":"unavailable"}</b> (threshold 50%)`:"No towers in Stage 2 → <b>unavailable</b>";
+  const order=[1,3,2,4];
+  $("scGrid").innerHTML=order.map(n=>`<div class="sc-cell ${R.sc===n?"on":""}"><b>Scenario ${n}</b><span>${n<=2?(n===1?"Low AI":"Moderate AI"):(n===3?"Low AI":"Moderate AI")} · POD ${SCENARIOS[n].range} · AIOps 1:${SCENARIOS[n].ratio}</span></div>`).join("");
+  $("transPct").placeholder=`${SC.pct} (scenario default)`;
+  $("transHint").textContent=`Scenario ${R.sc} guidance: ${SC.range}. Leave blank to use ${SC.pct}%.`;
+  $("ratioHint").textContent=`Scenario ${R.sc} default 1:${SC.ratio}${SC.ratio===8?"; flexes to 1:6 when the team is over 20 FTE":""}. Using 1:${R.ratio}.`;
+  const nR=S.risks.s4.filter(r=>r.on&&+r.pct).length;
+  let h="";
+  h+=wstep("1","Team so far",fmt(R.sub3,2),`Stages 1–3: ${fmt(R.s1,2)} + ${fmt(R.s2,2)} + ${fmt(R.s3,2)}`);
+  h+=wstep("2","Scenario",String(R.sc),`${esc(SC.name)}`);
+  h+=wstep("3","Transformation POD",fmt(R.pod,2),`${fmt(R.sub3,2)} × ${R.transPct}%`);
+  h+=wstep("4","AIOps engineers",fmt(R.aiops,2),`${fmt(R.sub3,2)} ÷ ${R.ratio} (1 AIOps engineer per ${R.ratio} delivery FTE)`);
+  h+=wstep("5","Transformation added",`<span class="delta add">${sgn(R.stage4raw,2)}</span>`,`Larger of the two: AIOps ${fmt(R.aiops,2)} + other transformation (SRE, automation, CI/CD) ${fmt(R.otherTrans,2)}`);
+  h+=wstep("6","Risk modifiers",`<span class="delta risk">${sgn(R.risk4Add,2)}</span>`,`${fmt(R.stage4raw,2)} × ${fmt(R.rp4*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
+  h+=wstep("=","Stage 4 adds",`${sgn(R.s4,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team so far: ${fmt(R.sub3,2)} + ${fmt(R.s4,2)} = ${fmt(R.total,2)} FTE`,"total");
+  $("steps4").innerHTML=h;
+  $("scFacts").innerHTML=[["Estimation confidence",SC.conf],["Y1 contingency",SC.cont],["Team shape",SC.shape],["AIOps timeline",SC.aiops],["Commercial model",SC.comm],["Volume band clause",SC.band],["YoY savings target",SC.savings]].map(([k,v])=>`<div><span>${k}</span><b>${esc(v)}</b></div>`).join("");
+  updateRiskDeltas("s4",R.stage4raw,R.risk4Add,R.rp4);
+  renderAuto("s4",[
+    ["D1",`Scenario ${R.sc} (${SC.name}). Volumetrics count as available when towers with ticket history carry at least half of the tower FTE.`,"[F] Part 2–3"],
+    ["D2",`Transformation POD is ${R.transPct}% of the team so far (scenario guidance ${SC.range}). It covers SRE, automation, CI/CD and AI adoption.`,"[F] 1.7"],
+    ["D3",`AIOps engineers are sized at 1:${R.ratio} of the delivery team and sit inside the Transformation POD, so the larger of the two is added.`,"[F] Sc.4 Step 3"],
+    ["D4",`AIOps timeline for this scenario: ${SC.aiops}. This stage sizes steady-state capacity; the year-by-year ramp is set in Stage 7.`,"[F] Part 3"],
+    ["D5","AI tools, licences, tokens and hyperscaler AI API costs are paid by the client.","[F] G5"],
+    ["D6","Transformation FTE is engineering capacity (L3) and is spread across locations like the Stage 1 roster.","proposed"]
+  ]);
+}
+
 function renderBar(){
   const whole=S.rounding!=="none";
   $("barFte").innerHTML=`${fmt(R.total,1)}<small>FTE</small>`;
@@ -1097,7 +1257,9 @@ function renderBar(){
   h+=`<div class="chip sep">›</div>`;
   h+=chip("add","2 · Towers",sgn(R.added),2)+chip("risk","+ Risk",sgn(R.risk2Add),2)+chip("base","Stage 2",fmt(R.sub2,1),2);
   h+=`<div class="chip sep">›</div>`;
-  h+=chip("add","3 · Skill cover",sgn(R.topUp),3)+chip("risk","+ Risk",sgn(R.risk3Add),3)+chip("base","Stage 3",fmt(R.total,1),3);
+  h+=chip("add","3 · Skill cover",sgn(R.topUp),3)+chip("risk","+ Risk",sgn(R.risk3Add),3)+chip("base","Stage 3",fmt(R.sub3,1),3);
+  h+=`<div class="chip sep">›</div>`;
+  h+=chip("add","4 · Transform",sgn(R.stage4raw),4)+chip("risk","+ Risk",sgn(R.risk4Add),4)+chip("base","Stage 4",fmt(R.total,1),4);
   h+=`<div class="chip sep">›</div>`;
   h+=STAGES.filter(s=>!s.built).map(s=>chip("todo",`${s.n} · ${esc(s.t)}`,"—")).join("");
   if(whole)h+=`<div class="chip sep">›</div>`+chip("round","Rounding",sgn(R.roundAdd));
@@ -1105,7 +1267,7 @@ function renderBar(){
   const tot=Math.max(R.people,R.total,0.0001);
   const seg=(v,c,t)=>`<span style="width:${Math.max(0,v)/tot*100}%;background:${c}" title="${t}"></span>`;
   $("barStack").innerHTML=seg(R.roster,"var(--accent)","Roster")+seg(R.utilAdd,"var(--accent-soft)","Utilisation")+seg(R.leaveAdd,"var(--add)","Leave backfill")+seg(R.risk1Add,"var(--risk)","Stage 1 risk")
-    +seg(R.added,"#6B7C93","Towers")+seg(R.risk2Add,"var(--risk)","Stage 2 risk")+seg(R.topUp,"#3F8C9B","Skill cover")+seg(R.risk3Add,"var(--risk)","Stage 3 risk")+(whole?seg(R.roundAdd,"var(--round)","Rounding"):"");
+    +seg(R.added,"#6B7C93","Towers")+seg(R.risk2Add,"var(--risk)","Stage 2 risk")+seg(R.topUp,"#3F8C9B","Skill cover")+seg(R.risk3Add,"var(--risk)","Stage 3 risk")+seg(R.stage4raw,"#8C5FA8","Transformation")+seg(R.risk4Add,"var(--risk)","Stage 4 risk")+(whole?seg(R.roundAdd,"var(--round)","Rounding"):"");
   const cell=S.rounding==="cell";
   $("barSplit").innerHTML=`<div class="r"><span>L2</span><b>${cell?fmt(R.L2p,0):fmt(R.L2,1)}</b></div>
     <div class="r"><span>L3</span><b>${cell?fmt(R.L3p,0):fmt(R.L3,1)}</b></div>
@@ -1136,6 +1298,7 @@ document.addEventListener("click",e=>{
   else if(d.tbasis){twr(t).amsBasis=d.tbasis;renderS2();update();}
   else if(d.testate){twr(t).estate=d.testate;renderS2();update();}
   else if(d.addskill){const tw=S.towers.find(x=>x.id===d.addskill);const id=$("sk-add-"+tw.id).value;if(id){tw.skills.push(mkSkill(id,0,id==="spec"?"Special skill":null));renderS2();update();}}
+  else if(d.ai){S.aiMaturity=d.ai;update();}
   else if(d.kshift){const [id,i]=pair(d.kshift);const cv=covOf(id);const n=+i;cv.shifts=cv.shifts.includes(n)?cv.shifts.filter(x=>x!==n):[...cv.shifts,n].sort();renderS3();update();}
   else if(d.callall){const cv=covOf(d.callall);cv.shifts=Array.from({length:S.spd},(_,i)=>i);renderS3();update();}
   else if(d.rmskill){const tw=twr(t);tw.skills=tw.skills.filter(k=>k.id!==d.rmskill);renderS2();update();}
@@ -1154,6 +1317,7 @@ document.addEventListener("input",e=>{
   if(t.id==="hours"){const v=Math.round(+t.value);if(v>=1&&v<=24){S.hours=v;renderSpd();update();}return}
   if(t.id==="util1"){const v=+t.value;if(t.value!==""&&v>=50&&v<=100){S.util1=v;update()}return}
   if(t.id==="fteHours"){const v=+t.value;if(v>=20&&v<=60){S.fteHours=v;update()}return}
+  if(t.id==="transPct"){if(t.value===""){S.transPct=null;update()}else{const v=+t.value;if(v>=0&&v<=50){S.transPct=v;update()}}return}
   if(t.id==="onCallPct"){const v=+t.value;if(t.value!==""&&v>=0&&v<=100){S.onCallPct=v;update()}return}
   if(d.cpeople){const v=Math.round(+t.value);if(v>=1&&v<=9){covOf(d.cpeople).people=v;update()}return}
   if(t.id==="sparePct"){const v=+t.value;if(v>=0&&v<=80){S.sparePct=v;update()}return}
@@ -1172,6 +1336,7 @@ document.addEventListener("change",e=>{
   if(t.id==="days"){S.days=+t.value;update();return}
   if(t.id==="hours"){renderS1();update();return}
   if(t.id==="backfill"){S.backfill=t.checked;update();return}
+  if(t.id==="aiRatio"){S.aiRatio=t.value;update();return}
   if(t.id==="rounding"){S.rounding=t.value;update();return}
   if(d.assign){S.assign[+d.assign]=t.value;renderS1();update();return}
   if(d.tc){twr(t)[d.tc]=t.checked;update();return}
@@ -1221,8 +1386,16 @@ function summary(){
   R.covSkills.forEach(k=>L.push(`| ${k.name} | ${k.tower} | ${k.live.map(i=>i+1).join(", ")||"none"} | ${k.onCall} | ${fmt(k.floor,2)} | ${fmt(k.have,2)} | ${fmt(k.top,2)} |`));
   L.push("",`- On-call allowance: ${S.onCallPct}% of a staffed shift`);
   L.push(`- Top-up for coverage: ${fmt(R.topUp,2)}; risk modifiers (${fmt(R.rp3*100,1)}%): ${sgn(R.risk3Add,2)}`);
-  L.push(`- **Stage 3 adds: ${fmt(R.s3,2)} FTE. Team so far ${fmt(R.total,2)} FTE**`);
+  L.push(`- **Stage 3 adds: ${fmt(R.s3,2)} FTE. Team so far ${fmt(R.sub3,2)} FTE**`);
   rows("s3");
+  L.push("","## Stage 4 · Transformation capacity");
+  L.push(`- Scenario ${R.sc}: ${R.SC.name} (volumetrics ${R.volAvail?"available":"unavailable"}, ${fmt(R.volShare*100,0)}% of tower FTE from ticket history)`);
+  L.push(`- Transformation POD: ${fmt(R.sub3,2)} × ${R.transPct}% = ${fmt(R.pod,2)}`);
+  L.push(`- AIOps engineers: ${fmt(R.sub3,2)} ÷ ${R.ratio} = ${fmt(R.aiops,2)}`);
+  L.push(`- Added (larger of the two): ${fmt(R.stage4raw,2)}; risk modifiers (${fmt(R.rp4*100,1)}%): ${sgn(R.risk4Add,2)}`);
+  L.push(`- **Stage 4 adds: ${fmt(R.s4,2)} FTE. Team so far ${fmt(R.total,2)} FTE**`);
+  L.push(`- Scenario guidance: confidence ${R.SC.conf}, Y1 contingency ${R.SC.cont}, ${R.SC.shape}, ${R.SC.comm}`);
+  rows("s4");
   if(S.rounding!=="none")L.push("",`## Rounding`,`- ${fmt(R.total,2)} FTE rounded to ${fmt(R.people,0)} people (${sgn(R.roundAdd,2)}). By location: ${R.locs.filter(l=>l.fte>0).map(l=>`${l.name} ${S.rounding==="total"?fmt(l.fte,2):fmt(l.people,0)}`).join(", ")}`);
   return L.join("\n");
 }
@@ -1234,7 +1407,7 @@ function copySummary(){
 }
 
 /* ---------- boot ---------- */
-function renderAll(){renderRail();renderS1();renderS2();renderS3();["s1","s2","s3"].forEach(k=>{renderAssume(k);renderRisks(k)});update();}
+function renderAll(){renderRail();renderS1();renderS2();renderS3();renderS4();["s1","s2","s3","s4"].forEach(k=>{renderAssume(k);renderRisks(k)});update();}
 renderAll();
 })();
 </script>

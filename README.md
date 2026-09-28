@@ -21,8 +21,8 @@ Values not taken from either source are marked `proposed`.
 | 1 | Base team: coverage, location, shifts | Built |
 | 2 | Service towers and complexity (FE, BE, Mobile, Infra, SRE, Data, special skills) | Built |
 | 3 | Skill coverage by shift: live shifts, on call outside them | Built |
-| 4 | Transformation capacity | Next |
-| 5 | Governance and reconciliation | Planned |
+| 4 | Transformation capacity: scenario, POD share, AIOps ratio | Built |
+| 5 | Governance and reconciliation | Next |
 | 6 | Seniority and risk multipliers | Planned |
 | 7 | Commitment term and YoY savings | Planned |
 | 8 | Brownfield existing capacity | Planned |
@@ -115,6 +115,30 @@ stage 3           = top-up × (1 + Σ active stage 3 risk %)
 Specialists sit in the locations covering their shifts. Top-up keeps the skill's L2/L3 effort split.
 
 Default example: Database (IMS) and Data engineering (DMS) are live on shift 1 (India) and on call on shifts 2–3. Each has a floor of 1.72 FTE. Database has 0.47 FTE of effort, so it adds 1.25. Data engineering already has 1.98, so it adds nothing. With a 5% risk, Stage 3 adds 1.31, so the team is 14.6 FTE, rostered as 17 people.
+
+## Stage 4: transformation capacity
+
+The framework scenario ([F] Part 2–3) is worked out, not picked:
+
+- **AI adoption** is an input: Low or Moderate.
+- **Volumetrics available** is derived from Stage 2. It counts as available when towers sized from ticket history carry at least 50% of the tower FTE.
+
+| | Volumetrics unavailable | Volumetrics available |
+|---|---|---|
+| **Low AI** | Scenario 1: POD 10–15% (12.5), AIOps 1:4 | Scenario 3: POD 10–15% (12.5, `proposed`), AIOps 1:4 |
+| **Moderate AI** | Scenario 2: POD 15–20% (17.5), AIOps 1:8 | Scenario 4: POD 20%+ (20), AIOps 1:8 |
+
+```
+team so far = Stages 1–3
+POD         = team so far × transformation %      (scenario midpoint, overridable)
+AIOps       = team so far ÷ ratio                 (1:8 flexes to 1:6 over 20 FTE; overridable)
+added       = max(POD, AIOps)                     AIOps engineers sit inside the Transformation POD
+stage 4     = added × (1 + Σ active stage 4 risk %)
+```
+
+Transformation FTE is counted as L3 and spread across locations like the Stage 1 roster. The stage also shows the scenario's guidance from the comparison matrix (confidence, Y1 contingency, team shape, AIOps timeline, commercial model, volume band clause, YoY savings target) for the deal review.
+
+Default example: no tower has ticket history and AI adoption is Low, so this is Scenario 1. The team so far is 14.60. The POD is 1.83 and AIOps at 1:4 is 3.65, so 3.65 is added, or 3.83 with a 5% risk. The team is 18.4 FTE, rostered as 21 people. With Moderate AI (Scenario 2), the POD of 2.56 exceeds AIOps at 1:8 (1.83), so Stage 4 adds 2.68 instead.
 
 ### Copy summary
 **Copy summary** puts each stage's working, the location table, the assumptions and the risks on the clipboard as Markdown, ready for the deal-review deck or notes.
