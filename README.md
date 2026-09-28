@@ -61,21 +61,39 @@ Rounding to whole people is applied once, to the final team, after all stages.
 
 ## Stage 2: service towers and complexity
 
-Towers are skill sets: Front end, Back end / APIs, Mobile, Infra / Cloud, SRE, Data, and named special skills. Each tower is rated S / M / L / XL / XXL, using the framework's complexity descriptions ([F] Scenario 1, Step 1). Each size adds a set FTE (proposed: S 0.5, M 1, L 1.5, XL 2, XXL 3; editable).
+Towers are **AMS**, **IMS** or **DMS** ([F] 1.3 service functions). Each tower chooses how its demand is sized:
 
-The base team absorbs work first:
+| Volumetrics available? | AMS | IMS | DMS |
+|---|---|---|---|
+| **Yes** | Incidents + service requests a month | same | same |
+| **No** | Apps by complexity S–XXL at 4 / 10 / 17.5 / 30 / 50 tickets per app a month ([F] Sc.1 midpoints), **or** MAU × incident rate (0.5–2%, [F] Sc.1 Step 2) | Complexity points: environments × 1 + hosting platforms × 1.5 + databases × 1 + security in scope 3, × 4.5 tickets per point | Complexity points: data products × 1 + pipelines × 0.5 + integrations × 1 + upstream × 0.75 + downstream × 0.75, × 3.4 tickets per point |
+
+IMS/DMS weights and tickets per point come from the `damo-estimator` structural-complexity model (pipelines weight is new). All are `proposed` and editable in the stage's Benchmarks panel.
+
+Every route ends in tickets a month, which then follow the framework effort chain ([F] 1.1, 1.4, 1.5, p.3):
 
 ```
-demand     = Σ FTE per tower size
-capacity   = Stage 1 roster × spare capacity %           (proposed 25%)
-absorbed   = min(demand of towers the base team has skills for, capacity)
-added      = demand − absorbed
-stage 2    = added × (1 + Σ active stage 2 risk %)
+L2 tickets = tickets × 70%            L1 is the client's service desk
+L3 tickets = L2 tickets × 20%
+A          = (L2 × 3h + L3 × 10h) ÷ 85% utilisation
+B          = A × 25% (modern) or 35% (complex legacy)
+tower FTE  = (A + B) ÷ 160 hours a month, keeping the L2/L3 split from the effort
 ```
 
-Each tower has a **Base team has this skill** switch. It is on by default for Front end, Back end and Infra, and off for Mobile, SRE, Data and special skills. Absorbed FTE is shared across skill-matched towers in proportion to their demand. Tower FTE is split L2/L3 (proposed 40/60) and across locations in the same proportion as the Stage 1 roster. Stage 3 will refine which shifts each skill covers.
+**Skill sets** form the bottom layer. Each tower lists the skill sets it needs (Front end, Back end / APIs, Mobile, Infra / Cloud, SRE, Database, Data engineering, named special skills) with a share %. The tower's FTE is split by those shares (scaled to 100% if they don't add up). Defaults: AMS Back end 60 / Front end 40, IMS Infra 80 / Database 20, DMS Data engineering 100.
 
-Default example: Back end M, Front end S, Infra M and Data L give 4.0 FTE of demand. The base team absorbs 1.5 (6.0 × 25%), leaving 2.5 added. A 15% risk modifier takes that to +2.88, so the team is 10.22 FTE, rostered as 12 people.
+The base team absorbs work first, at skill-set level:
+
+```
+capacity = Stage 1 roster × spare capacity %                  (proposed 25%)
+absorbed = min(FTE of skill sets marked "Base has skill", capacity)
+added    = tower FTE − absorbed
+stage 2  = added × (1 + Σ active stage 2 risk %)
+```
+
+"Base has skill" is on by default for Front end, Back end and Infra / Cloud. Added FTE is spread across locations in the same proportion as the Stage 1 roster. Stage 3 will set which shifts each skill covers.
+
+Default example: AMS "Customer apps" (2 S, 3 M, 1 L apps), IMS "Cloud platform" (4 environments, 2 hosting platforms, 4 databases, security) and DMS "Analytics platform" (4 data products, 10 pipelines, 3 integrations, 3 upstream, 2 downstream). That is 172 tickets a month, 5.53 tower FTE, 1.50 absorbed, +4.03 added, +4.64 after 15% risk. The team is 12.0 FTE, rostered as 14 people.
 
 ### Copy summary
 **Copy summary** puts each stage's working, the location table, the assumptions and the risks on the clipboard as Markdown, ready for the deal-review deck or notes.
