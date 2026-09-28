@@ -272,6 +272,21 @@ details.bench{border:1px solid var(--line);border-radius:8px;padding:10px 12px;b
 details.bench summary{cursor:pointer;font-weight:600;font-size:14px}
 details.bench .tgrid{margin-top:10px}
 details.bench h4{margin:14px 0 0;font:600 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+/* stage 3 */
+.covlist{display:grid;gap:10px}
+.covrow{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface-2);display:grid;gap:10px}
+.covrow.base{background:transparent;border-style:dashed}
+.covrow .ch{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;justify-content:space-between}
+.covrow .ch b{font:700 15px var(--display)}
+.covrow .ch small{color:var(--muted);font-size:12px;margin-left:6px}
+.shiftchips{display:flex;flex-wrap:wrap;gap:6px}
+.shiftchips button{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 10px;cursor:pointer;display:grid;gap:1px;text-align:left;font-size:12px}
+.shiftchips button b{font:600 12px var(--mono)}
+.shiftchips button span{color:var(--muted)}
+.shiftchips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.shiftchips button[aria-pressed="true"] span{color:var(--accent-ink);opacity:.85}
+.shiftchips button.oc{border-style:dashed}
+.covmeta{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between}
 </style>
 </head>
 <body>
@@ -497,7 +512,65 @@ details.bench h4{margin:14px 0 0;font:600 11px var(--body);letter-spacing:.08em;
       </div>
     </div>
 
-    <div class="stage-nav"><button class="btn" type="button" data-go="1">← Base team</button><span class="hint">Stage 3, skill coverage by shift, comes next.</span></div>
+    <div class="stage-nav"><button class="btn" type="button" data-go="1">← Base team</button><button class="btn primary" type="button" data-go="3">Next: skill coverage →</button></div>
+  </section>
+
+  <!-- ===================== STAGE 3 ===================== -->
+  <section id="stage3" class="stage" aria-labelledby="s3h" hidden>
+    <div class="stage-head">
+      <span class="eyebrow">Stage 3 of 8</span>
+      <h2 id="s3h">Skill coverage by shift</h2>
+      <p>Skill sets the base team already has are on every shift through the base roster. For every other skill set, pick the shifts where it must be live. Outside those shifts it is on call. If covering those shifts needs more people than the skill's Stage 2 effort, the difference is added here.</p>
+    </div>
+
+    <div class="cols">
+      <div class="panel">
+        <header><h3>Inputs</h3><span class="sub">Pick live shifts per skill set</span></header>
+        <div class="field">
+          <div class="lbl">On-call allowance outside live shifts <span class="tag">proposed</span></div>
+          <label class="inline" for="onCallPct"><input id="onCallPct" type="number" min="0" max="100" step="5">% of a staffed shift</label>
+        </div>
+        <div class="divider"></div>
+        <div class="field">
+          <div class="lbl">Skill sets from Stage 2</div>
+          <div class="covlist" id="covList"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <header><h3>How the number is built</h3><span class="sub">Coverage floor against effort already staffed</span></header>
+        <div class="working" id="steps3"></div>
+        <div class="loc-table">
+          <table>
+            <thead><tr><th>Skill set</th><th class="r">Live</th><th class="r">On call</th><th class="r">Floor</th><th class="r">Stage 2 FTE</th><th class="r">Added</th></tr></thead>
+            <tbody id="covCalc"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="cols even" data-stage="s3">
+      <div class="panel">
+        <header><h3>Assumptions</h3><span class="sub">Stage 3</span></header>
+        <ul class="alist" id="auto-s3"></ul>
+        <ul class="alist" id="user-s3"></ul>
+        <form class="addrow" data-addassume="s3">
+          <input type="text" id="ai-s3" placeholder="Add an assumption agreed in the review" aria-label="New assumption">
+          <button class="btn sm" type="submit">Add</button>
+        </form>
+      </div>
+      <div class="panel">
+        <header><h3>Risks &amp; FTE modifiers</h3><span class="sub">Each risk's % is applied to the FTE this stage adds</span></header>
+        <div class="risks" id="risks-s3"></div>
+        <form class="addrow" data-addrisk="s3">
+          <input type="text" id="ri-s3" placeholder="Add a risk" aria-label="New risk">
+          <button class="btn sm" type="submit">Add</button>
+        </form>
+        <div class="risk-sum"><span>Stage 3 risk modifier</span><span class="num" id="rt-s3"></span></div>
+      </div>
+    </div>
+
+    <div class="stage-nav"><button class="btn" type="button" data-go="2">← Service towers</button><span class="hint">Stage 4, transformation capacity, comes next.</span></div>
   </section>
 
   <div class="upcoming">
@@ -536,7 +609,7 @@ details.bench h4{margin:14px 0 0;font:600 11px var(--body);letter-spacing:.08em;
 const STAGES=[
   {n:1,t:"Base team",d:"Coverage, location and shifts set the L2 + L3 roster.",built:true},
   {n:2,t:"Service towers",d:"AMS, IMS and DMS demand from volumetrics or complexity, then skill sets.",built:true},
-  {n:3,t:"Skill coverage",d:"Decide whether each special skill is needed on every shift or only in some."},
+  {n:3,t:"Skill coverage",d:"Live shifts per skill set, on call outside them.",built:true},
   {n:4,t:"Transformation",d:"Capacity for SRE, automation and AIOps (framework: 10–20% of effort)."},
   {n:5,t:"Governance",d:"SDM and governance effort, and reconciliation of coverage-led and effort-led sizing."},
   {n:6,t:"Seniority & risk",d:"Grade mix and overall risk multipliers on the team."},
@@ -594,6 +667,11 @@ const RISKS_S2=()=>[
   {id:uid(),on:false,pct:5,title:"Niche skill availability",note:"Special or legacy skills are hard to hire in the chosen locations. Mitigation: named bench or partner capacity."},
   {id:uid(),on:true,pct:0,title:"Base team spare capacity overestimated",note:"If quiet time on shifts is lower than assumed, the base team absorbs less. Tracked only; revisit in Stage 5."}
 ];
+const RISKS_S3=()=>[
+  {id:uid(),on:true,pct:5,title:"Skills needed live outside the chosen shifts",note:"P1 incidents out of hours may need the specialist hands-on, not just reachable. Mitigation: on-call response SLA and escalation path in the SOW."},
+  {id:uid(),on:true,pct:0,title:"On-call rota too thin",note:"One specialist cannot carry a sustainable on-call rota. Tracked only: at least two people share each on-call rota."},
+  {id:uid(),on:false,pct:3,title:"Shift pattern changes after transition",note:"The client moves core hours or adds a region, so live shifts move. Mitigation: shift changes handled as a change request."}
+];
 function mkSkill(id,share,name){const c=SKILL_CATALOG.find(k=>k.id===id);return {id:uid(),skill:id,name:name||c.name,share,absorb:c.absorb}}
 function mkTower(kind){
   const n=S&&S.towers?S.towers.filter(t=>t.kind===kind).length+1:1;
@@ -615,8 +693,10 @@ function defaults(){
     towers:[Object.assign(mkTower("AMS"),{name:"Customer apps"}),Object.assign(mkTower("IMS"),{name:"Cloud platform"}),Object.assign(mkTower("DMS"),{name:"Analytics platform"})],
     bench:defaultBench(),
     sparePct:25,
-    assumptions:{s1:["Service desk (L1) is provided by the client and is out of scope for this team."],s2:[]},
-    risks:{s1:RISKS_S1(),s2:RISKS_S2()}
+    onCallPct:15,
+    cov:{},
+    assumptions:{s1:["Service desk (L1) is provided by the client and is out of scope for this team."],s2:[],s3:[]},
+    risks:{s1:RISKS_S1(),s2:RISKS_S2(),s3:RISKS_S3()}
   };
 }
 function pickLoc(id){const c=LOC_CATALOG.find(l=>l.id===id);return {id:c.id,name:c.name,kind:c.kind,leave:c.leave,hol:c.hol}}
@@ -635,6 +715,7 @@ function load(){
       const st=Object.assign(d,p);
       st.assumptions=Object.assign(defaults().assumptions,p.assumptions||{});
       st.risks=Object.assign(defaults().risks,p.risks||{});
+      st.cov=p.cov||{};
       if(!Array.isArray(p.towers)||p.towers.some(t=>!t.kind))st.towers=defaults().towers;
       const db=defaultBench(), pb=p.bench||{};
       st.bench=Object.assign(db,pb,{tpa:Object.assign(db.tpa,pb.tpa||{}),ims:Object.assign(db.ims,pb.ims||{}),dms:Object.assign(db.dms,pb.dms||{})});
@@ -643,6 +724,7 @@ function load(){
   }catch(e){}
   return defaults();
 }
+function covOf(id){if(!S.cov[id])S.cov[id]={shifts:[0],people:1};return S.cov[id]}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 
 /* ---------- engine ---------- */
@@ -703,14 +785,36 @@ function compute(){
   locs.forEach(l=>{
     const sh=roster>0?l.roster/shareBase:1/locs.length;
     l.t2=add2*(1+rp2)*sh; l.t3=add3*(1+rp2)*sh;
-    l.c2=l.k2+l.t2; l.c3=l.k3+l.t3; l.fte=l.c2+l.c3;
+    l.u2=0; l.u3=0;
   });
+
+  /* Stage 3: skill sets outside the base team's skills need their own cover on chosen shifts, on call elsewhere */
+  const oc=S.onCallPct/100, rp3=riskPctOf("s3");
+  const covSkills=skills.filter(k=>!k.absorb).map(k=>{
+    const cv=covOf(k.id);
+    const live=cv.shifts.filter(i=>i<spd);
+    const byLoc=locs.map(l=>{
+      let ls=0,os=0;
+      S.assign.forEach((id,i)=>{if(id!==l.id)return;if(live.includes(i))ls++;else os++});
+      const f=S.backfill?1/l.avail:1;
+      return {id:l.id,floor:(ls*days*cv.people+os*days*oc)/b*f};
+    });
+    const floor=byLoc.reduce((s3,x)=>s3+x.floor,0);
+    const have=k.added*(1+rp2);
+    const top=Math.max(0,floor-have);
+    const l3s=(k.f2+k.f3)>0?k.f3/(k.f2+k.f3):0.5;
+    return {...k,live,onCall:spd-live.length,people:cv.people,floor,have,top,l3s,byLoc};
+  });
+  const topUp=covSkills.reduce((s3,k)=>s3+k.top,0);
+  const s3=topUp*(1+rp3);
+  covSkills.forEach(k=>{if(!(k.top>0))return;k.byLoc.forEach(x=>{const l=locs.find(y=>y.id===x.id);const sh=k.floor>0?x.floor/k.floor:0;const v=k.top*(1+rp3)*sh;l.u2+=v*(1-k.l3s);l.u3+=v*k.l3s})});
+  locs.forEach(l=>{l.c2=l.k2+l.t2+l.u2; l.c3=l.k3+l.t3+l.u3; l.fte=l.c2+l.c3});
   towers.filter(t=>t.skills.length&&t.shareSum!==100).forEach(t=>warnings2.push(`${t.name}: skill shares add up to ${fmt(t.shareSum,0)}%. They are scaled to 100%.`));
   towers.filter(t=>!t.skills.length).forEach(t=>warnings2.push(`${t.name} has no skill sets, so its ${fmt(t.fte,2)} FTE is not staffed. Add at least one skill set.`));
 
   /* rounding on the combined team */
   const up=x=>Math.ceil(x-1e-6);
-  const total=s1+s2;
+  const total=s1+s2+s3;
   locs.forEach(l=>{
     if(S.rounding==="cell"){l.p2=up(l.c2);l.p3=up(l.c3);l.people=l.p2+l.p3}
     else if(S.rounding==="loc"){l.p2=l.c2;l.p3=l.c3;l.people=up(l.fte)}
@@ -720,6 +824,7 @@ function compute(){
   return {days,spd,shiftLen,a,b,c,framework,rp1,locs,roster,buffered,s1,warnings,
     leaveAdd:buffered-roster,risk1Add:s1-buffered,
     towers,skills,demand,demAbs,capacity,absorbed,added,add2,add3,rp2,s2,risk2Add:s2-added,warnings2,
+    covSkills,topUp,rp3,s3,risk3Add:s3-topUp,sub2:s1+s2,
     total,people,roundAdd:people-total,
     L2:sum(locs,"c2"),L3:sum(locs,"c3"),L2p:sum(locs,"p2"),L3p:sum(locs,"p3")};
 }
@@ -743,7 +848,7 @@ function renderRail(){
   $("upcoming").innerHTML=STAGES.filter(s=>!s.built).map(s=>`<div class="ucard"><span class="n">STAGE ${s.n}</span><b>${esc(s.t)}</b><span>${esc(s.d)}</span></div>`).join("");
   document.querySelectorAll(".stage").forEach(sec=>{sec.hidden=sec.id!=="stage"+S.active});
 }
-function go(n){S.active=n;renderRail();save();window.scrollTo({top:0,behavior:"auto"})}
+function go(n){S.active=n;if(n===3){renderS3();update();}renderRail();save();window.scrollTo({top:0,behavior:"auto"})}
 
 /* ---------- stage 1 static render ---------- */
 function renderS1(){
@@ -853,7 +958,7 @@ function updateRiskDeltas(k,base,add,pct){
 let R;
 function update(){
   R=compute();
-  updateS1(); updateS2(); renderBar(); save();
+  updateS1(); updateS2(); updateS3(); renderBar(); save();
 }
 function updateS1(){
   document.querySelectorAll("[data-cov]").forEach(b=>{const p=COV_PRESETS.find(x=>x[0]===b.dataset.cov);b.setAttribute("aria-pressed",String(S.days===p[1]&&S.hours===p[2]))});
@@ -918,7 +1023,7 @@ function updateS2(){
   h+=wstep("6","Absorbed by the base team",`<span class="delta round">${sgn(-R.absorbed,2)}</span>`,`Lower of skill-matched FTE ${fmt(R.demAbs,2)} and spare capacity ${fmt(R.roster,2)} × ${S.sparePct}% = ${fmt(R.capacity,2)}`);
   h+=wstep("7","Added by towers",`<span class="delta add">${sgn(R.added,2)}</span>`,`${fmt(R.demand,2)} − ${fmt(R.absorbed,2)} · L2 ${fmt(R.add2,2)} · L3 ${fmt(R.add3,2)}`);
   h+=wstep("8","Risk modifiers",`<span class="delta risk">${sgn(R.risk2Add,2)}</span>`,`${fmt(R.added,2)} × ${fmt(R.rp2*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
-  h+=wstep("=","Stage 2 adds",`${sgn(R.s2,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team so far: ${fmt(R.s1,2)} + ${fmt(R.s2,2)} = ${fmt(R.total,2)} FTE`,"total");
+  h+=wstep("=","Stage 2 adds",`${sgn(R.s2,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team so far: ${fmt(R.s1,2)} + ${fmt(R.s2,2)} = ${fmt(R.sub2,2)} FTE`,"total");
   $("steps2").innerHTML=h;
   $("towerCalc").innerHTML=R.towers.length?R.towers.map(t=>`<tr><td class="loc-name">${esc(t.name)}<small>${t.kind}${t.estate==="legacy"?" · legacy":""}</small></td><td>${esc(t.src)}</td><td class="r num">${fmt(t.tickets,0)}</td><td class="r num">${fmt(t.l2t,1)}</td><td class="r num">${fmt(t.l3t,1)}</td><td class="r num">${fmt(t.A,0)}</td><td class="r num">${fmt(t.Bh,0)}</td><td class="r num"><b>${fmt(t.fte,2)}</b></td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td></td><td class="r num">${fmt(tk,0)}</td><td class="r num">${fmt(l2,1)}</td><td class="r num">${fmt(l3,1)}</td><td class="r num">${fmt(A,0)}</td><td class="r num">${fmt(Bh,0)}</td><td class="r num"><b>${fmt(R.demand,2)}</b></td></tr>`
@@ -939,6 +1044,44 @@ function updateS2(){
   ]);
 }
 const n0v=v=>Math.max(0,+v||0);
+function shiftLabel(i){const from=i*S.hours/S.spd,to=(i+1)*S.hours/S.spd;const l=S.locations.find(x=>x.id===S.assign[i]);return {h:`Shift ${i+1}`,s:`h${hrs(from)}–${hrs(to)} · ${l?l.name:""}`}}
+function renderS3(){
+  $("onCallPct").value=S.onCallPct;
+  const all=S.towers.flatMap(t=>t.skills.map(k=>({...k,tower:t.name,kind:t.kind})));
+  $("covList").innerHTML=all.length?all.map(k=>{
+    if(k.absorb)return `<div class="covrow base"><div class="ch"><span><b>${esc(k.name)}</b><small>${esc(k.kind)} · ${esc(k.tower)}</small></span><span class="yes" style="font-size:13px">Base team, every shift</span></div></div>`;
+    const cv=covOf(k.id);
+    return `<div class="covrow" data-cskill="${k.id}"><div class="ch"><span><b>${esc(k.name)}</b><small>${esc(k.kind)} · ${esc(k.tower)}</small></span>
+      <span class="row" style="gap:6px"><button type="button" class="btn ghost sm" data-callall="${k.id}">All shifts</button></span></div>
+      <div class="shiftchips" role="group" aria-label="Live shifts for ${esc(k.name)}">${Array.from({length:S.spd},(_,i)=>{const L=shiftLabel(i);const on=cv.shifts.includes(i);return `<button type="button" data-kshift="${k.id}:${i}" aria-pressed="${on}" class="${on?"":"oc"}"><b>${L.h} · ${on?"live":"on call"}</b><span>${esc(L.s)}</span></button>`}).join("")}</div>
+      <div class="covmeta"><label class="inline" for="cp-${k.id}">People per live shift <input type="number" class="w-s" id="cp-${k.id}" data-cpeople="${k.id}" min="1" max="9" step="1" value="${cv.people}"></label><span class="derived" id="cd-${k.id}" style="padding:4px 8px"></span></div>
+    </div>`}).join(""):`<div class="empty">Add towers and skill sets in Stage 2 first.</div>`;
+}
+function updateS3(){
+  R.covSkills.forEach(k=>{const d=$("cd-"+k.id);if(d)d.innerHTML=`floor ${fmt(k.floor,2)} vs effort ${fmt(k.have,2)} → <b>${k.top>0?"adds "+sgn(k.top,2):"covered"}</b>`});
+  const nR=S.risks.s3.filter(r=>r.on&&+r.pct).length;
+  const fl=R.covSkills.reduce((s3,k)=>s3+k.floor,0), hv=R.covSkills.reduce((s3,k)=>s3+k.have,0);
+  let h="";
+  h+=wstep("1","Skill sets needing their own cover",fmt(R.covSkills.length,0),R.covSkills.length?esc(R.covSkills.map(k=>k.name).join(", ")):"All skill sets are held by the base team");
+  h+=wstep("2","Coverage floor",fmt(fl,2),`(live shifts × people + on-call shifts × ${S.onCallPct}%) × ${S.days} days ÷ ${fmt(R.b,2)} shifts per FTE${S.backfill?", with Stage 1 leave backfill":""}`);
+  h+=wstep("3","Already staffed from Stage 2",fmt(hv,2),"Each skill set's Stage 2 FTE after absorption and risk");
+  h+=wstep("4","Top-up for coverage",`<span class="delta add">${sgn(R.topUp,2)}</span>`,"Sum over skill sets of max(0, floor − Stage 2 FTE)");
+  h+=wstep("5","Risk modifiers",`<span class="delta risk">${sgn(R.risk3Add,2)}</span>`,`${fmt(R.topUp,2)} × ${fmt(R.rp3*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
+  h+=wstep("=","Stage 3 adds",`${sgn(R.s3,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team so far: ${fmt(R.sub2,2)} + ${fmt(R.s3,2)} = ${fmt(R.total,2)} FTE`,"total");
+  $("steps3").innerHTML=h;
+  $("covCalc").innerHTML=R.covSkills.length?R.covSkills.map(k=>`<tr><td class="loc-name">${esc(k.name)}<small>${esc(k.tower)}</small></td><td class="r num">${k.live.length}</td><td class="r num">${k.onCall}</td><td class="r num">${fmt(k.floor,2)}</td><td class="r num">${fmt(k.have,2)}</td><td class="r num"><b>${fmt(k.top,2)}</b></td></tr>`).join("")
+    +`<tr><td><b>Total</b></td><td></td><td></td><td class="r num">${fmt(fl,2)}</td><td class="r num">${fmt(hv,2)}</td><td class="r num"><b>${fmt(R.topUp,2)}</b></td></tr>`
+    :`<tr><td colspan="6" class="hint">No skill sets need their own cover.</td></tr>`;
+  updateRiskDeltas("s3",R.topUp,R.risk3Add,R.rp3);
+  const base=R.skills.filter(k=>k.absorb).map(k=>k.name);
+  renderAuto("s3",[
+    ["C1",`Skill sets the base team has are present on every shift through the Stage 1 roster: ${base.length?[...new Set(base)].join(", "):"none"}.`,"Stage 1"],
+    ["C2",`Other skill sets are live on the shifts picked here, with the stated people per shift. Outside them they are on call, costed at ${S.onCallPct}% of a staffed shift.`,"proposed"],
+    ["C3","A skill set's FTE is the higher of its Stage 2 effort and its shift coverage floor. This stage adds only the difference.","proposed"],
+    ["C4",`Specialists sit in the locations covering their shifts${S.backfill?", with the same leave and holiday backfill as Stage 1":""}.`,"[F] G3"]
+  ]);
+}
+
 function renderBar(){
   const whole=S.rounding!=="none";
   $("barFte").innerHTML=`${fmt(R.total,1)}<small>FTE</small>`;
@@ -946,7 +1089,9 @@ function renderBar(){
   const chip=(cls,l,v,go)=>`<div class="chip ${cls}" ${go?`data-gochip="${go}" style="cursor:pointer"`:""}><span class="l">${l}</span><span class="v">${v}</span></div>`;
   let h=chip("base","Roster",fmt(R.roster,1),1)+chip("add","+ Leave",sgn(R.leaveAdd),1)+chip("risk","+ Risk",sgn(R.risk1Add),1)+chip("base","Stage 1",fmt(R.s1,1),1);
   h+=`<div class="chip sep">›</div>`;
-  h+=chip("add","2 · Towers",sgn(R.added),2)+chip("risk","+ Risk",sgn(R.risk2Add),2)+chip("base","Stage 2",fmt(R.total,1),2);
+  h+=chip("add","2 · Towers",sgn(R.added),2)+chip("risk","+ Risk",sgn(R.risk2Add),2)+chip("base","Stage 2",fmt(R.sub2,1),2);
+  h+=`<div class="chip sep">›</div>`;
+  h+=chip("add","3 · Skill cover",sgn(R.topUp),3)+chip("risk","+ Risk",sgn(R.risk3Add),3)+chip("base","Stage 3",fmt(R.total,1),3);
   h+=`<div class="chip sep">›</div>`;
   h+=STAGES.filter(s=>!s.built).map(s=>chip("todo",`${s.n} · ${esc(s.t)}`,"—")).join("");
   if(whole)h+=`<div class="chip sep">›</div>`+chip("round","Rounding",sgn(R.roundAdd));
@@ -954,7 +1099,7 @@ function renderBar(){
   const tot=Math.max(R.people,R.total,0.0001);
   const seg=(v,c,t)=>`<span style="width:${Math.max(0,v)/tot*100}%;background:${c}" title="${t}"></span>`;
   $("barStack").innerHTML=seg(R.roster,"var(--accent)","Roster")+seg(R.leaveAdd,"var(--add)","Leave backfill")+seg(R.risk1Add,"var(--risk)","Stage 1 risk")
-    +seg(R.added,"#6B7C93","Towers")+seg(R.risk2Add,"var(--risk)","Stage 2 risk")+(whole?seg(R.roundAdd,"var(--round)","Rounding"):"");
+    +seg(R.added,"#6B7C93","Towers")+seg(R.risk2Add,"var(--risk)","Stage 2 risk")+seg(R.topUp,"#3F8C9B","Skill cover")+seg(R.risk3Add,"var(--risk)","Stage 3 risk")+(whole?seg(R.roundAdd,"var(--round)","Rounding"):"");
   const cell=S.rounding==="cell";
   $("barSplit").innerHTML=`<div class="r"><span>L2</span><b>${cell?fmt(R.L2p,0):fmt(R.L2,1)}</b></div>
     <div class="r"><span>L3</span><b>${cell?fmt(R.L3p,0):fmt(R.L3,1)}</b></div>
@@ -985,6 +1130,8 @@ document.addEventListener("click",e=>{
   else if(d.tbasis){twr(t).amsBasis=d.tbasis;renderS2();update();}
   else if(d.testate){twr(t).estate=d.testate;renderS2();update();}
   else if(d.addskill){const tw=S.towers.find(x=>x.id===d.addskill);const id=$("sk-add-"+tw.id).value;if(id){tw.skills.push(mkSkill(id,0,id==="spec"?"Special skill":null));renderS2();update();}}
+  else if(d.kshift){const [id,i]=pair(d.kshift);const cv=covOf(id);const n=+i;cv.shifts=cv.shifts.includes(n)?cv.shifts.filter(x=>x!==n):[...cv.shifts,n].sort();renderS3();update();}
+  else if(d.callall){const cv=covOf(d.callall);cv.shifts=Array.from({length:S.spd},(_,i)=>i);renderS3();update();}
   else if(d.rmskill){const tw=twr(t);tw.skills=tw.skills.filter(k=>k.id!==d.rmskill);renderS2();update();}
   else if(d.rmtower){S.towers=S.towers.filter(x=>x.id!==d.rmtower);renderS2();update();}
   else if(d.rmassume){const [k,i]=pair(d.rmassume);S.assumptions[k].splice(+i,1);renderAssume(k);update();}
@@ -1000,6 +1147,8 @@ document.addEventListener("input",e=>{
   if(t.id==="dealName"){S.deal=t.value;save();return}
   if(t.id==="hours"){const v=Math.round(+t.value);if(v>=1&&v<=24){S.hours=v;renderSpd();update();}return}
   if(t.id==="fteHours"){const v=+t.value;if(v>=20&&v<=60){S.fteHours=v;update()}return}
+  if(t.id==="onCallPct"){const v=+t.value;if(t.value!==""&&v>=0&&v<=100){S.onCallPct=v;update()}return}
+  if(d.cpeople){const v=Math.round(+t.value);if(v>=1&&v<=9){covOf(d.cpeople).people=v;update()}return}
   if(t.id==="sparePct"){const v=+t.value;if(v>=0&&v<=80){S.sparePct=v;update()}return}
   if(d.tn){const v=+t.value;if(t.value!==""&&v>=0){twr(t)[d.tn]=v;update()}return}
   if(d.tapp){const v=+t.value;if(t.value!==""&&v>=0){twr(t).apps[d.tapp]=v;update()}return}
@@ -1058,8 +1207,14 @@ function summary(){
   L.push(`- Base spare capacity: ${fmt(R.roster,2)} × ${S.sparePct}% = ${fmt(R.capacity,2)}; absorbed ${fmt(R.absorbed,2)}`);
   L.push(`- Added by towers: ${fmt(R.added,2)} (L2 ${fmt(R.add2,2)}, L3 ${fmt(R.add3,2)})`);
   L.push(`- Risk modifiers (${fmt(R.rp2*100,1)}%): ${sgn(R.risk2Add,2)}`);
-  L.push(`- **Stage 2 adds: ${fmt(R.s2,2)} FTE. Team so far ${fmt(R.total,2)} FTE**`);
+  L.push(`- **Stage 2 adds: ${fmt(R.s2,2)} FTE. Team so far ${fmt(R.sub2,2)} FTE**`);
   rows("s2");
+  L.push("","## Stage 3 · Skill coverage by shift","","| Skill set | Tower | Live shifts | On-call shifts | Floor | Stage 2 FTE | Added |","|---|---|---|---|---|---|---|");
+  R.covSkills.forEach(k=>L.push(`| ${k.name} | ${k.tower} | ${k.live.map(i=>i+1).join(", ")||"none"} | ${k.onCall} | ${fmt(k.floor,2)} | ${fmt(k.have,2)} | ${fmt(k.top,2)} |`));
+  L.push("",`- On-call allowance: ${S.onCallPct}% of a staffed shift`);
+  L.push(`- Top-up for coverage: ${fmt(R.topUp,2)}; risk modifiers (${fmt(R.rp3*100,1)}%): ${sgn(R.risk3Add,2)}`);
+  L.push(`- **Stage 3 adds: ${fmt(R.s3,2)} FTE. Team so far ${fmt(R.total,2)} FTE**`);
+  rows("s3");
   if(S.rounding!=="none")L.push("",`## Rounding`,`- ${fmt(R.total,2)} FTE rounded to ${fmt(R.people,0)} people (${sgn(R.roundAdd,2)}). By location: ${R.locs.filter(l=>l.fte>0).map(l=>`${l.name} ${S.rounding==="total"?fmt(l.fte,2):fmt(l.people,0)}`).join(", ")}`);
   return L.join("\n");
 }
@@ -1071,7 +1226,7 @@ function copySummary(){
 }
 
 /* ---------- boot ---------- */
-function renderAll(){renderRail();renderS1();renderS2();["s1","s2"].forEach(k=>{renderAssume(k);renderRisks(k)});update();}
+function renderAll(){renderRail();renderS1();renderS2();renderS3();["s1","s2","s3"].forEach(k=>{renderAssume(k);renderRisks(k)});update();}
 renderAll();
 })();
 </script>

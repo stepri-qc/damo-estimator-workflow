@@ -20,9 +20,9 @@ Values not taken from either source are marked `proposed`.
 |---|---|---|
 | 1 | Base team: coverage, location, shifts | Built |
 | 2 | Service towers and complexity (FE, BE, Mobile, Infra, SRE, Data, special skills) | Built |
-| 3 | Special-skill coverage: every shift or only some | Next |
-| 4 | Transformation capacity | Planned |
-| 5 | Effort-based cross-check (A + B tickets) | Planned |
+| 3 | Skill coverage by shift: live shifts, on call outside them | Built |
+| 4 | Transformation capacity | Next |
+| 5 | Governance and reconciliation | Planned |
 | 6 | Seniority and risk multipliers | Planned |
 | 7 | Commitment term and YoY savings | Planned |
 | 8 | Brownfield existing capacity | Planned |
@@ -94,6 +94,23 @@ stage 2  = added × (1 + Σ active stage 2 risk %)
 "Base has skill" is on by default for Front end, Back end and Infra / Cloud. Added FTE is spread across locations in the same proportion as the Stage 1 roster. Stage 3 will set which shifts each skill covers.
 
 Default example: AMS "Customer apps" (2 S, 3 M, 1 L apps), IMS "Cloud platform" (4 environments, 2 hosting platforms, 4 databases, security) and DMS "Analytics platform" (4 data products, 10 pipelines, 3 integrations, 3 upstream, 2 downstream). That is 172 tickets a month, 5.53 tower FTE, 1.50 absorbed, +4.03 added, +4.64 after 15% risk. The team is 12.0 FTE, rostered as 14 people.
+
+## Stage 3: skill coverage by shift
+
+Skill sets marked **Base has skill** in Stage 2 are on every shift through the Stage 1 roster, so they add nothing here. For every other skill set, you pick the Stage 1 shifts where it must be **live** (default: shift 1) and the people per live shift (default 1). On the remaining shifts it is **on call**, costed at 15% of a staffed shift (`proposed`, editable).
+
+```
+floor(skill, loc) = (live shifts at loc × people + on-call shifts at loc × on-call %) × days ÷ b
+                    ÷ availability(loc) when leave backfill is on
+floor(skill)      = Σ floor(skill, loc)
+have(skill)       = Stage 2 FTE after absorption and risk
+top-up            = Σ max(0, floor − have)
+stage 3           = top-up × (1 + Σ active stage 3 risk %)
+```
+
+Specialists sit in the locations covering their shifts. Top-up keeps the skill's L2/L3 effort split.
+
+Default example: Database (IMS) and Data engineering (DMS) are live on shift 1 (India) and on call on shifts 2–3. Each has a floor of 1.46 FTE. Database has 0.47 FTE of effort, so it adds 1.00. Data engineering already has 1.98, so it adds nothing. With a 5% risk, Stage 3 adds 1.05, so the team is 13.0 FTE, rostered as 15 people.
 
 ### Copy summary
 **Copy summary** puts each stage's working, the location table, the assumptions and the risks on the clipboard as Markdown, ready for the deal-review deck or notes.
