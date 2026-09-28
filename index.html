@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DAMO Estimation Workflow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#F4F5F8; --surface:#FFFFFF; --surface-2:#F8F9FB; --ink:#18202B; --muted:#5A6472; --faint:#8A93A0;
+  --line:#DCE0E7; --accent:#9B2F66; --accent-ink:#FFFFFF; --accent-soft:#F7E8F0;
+  --add:#2B7657; --add-soft:#E3F2EB; --risk:#A9620E; --risk-soft:#FBEEDC; --round:#4F5FA8; --round-soft:#E8EBF8;
+  --warn:#B3261E; --warn-soft:#FBE5E3;
+  --bar-h:136px;
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#10141A; --surface:#181E27; --surface-2:#1D242E; --ink:#E7EBF0; --muted:#A0A9B6; --faint:#6F7987;
+    --line:#2B333F; --accent:#E27AAF; --accent-ink:#1A0E14; --accent-soft:#3A1F2D;
+    --add:#63C095; --add-soft:#173327; --risk:#E6A85C; --risk-soft:#3A2A15; --round:#98A6EA; --round-soft:#232A45;
+    --warn:#F08A80; --warn-soft:#3C1D1B;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#10141A; --surface:#181E27; --surface-2:#1D242E; --ink:#E7EBF0; --muted:#A0A9B6; --faint:#6F7987;
+  --line:#2B333F; --accent:#E27AAF; --accent-ink:#1A0E14; --accent-soft:#3A1F2D;
+  --add:#63C095; --add-soft:#173327; --risk:#E6A85C; --risk-soft:#3A2A15; --round:#98A6EA; --round-soft:#232A45;
+  --warn:#F08A80; --warn-soft:#3C1D1B;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);padding-bottom:calc(var(--bar-h) + 24px + env(safe-area-inset-bottom,0px))}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:20px}
+@media (max-width:480px){.wrap{padding-inline:16px}}
+
+/* header */
+.top{border-bottom:1px solid var(--line);background:var(--surface)}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding-block:14px}
+.brand{display:flex;flex-direction:column;gap:2px;margin-right:auto}
+.brand .eyebrow{font:600 11px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.brand h1{font-size:20px;font-weight:800}
+.deal{display:flex;align-items:center;gap:8px}
+.deal label{font-size:12px;color:var(--muted)}
+.deal input{width:220px;max-width:50vw;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2)}
+.btn{border:1px solid var(--line);background:var(--surface);padding:7px 12px;border-radius:6px;cursor:pointer;font-weight:500;font-size:14px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--ink);border-color:var(--line)}
+.btn.sm{padding:4px 9px;font-size:13px}
+
+/* stage rail */
+.stages{overflow-x:auto;border-bottom:1px solid var(--line);background:var(--surface)}
+.stages ol{list-style:none;margin:0;padding:0;display:flex;gap:4px;min-width:max-content}
+.stages li{display:flex;align-items:center;gap:8px;padding:12px 14px 10px;border-bottom:3px solid transparent;color:var(--faint);font-size:13px;white-space:nowrap}
+.stages li .n{font:600 12px/1 var(--mono);width:22px;height:22px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line)}
+.stages li.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.stages li.on .n{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+/* stage */
+.stage-head{display:grid;gap:6px;padding-block:28px 18px;max-width:780px}
+.stage-head .eyebrow{font:600 12px/1 var(--mono);color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+.stage-head h2{font-size:30px;font-weight:800}
+.stage-head p{margin:0;color:var(--muted)}
+.cols{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:20px;align-items:start}
+.cols.even{grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-top:20px}
+@media (max-width:920px){.cols,.cols.even{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;display:grid;gap:20px;min-width:0}
+.panel > header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.panel h3{font-size:17px;font-weight:700}
+.panel .sub{font-size:13px;color:var(--muted)}
+.field{display:grid;gap:8px}
+.field > .lbl{display:flex;justify-content:space-between;gap:8px;align-items:baseline;font-weight:600;font-size:14px}
+.field > .lbl .tag{font:500 11px/1 var(--mono);color:var(--faint);letter-spacing:.04em}
+.hint{font-size:12.5px;color:var(--muted)}
+.hint.warn{color:var(--warn)}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1px solid var(--line);background:var(--surface-2);padding:6px 11px;border-radius:6px;cursor:pointer;font:500 13px/1.2 var(--mono)}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.row{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.inline{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted)}
+input[type=number],select,input[type=text],textarea{border:1px solid var(--line);background:var(--surface-2);border-radius:6px;padding:6px 8px}
+input[type=number]{width:74px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+input.w-s{width:60px}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--surface-2)}
+.stepper button{border:0;background:transparent;width:30px;height:32px;cursor:pointer;font-size:16px;color:var(--muted)}
+.stepper button:hover{color:var(--accent)}
+.stepper output{min-width:28px;text-align:center;font:600 15px var(--mono)}
+.tierbox{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tier{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--surface-2)}
+.tier b{font-family:var(--display);font-size:15px}
+.tier span{display:block;font-size:12px;color:var(--muted)}
+.divider{height:1px;background:var(--line);margin-block:-4px}
+
+/* locations */
+.loc-table{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{font:600 11px/1.2 var(--body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.r,th.r{text-align:right}
+tr:last-child td{border-bottom:0}
+.loc-name{font-weight:600}
+.loc-name small{display:block;font-weight:400;color:var(--faint);font-size:11.5px}
+.shiftmap{display:grid;gap:8px}
+.shiftslot{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}
+.shiftslot .s{font:600 12px var(--mono);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:6px 8px;white-space:nowrap}
+.dial{display:flex;height:14px;border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+.dial span{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.switch{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.switch input{margin-top:3px;accent-color:var(--accent);width:16px;height:16px}
+.switch b{font-weight:600;font-size:14px}
+.switch span{display:block;font-size:12.5px;color:var(--muted)}
+
+/* working */
+.working{display:grid;gap:0}
+.wstep{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:4px 12px;padding:12px 0;border-bottom:1px dashed var(--line);align-items:baseline}
+.wstep:first-child{padding-top:0}
+.wstep .k{font:600 12px var(--mono);color:var(--accent)}
+.wstep .t{font-weight:600}
+.wstep .f{grid-column:2/4;font:13px/1.5 var(--mono);color:var(--muted)}
+.wstep .v{font:600 16px var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.wstep.total{border-bottom:0;background:var(--accent-soft);margin-top:12px;padding:14px 12px;border-radius:8px;grid-template-columns:22px minmax(0,1fr) auto}
+.wstep.total .v{font-size:22px;color:var(--accent)}
+.wstep.total .k{color:var(--accent)}
+.delta{font:600 12px var(--mono);padding:2px 6px;border-radius:4px;white-space:nowrap}
+.delta.add{color:var(--add);background:var(--add-soft)}
+.delta.risk{color:var(--risk);background:var(--risk-soft)}
+.delta.round{color:var(--round);background:var(--round-soft)}
+.check{font-size:12.5px;color:var(--add);display:flex;gap:6px;align-items:baseline}
+.check.off{color:var(--muted)}
+.alert{border:1px solid var(--warn);background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:8px 12px;font-size:13px}
+
+/* assumptions and risks */
+.alist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.alist li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:start;font-size:14px}
+.alist li .i{font:600 11px/22px var(--mono);color:var(--faint)}
+.alist li.auto .src{font:500 10.5px/1 var(--mono);color:var(--muted);border:1px solid var(--line);padding:3px 5px;border-radius:4px;white-space:nowrap;margin-top:2px}
+.alist textarea{width:100%;min-height:36px;resize:vertical;padding:6px 8px;font-size:14px;line-height:1.4}
+.addrow{display:flex;gap:8px}
+.addrow input{flex:1;min-width:0}
+.riskcard{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 12px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);align-items:start}
+.riskcard.off{opacity:.62}
+.riskcard input[type=checkbox]{margin-top:4px;accent-color:var(--risk);width:16px;height:16px}
+.riskcard .rt{display:grid;gap:4px;min-width:0}
+.riskcard .rt input[type=text]{font-weight:600;background:transparent;border-color:transparent;padding:2px 4px;margin-left:-4px;width:100%}
+.riskcard .rt input[type=text]:hover,.riskcard .rt input[type=text]:focus{border-color:var(--line);background:var(--surface)}
+.riskcard .rt textarea{font-size:13px;color:var(--muted);background:transparent;border-color:transparent;padding:2px 4px;margin-left:-4px;resize:vertical;min-height:0;width:100%}
+.riskcard .rt textarea:hover,.riskcard .rt textarea:focus{border-color:var(--line);background:var(--surface)}
+.riskcard .pct{display:grid;justify-items:end;gap:4px}
+.riskcard .pct label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.riskcard .pct .pin{display:flex;align-items:center;gap:4px;font-family:var(--mono)}
+.riskcard .pct input{width:64px;text-align:right}
+.risks{display:grid;gap:10px}
+.risk-sum{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--line);padding-top:12px;font-size:14px}
+
+/* upcoming */
+.upcoming{margin-top:36px}
+.upcoming h3{font-size:15px;margin-bottom:12px;color:var(--muted);font-weight:700}
+.ulist{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.ucard{border:1px dashed var(--line);border-radius:8px;padding:12px 14px;display:grid;gap:4px}
+.ucard b{font-family:var(--display);font-size:14px}
+.ucard span{font-size:13px;color:var(--muted)}
+.ucard .n{font:600 11px var(--mono);color:var(--faint)}
+
+/* fixed FTE bar */
+.fte{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 24px rgba(15,20,30,.08);padding-bottom:env(safe-area-inset-bottom,0px)}
+.fte .wrap{height:var(--bar-h);display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:24px;align-items:center}
+.fte .big{display:grid;gap:2px}
+.fte .big .lbl{font:600 11px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.fte .big .n{font:700 38px/1 var(--mono);color:var(--accent);font-variant-numeric:tabular-nums}
+.fte .big .n small{font-size:14px;color:var(--muted);font-weight:500;margin-left:4px}
+.fte .big .hc{font-size:13px;color:var(--muted)}
+.fte .big .hc b{color:var(--ink);font-family:var(--mono)}
+.fte .flow{display:grid;gap:8px;min-width:0}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.chip{flex:none;display:grid;gap:1px;padding:5px 9px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);min-width:74px}
+.chip .l{font-size:10.5px;color:var(--muted);white-space:nowrap}
+.chip .v{font:600 13px var(--mono);white-space:nowrap}
+.chip.add .v{color:var(--add)} .chip.risk .v{color:var(--risk)} .chip.round .v{color:var(--round)} .chip.base .v{color:var(--accent)}
+.chip.todo{border-style:dashed;opacity:.6}
+.chip.sep{min-width:0;border:0;background:transparent;padding:5px 2px;color:var(--faint);align-self:center}
+.stack{display:flex;height:12px;border-radius:3px;overflow:hidden;background:var(--surface-2);border:1px solid var(--line)}
+.stack span{height:100%;transition:width .25s ease}
+.fte .split{display:grid;gap:4px;font-size:13px;min-width:170px}
+.fte .split .r{display:flex;justify-content:space-between;gap:12px}
+.fte .split .r b{font-family:var(--mono)}
+.fte .split .locs{color:var(--muted);font-size:12px;max-width:240px}
+@media (max-width:860px){
+  :root{--bar-h:112px}
+  .fte .wrap{grid-template-columns:auto minmax(0,1fr);gap:14px}
+  .fte .split{display:none}
+  .fte .big .n{font-size:30px}
+}
+@media (max-width:520px){
+  .chips{display:none}
+  .stage-head h2{font-size:24px}
+  .tierbox{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){.stack span{transition:none}}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--bar-h) + 16px);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:13px;z-index:30}
+#copybox{width:100%;min-height:200px;font:12px/1.4 var(--mono)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <span class="eyebrow">DAMO · Deal review</span>
+      <h1>Estimation Workflow</h1>
+    </div>
+    <div class="deal">
+      <label for="dealName">Deal</label>
+      <input id="dealName" type="text" placeholder="Client / opportunity name">
+    </div>
+    <button class="btn" id="copyBtn" type="button">Copy summary</button>
+    <button class="btn ghost" id="resetBtn" type="button">Reset</button>
+  </div>
+</header>
+
+<nav class="stages" aria-label="Estimation stages">
+  <div class="wrap"><ol id="stageRail"></ol></div>
+</nav>
+
+<main class="wrap">
+  <section id="stage1" aria-labelledby="s1h">
+    <div class="stage-head">
+      <span class="eyebrow">Stage 1 of 8</span>
+      <h2 id="s1h">Base team from coverage, location and shifts</h2>
+      <p>The support window sets the smallest L2 + L3 team that can staff every shift. No ticket volumes are used yet. Later stages add to this number, and the bar at the bottom shows each change.</p>
+    </div>
+
+    <div class="cols">
+      <!-- inputs -->
+      <div class="panel" id="inputs">
+        <header><h3>Inputs</h3><span class="sub">Every change updates the FTE bar below</span></header>
+
+        <div class="field">
+          <div class="lbl">Coverage window <span class="tag">[F] 1.1 C · Coverage model</span></div>
+          <div class="seg" id="covPresets"></div>
+          <div class="row">
+            <label class="inline" for="days">Days a week <select id="days"><option>5</option><option>6</option><option>7</option></select></label>
+            <label class="inline" for="hours">Hours a day <input id="hours" type="number" min="1" max="24" step="1"></label>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="field">
+          <div class="lbl">Shifts per day</div>
+          <div class="seg" id="spdSeg"></div>
+          <div class="row">
+            <label class="inline" for="fteHours">Contracted hours per FTE a week <input id="fteHours" type="number" min="20" max="60" step="1"></label>
+          </div>
+          <div class="hint" id="shiftHint"></div>
+        </div>
+
+        <div class="field">
+          <div class="lbl">Minimum people on every shift</div>
+          <div class="tierbox">
+            <div class="tier"><div><b>L2</b><span>Support engineers</span></div>
+              <div class="stepper"><button type="button" data-step="L2:-1" aria-label="Fewer L2 per shift">−</button><output id="outL2">1</output><button type="button" data-step="L2:1" aria-label="More L2 per shift">+</button></div></div>
+            <div class="tier"><div><b>L3</b><span>Engineers / SMEs</span></div>
+              <div class="stepper"><button type="button" data-step="L3:-1" aria-label="Fewer L3 per shift">−</button><output id="outL3">1</output><button type="button" data-step="L3:1" aria-label="More L3 per shift">+</button></div></div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="field">
+          <div class="lbl">Delivery locations <span class="tag">[F] G3 · Follow-the-sun</span></div>
+          <div class="loc-table">
+            <table>
+              <thead><tr><th>Location</th><th class="r">Leave days</th><th class="r">Public holidays</th><th class="r">Available</th><th></th></tr></thead>
+              <tbody id="locBody"></tbody>
+            </table>
+          </div>
+          <div class="addrow">
+            <select id="locAdd" aria-label="Add a location"></select>
+            <button class="btn sm" type="button" id="locAddBtn">Add location</button>
+          </div>
+          <div class="hint">Leave and holiday days are proposed defaults. Change them to match the delivery centre's policy.</div>
+        </div>
+
+        <div class="field">
+          <div class="lbl">Who covers each shift</div>
+          <div class="shiftmap" id="shiftMap"></div>
+          <div class="dial" id="dial" aria-hidden="true"></div>
+          <div class="legend" id="dialLegend"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <label class="switch" for="backfill">
+          <input type="checkbox" id="backfill">
+          <div><b>Add leave &amp; holiday backfill</b><span>Raise each location's FTE so the roster still holds when people take leave. Shown as its own step.</span></div>
+        </label>
+
+        <div class="field">
+          <div class="lbl">Rounding to whole people</div>
+          <select id="rounding">
+            <option value="cell">Round up per location and tier (rosterable)</option>
+            <option value="loc">Round up per location</option>
+            <option value="total">Round up the total only</option>
+            <option value="none">No rounding (fractional FTE)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- working -->
+      <div class="panel" id="working">
+        <header><h3>How the number is built</h3><span class="sub">Framework formula with this deal's values</span></header>
+        <div id="alerts"></div>
+        <div class="working" id="steps"></div>
+        <div class="loc-table">
+          <table>
+            <thead><tr><th>Location</th><th class="r">Shifts / wk</th><th class="r">L2</th><th class="r">L3</th><th class="r">Roster</th><th class="r">+ Leave</th><th class="r">+ Risk</th><th class="r">People</th></tr></thead>
+            <tbody id="locCalc"></tbody>
+          </table>
+        </div>
+        <div class="check" id="fwCheck"></div>
+      </div>
+    </div>
+
+    <div class="cols even">
+      <div class="panel">
+        <header><h3>Assumptions</h3><span class="sub">Stage 1</span></header>
+        <ul class="alist" id="autoAssume"></ul>
+        <ul class="alist" id="userAssume"></ul>
+        <form class="addrow" id="assumeForm">
+          <input type="text" id="assumeInput" placeholder="Add an assumption agreed in the review">
+          <button class="btn sm" type="submit">Add</button>
+        </form>
+      </div>
+      <div class="panel">
+        <header><h3>Risks &amp; FTE modifiers</h3><span class="sub">Each risk's % is applied to the Stage 1 team</span></header>
+        <div class="risks" id="riskList"></div>
+        <form class="addrow" id="riskForm">
+          <input type="text" id="riskInput" placeholder="Add a risk">
+          <button class="btn sm" type="submit">Add</button>
+        </form>
+        <div class="risk-sum"><span>Stage 1 risk modifier</span><span class="num" id="riskTotal"></span></div>
+      </div>
+    </div>
+
+    <div class="upcoming">
+      <h3>Next stages</h3>
+      <div class="ulist" id="upcoming"></div>
+    </div>
+  </section>
+
+  <section id="copyWrap" hidden style="margin-top:24px">
+    <div class="panel">
+      <header><h3>Summary text</h3><span class="sub">Copying was blocked. Select all and copy it by hand.</span></header>
+      <textarea id="copybox" readonly></textarea>
+    </div>
+  </section>
+</main>
+
+<footer class="fte" aria-label="FTE summary">
+  <div class="wrap">
+    <div class="big">
+      <span class="lbl">Estimated team</span>
+      <span class="n" id="barFte">0.0<small>FTE</small></span>
+      <span class="hc" id="barHc"></span>
+    </div>
+    <div class="flow">
+      <div class="chips" id="barChips"></div>
+      <div class="stack" id="barStack"></div>
+    </div>
+    <div class="split" id="barSplit"></div>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- reference data ---------- */
+const STAGES=[
+  {n:1,t:"Base team",d:"Coverage, location and shifts set the L2 + L3 roster."},
+  {n:2,t:"Service towers",d:"Add towers (FE, BE, Mobile, Infra, SRE, Data, special skills) and rate each one's complexity."},
+  {n:3,t:"Skill coverage",d:"Decide whether each special skill is needed on every shift or only in some."},
+  {n:4,t:"Transformation",d:"Capacity for SRE, automation and AIOps (framework: 10–20% of effort)."},
+  {n:5,t:"Effort check",d:"Cross-check against ticket effort A + B at 85% utilisation."},
+  {n:6,t:"Seniority & risk",d:"Grade mix and overall risk multipliers on the team."},
+  {n:7,t:"Term & savings",d:"Cost across 1–5 year commitments and YoY productivity savings."},
+  {n:8,t:"Brownfield capacity",d:"Offset by existing client or incumbent capacity we take over."}
+];
+const COV_PRESETS=[["8x5",5,8],["16x5",5,16],["24x5",5,24],["8x7",7,8],["16x7",7,16],["24x7",7,24]];
+/* proposed defaults, not from [F]/[P] */
+const LOC_CATALOG=[
+  {id:"in",name:"India",kind:"Offshore",leave:18,hol:10},
+  {id:"ro",name:"Romania",kind:"Nearshore EU",leave:21,hol:15},
+  {id:"eu",name:"Europe (Germany)",kind:"Onshore EU",leave:28,hol:10},
+  {id:"uk",name:"United Kingdom",kind:"Onshore EU",leave:25,hol:8},
+  {id:"ec",name:"Ecuador",kind:"Nearshore NA",leave:15,hol:11},
+  {id:"us",name:"United States",kind:"Onshore NA",leave:15,hol:10},
+  {id:"cn",name:"China",kind:"APAC",leave:10,hol:11},
+  {id:"au",name:"Australia",kind:"APAC",leave:20,hol:10}
+];
+const LOC_COLORS=["var(--accent)","var(--round)","var(--add)","var(--risk)","#6B7C93","#8C5FA8","#3F8C9B","#9B7B3F"];
+const WORK_DAYS=260;
+
+const DEFAULT_RISKS=()=>[
+  {id:uid(),on:true,pct:5,title:"Single point of failure on a shift",note:"With one person per tier on a shift, sickness or attrition leaves the shift uncovered. Mitigation: named cross-trained backup on call."},
+  {id:uid(),on:true,pct:3,title:"Handover loss between locations",note:"Context is lost at follow-the-sun handovers and resolution slows. Mitigation: handover runbook and a 30-minute overlap."},
+  {id:uid(),on:false,pct:2,title:"Attrition and backfill lag",note:"Replacements take 6–10 weeks to hire and ramp. Mitigation: shadow resource in the offshore bench."},
+  {id:uid(),on:true,pct:0,title:"Coverage window grows after signature",note:"Client asks for weekend or extended hours later. Tracked only: priced as a change request in the SOW, no FTE added."}
+];
+
+function uid(){return Math.random().toString(36).slice(2,9)}
+function defaults(){
+  return {
+    deal:"",
+    days:5,hours:24,spd:3,fteHours:40,
+    perShift:{L2:1,L3:1},
+    locations:[pickLoc("in"),pickLoc("ro")],
+    assign:["in","in","ro"],
+    backfill:true,
+    rounding:"cell",
+    assumptions:["Service desk (L1) is provided by the client and is out of scope for this team."],
+    risks:DEFAULT_RISKS()
+  };
+}
+function pickLoc(id){const c=LOC_CATALOG.find(l=>l.id===id);return {id:c.id,name:c.name,kind:c.kind,leave:c.leave,hol:c.hol}}
+
+/* ---------- state ---------- */
+const KEY="damo-workflow-v1";
+let S=load();
+function load(){
+  try{const raw=localStorage.getItem(KEY);if(raw){const p=JSON.parse(raw);return Object.assign(defaults(),p)}}catch(e){}
+  return defaults();
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+/* ---------- engine ---------- */
+function compute(S){
+  const days=S.days, hours=S.hours, spd=S.spd;
+  const shiftLen=hours/spd;
+  const a=spd*days;                         // shifts to cover per week
+  const b=S.fteHours/shiftLen;              // shifts one FTE covers per week
+  const c=S.perShift.L2+S.perShift.L3;      // people per shift
+  const framework=a*c/b;                    // [F] p3 (a*c)/b
+  const riskPct=S.risks.filter(r=>r.on).reduce((s,r)=>s+(+r.pct||0),0)/100;
+  const locs=S.locations.map(l=>{
+    const slots=S.assign.filter(x=>x===l.id).length;
+    const sw=slots*days;
+    const r2=sw*S.perShift.L2/b, r3=sw*S.perShift.L3/b;
+    const avail=Math.max(0.1,(WORK_DAYS-(+l.leave||0)-(+l.hol||0))/WORK_DAYS);
+    const f=S.backfill?1/avail:1;
+    const b2=r2*f,b3=r3*f;
+    const k2=b2*(1+riskPct),k3=b3*(1+riskPct);
+    return {...l,slots,sw,r2,r3,roster:r2+r3,avail,b2,b3,buffered:b2+b3,k2,k3,risked:k2+k3};
+  });
+  const sum=(k)=>locs.reduce((s,l)=>s+l[k],0);
+  const roster=sum("roster"), buffered=sum("buffered"), risked=sum("risked");
+  const up=x=>Math.ceil(x-1e-6);
+  let people, L2p, L3p;
+  locs.forEach(l=>{
+    if(S.rounding==="cell"){l.p2=up(l.k2);l.p3=up(l.k3);l.people=l.p2+l.p3}
+    else if(S.rounding==="loc"){l.people=up(l.risked);l.p2=l.k2;l.p3=l.k3}
+    else {l.people=l.risked;l.p2=l.k2;l.p3=l.k3}
+  });
+  if(S.rounding==="total"){people=up(risked)}
+  else people=locs.reduce((s,l)=>s+l.people,0);
+  L2p=locs.reduce((s,l)=>s+l.p2,0); L3p=locs.reduce((s,l)=>s+l.p3,0);
+  const warnings=[];
+  if(shiftLen>12) warnings.push(`Each shift would be ${fmt(shiftLen,1)} hours. Add a shift so no shift runs longer than 12 hours.`);
+  if(c<1) warnings.push("Every shift needs at least one person. Set L2 or L3 to 1 or more.");
+  locs.filter(l=>l.slots===0).forEach(l=>warnings.push(`${l.name} is not covering any shift, so it adds no FTE. Assign it a shift or remove it.`));
+  return {days,hours,spd,shiftLen,a,b,c,framework,riskPct,locs,roster,buffered,risked,people,L2p,L3p,
+    leaveAdd:buffered-roster,riskAdd:risked-buffered,roundAdd:people-risked,warnings};
+}
+
+/* ---------- helpers ---------- */
+function fmt(x,d=1){return (Math.round(x*10**d)/10**d).toFixed(d)}
+function sgn(x,d=1){return (x>=0?"+":"−")+fmt(Math.abs(x),d)}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+const $=id=>document.getElementById(id);
+function locColor(id){const i=S.locations.findIndex(l=>l.id===id);return LOC_COLORS[(i<0?0:i)%LOC_COLORS.length]}
+function covLabel(){return `${S.hours}×${S.days}`}
+
+/* ---------- static render ---------- */
+function renderRail(){
+  $("stageRail").innerHTML=STAGES.map(s=>`<li class="${s.n===1?"on":""}" ${s.n===1?'aria-current="step"':""}><span class="n">${s.n}</span>${esc(s.t)}</li>`).join("");
+  $("upcoming").innerHTML=STAGES.slice(1).map(s=>`<div class="ucard"><span class="n">STAGE ${s.n}</span><b>${esc(s.t)}</b><span>${esc(s.d)}</span></div>`).join("");
+}
+function renderInputs(){
+  $("dealName").value=S.deal||"";
+  $("covPresets").innerHTML=COV_PRESETS.map(([k,d,h])=>`<button type="button" data-cov="${k}" aria-pressed="${S.days===d&&S.hours===h}">${k}</button>`).join("");
+  $("days").value=String(S.days);
+  $("hours").value=S.hours;
+  $("spdSeg").innerHTML=[1,2,3,4].map(n=>`<button type="button" data-spd="${n}" aria-pressed="${S.spd===n}">${n} × ${fmt(S.hours/n,S.hours%n?1:0)}h</button>`).join("");
+  $("fteHours").value=S.fteHours;
+  $("outL2").textContent=S.perShift.L2;
+  $("outL3").textContent=S.perShift.L3;
+  $("backfill").checked=!!S.backfill;
+  $("rounding").value=S.rounding;
+  // locations
+  $("locBody").innerHTML=S.locations.map(l=>`<tr data-loc="${l.id}">
+    <td><div class="loc-name"><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${locColor(l.id)};margin-right:6px"></i>${esc(l.name)}<small>${esc(l.kind)}</small></div></td>
+    <td class="r"><input type="number" class="w-s" min="0" max="60" id="lv-${l.id}" data-f="leave" value="${l.leave}" aria-label="${esc(l.name)} leave days"></td>
+    <td class="r"><input type="number" class="w-s" min="0" max="30" id="hl-${l.id}" data-f="hol" value="${l.hol}" aria-label="${esc(l.name)} public holidays"></td>
+    <td class="r num" id="av-${l.id}"></td>
+    <td class="r">${S.locations.length>1?`<button class="btn ghost sm" type="button" data-rmloc="${l.id}" aria-label="Remove ${esc(l.name)}">Remove</button>`:""}</td></tr>`).join("");
+  const avail=LOC_CATALOG.filter(c=>!S.locations.some(l=>l.id===c.id));
+  $("locAdd").innerHTML=avail.map(c=>`<option value="${c.id}">${esc(c.name)} · ${esc(c.kind)}</option>`).join("");
+  $("locAdd").disabled=$("locAddBtn").disabled=!avail.length;
+  // shift map
+  const opts=S.locations.map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join("");
+  $("shiftMap").innerHTML=S.assign.map((id,i)=>{
+    const from=i*S.hours/S.spd, to=(i+1)*S.hours/S.spd;
+    return `<label class="shiftslot" for="sa-${i}"><span class="s">Shift ${i+1} · h${fmt(from,from%1?1:0)}–${fmt(to,to%1?1:0)}</span><select id="sa-${i}" data-assign="${i}">${opts}</select></label>`}).join("");
+  S.assign.forEach((id,i)=>{$("sa-"+i).value=id});
+  renderAssumptions();
+  renderRisks();
+}
+function renderAssumptions(){
+  $("userAssume").innerHTML=S.assumptions.map((a,i)=>`<li><span class="i">U${i+1}</span><textarea id="as-${i}" data-assume="${i}" rows="1" aria-label="Assumption ${i+1}">${esc(a)}</textarea><button type="button" class="btn ghost sm" data-rmassume="${i}" aria-label="Remove assumption">Remove</button></li>`).join("");
+}
+function renderRisks(){
+  $("riskList").innerHTML=S.risks.map(r=>`<div class="riskcard ${r.on?"":"off"}" data-risk="${r.id}">
+    <input type="checkbox" id="ron-${r.id}" data-rf="on" ${r.on?"checked":""} aria-label="Apply this risk">
+    <div class="rt">
+      <input type="text" id="rti-${r.id}" data-rf="title" value="${esc(r.title)}" aria-label="Risk title">
+      <textarea id="rno-${r.id}" data-rf="note" rows="2" aria-label="Impact and mitigation">${esc(r.note)}</textarea>
+    </div>
+    <div class="pct">
+      <label for="rpc-${r.id}">FTE modifier</label>
+      <span class="pin"><input type="number" id="rpc-${r.id}" data-rf="pct" min="-50" max="100" step="0.5" value="${r.pct}">%</span>
+      <span class="delta risk" id="rd-${r.id}"></span>
+      <button type="button" class="btn ghost sm" data-rmrisk="${r.id}">Remove</button>
+    </div></div>`).join("");
+}
+
+/* ---------- live update ---------- */
+function update(){
+  const R=compute(S);
+  // presets pressed state
+  document.querySelectorAll("[data-cov]").forEach(b=>{const p=COV_PRESETS.find(x=>x[0]===b.dataset.cov);b.setAttribute("aria-pressed",String(S.days===p[1]&&S.hours===p[2]))});
+  $("shiftHint").textContent=`${S.spd} shift${S.spd>1?"s":""} of ${fmt(R.shiftLen,R.shiftLen%1?1:0)} hours. One FTE covers ${fmt(R.b,2)} shifts a week (${S.fteHours}h ÷ ${fmt(R.shiftLen,R.shiftLen%1?1:0)}h).`;
+  $("shiftHint").className="hint"+(R.shiftLen>12?" warn":"");
+  R.locs.forEach(l=>{const el=$("av-"+l.id);if(el)el.textContent=Math.round(l.avail*100)+"%"});
+  // dial
+  $("dial").innerHTML=S.assign.map(id=>`<span style="width:${100/S.assign.length}%;background:${locColor(id)}"></span>`).join("");
+  $("dialLegend").innerHTML=R.locs.map(l=>`<span><i style="background:${locColor(l.id)}"></i>${esc(l.name)} · ${l.slots} of ${S.spd} shift${S.spd>1?"s":""}</span>`).join("");
+  // alerts
+  $("alerts").innerHTML=R.warnings.map(w=>`<div class="alert">${esc(w)}</div>`).join("");
+  // working steps
+  const sl=fmt(R.shiftLen,R.shiftLen%1?1:0);
+  const steps=[
+    ["a","Shifts to cover each week",`${S.spd} shifts a day × ${S.days} days`,fmt(R.a,0)],
+    ["b","Shifts one FTE covers each week",`${S.fteHours} contracted hours ÷ ${sl}h shift`,fmt(R.b,2)],
+    ["c","People on every shift",`${S.perShift.L2} L2 + ${S.perShift.L3} L3`,fmt(R.c,0)],
+    ["1","Roster FTE",`(a × c) ÷ b = (${fmt(R.a,0)} × ${R.c}) ÷ ${fmt(R.b,2)}, split by the locations covering each shift`,fmt(R.roster,2)],
+  ];
+  let html=steps.map(s=>`<div class="wstep"><span class="k">${s[0]}</span><span class="t">${s[1]}</span><span class="v">${s[3]}</span><span class="f">${esc(s[2])}</span></div>`).join("");
+  html+=`<div class="wstep"><span class="k">2</span><span class="t">Leave &amp; holiday backfill</span><span class="v"><span class="delta add">${sgn(R.leaveAdd,2)}</span></span><span class="f">${S.backfill?"Roster ÷ availability per location: "+R.locs.filter(l=>l.slots).map(l=>`${esc(l.name)} ${Math.round(l.avail*100)}%`).join(", "):"Off. The roster assumes people are always available."}</span></div>`;
+  html+=`<div class="wstep"><span class="k">3</span><span class="t">Risk modifiers</span><span class="v"><span class="delta risk">${sgn(R.riskAdd,2)}</span></span><span class="f">${fmt(R.buffered,2)} × ${fmt(R.riskPct*100,1)}% from ${S.risks.filter(r=>r.on&&+r.pct).length} active risk${S.risks.filter(r=>r.on&&+r.pct).length===1?"":"s"}</span></div>`;
+  html+=`<div class="wstep"><span class="k">4</span><span class="t">Round to whole people</span><span class="v"><span class="delta round">${sgn(R.roundAdd,2)}</span></span><span class="f">${({cell:"Rounded up for each location and tier, so every local roster can be staffed",loc:"Rounded up for each location",total:"Total rounded up once",none:"Not rounded"})[S.rounding]}</span></div>`;
+  html+=`<div class="wstep total"><span class="k">=</span><span class="t">Stage 1 base team</span><span class="v">${S.rounding==="none"?fmt(R.people,1):fmt(R.people,0)} <small style="font-size:13px;color:var(--muted)">${S.rounding==="none"?"FTE":"people"}</small></span></div>`;
+  $("steps").innerHTML=html;
+  $("locCalc").innerHTML=R.locs.map(l=>`<tr><td class="loc-name">${esc(l.name)}</td><td class="r num">${l.sw}</td><td class="r num">${fmt(l.r2,2)}</td><td class="r num">${fmt(l.r3,2)}</td><td class="r num">${fmt(l.roster,2)}</td><td class="r num">${fmt(l.buffered-l.roster,2)}</td><td class="r num">${fmt(l.risked-l.buffered,2)}</td><td class="r num"><b>${S.rounding==="cell"||S.rounding==="loc"?fmt(l.people,0):fmt(l.risked,2)}</b></td></tr>`).join("")
+    +`<tr><td><b>Total</b></td><td class="r num">${fmt(R.a,0)}</td><td class="r num">${fmt(R.locs.reduce((s,l)=>s+l.r2,0),2)}</td><td class="r num">${fmt(R.locs.reduce((s,l)=>s+l.r3,0),2)}</td><td class="r num">${fmt(R.roster,2)}</td><td class="r num">${fmt(R.leaveAdd,2)}</td><td class="r num">${fmt(R.riskAdd,2)}</td><td class="r num"><b>${S.rounding==="none"?fmt(R.people,2):fmt(R.people,0)}</b></td></tr>`;
+  const matches=Math.abs(R.framework-R.roster)<1e-6;
+  $("fwCheck").className="check"+(matches?"":" off");
+  $("fwCheck").textContent=(matches?"✓ ":"")+`Framework check: (a × c) ÷ b = ${fmt(R.framework,2)} FTE, the same as the roster line. The framework's p.3 example (24×5, 2 per shift) gives 6.`;
+  // risks
+  S.risks.forEach(r=>{const el=$("rd-"+r.id);if(el)el.textContent=r.on&&+r.pct?sgn(R.buffered*(+r.pct)/100,2)+" FTE":"no FTE"});
+  $("riskTotal").textContent=`${sgn(R.riskPct*100,1)}% · ${sgn(R.riskAdd,2)} FTE`;
+  // auto assumptions
+  const auto=[
+    ["A1",`Coverage is ${covLabel()}: ${S.hours} hours a day, ${S.days} days a week, split into ${S.spd} shift${S.spd>1?"s":""} of ${sl} hours. Shift handover overlap is absorbed inside the shift.`,"[F] 1.1 C"],
+    ["A2",`Each FTE works ${S.fteHours} contracted hours a week, so covers ${fmt(R.b,2)} shifts.`,"[F] p.3 b"],
+    ["A3",`At least ${S.perShift.L2} L2 and ${S.perShift.L3} L3 on every shift, whatever the ticket volume. Volume-driven effort is tested in Stage 5.`,"[F] p.3 c"],
+    ["A4",`Shifts are covered from ${R.locs.filter(l=>l.slots).map(l=>`${l.name} (${l.slots})`).join(", ")}. Each location keeps its own roster.`,"[F] G3"],
+    ["A5",S.backfill?`Leave and public holidays are backfilled on a ${WORK_DAYS}-day working year per location.`:"No backfill for leave or public holidays. The client accepts reduced cover on those days.","proposed"],
+    ["A6","Location rates are not applied here. Cost is added in the pricing stage from the DAMO pricing sheet.","[P]"]
+  ];
+  $("autoAssume").innerHTML=auto.map(a=>`<li class="auto"><span class="i">${a[0]}</span><span>${esc(a[1])}</span><span class="src">${a[2]}</span></li>`).join("");
+  renderBar(R);
+  save();
+}
+
+function renderBar(R){
+  const whole=S.rounding!=="none";
+  $("barFte").innerHTML=`${fmt(R.risked,1)}<small>FTE</small>`;
+  $("barHc").innerHTML=whole?`Rostered as <b>${fmt(R.people,0)}</b> people`:"No rounding applied";
+  const chips=[
+    ["base","Roster",fmt(R.roster,1)],
+    ["add","+ Leave",sgn(R.leaveAdd)],
+    ["risk","+ Risk",sgn(R.riskAdd)],
+    ["base","Stage 1",fmt(R.risked,1)]
+  ];
+  let h=chips.map(c=>`<div class="chip ${c[0]}"><span class="l">${c[1]}</span><span class="v">${c[2]}</span></div>`).join("");
+  h+=`<div class="chip sep">›</div>`;
+  h+=STAGES.slice(1).map(s=>`<div class="chip todo"><span class="l">${s.n} · ${esc(s.t)}</span><span class="v">—</span></div>`).join("");
+  if(whole)h+=`<div class="chip sep">›</div><div class="chip round"><span class="l">Rounding</span><span class="v">${sgn(R.roundAdd)}</span></div>`;
+  $("barChips").innerHTML=h;
+  const tot=Math.max(R.people,R.risked,0.0001);
+  const seg=(v,c)=>`<span style="width:${Math.max(0,v)/tot*100}%;background:${c}" title=""></span>`;
+  $("barStack").innerHTML=seg(R.roster,"var(--accent)")+seg(R.leaveAdd,"var(--add)")+seg(R.riskAdd,"var(--risk)")+(whole?seg(R.roundAdd,"var(--round)"):"");
+  $("barSplit").innerHTML=`<div class="r"><span>L2</span><b>${whole&&S.rounding==="cell"?fmt(R.L2p,0):fmt(R.locs.reduce((s,l)=>s+l.k2,0),1)}</b></div>
+    <div class="r"><span>L3</span><b>${whole&&S.rounding==="cell"?fmt(R.L3p,0):fmt(R.locs.reduce((s,l)=>s+l.k3,0),1)}</b></div>
+    <div class="locs">${R.locs.filter(l=>l.slots).map(l=>`${esc(l.name)} ${whole&&S.rounding!=="total"?fmt(l.people,0):fmt(l.risked,1)}`).join(" · ")} · ${covLabel()}</div>`;
+}
+
+/* ---------- events ---------- */
+function setSpd(n){
+  S.spd=n;
+  const first=S.locations[0].id;
+  const next=[];for(let i=0;i<n;i++)next.push(S.assign[i]||S.assign[S.assign.length-1]||first);
+  S.assign=next;
+}
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.cov){const p=COV_PRESETS.find(x=>x[0]===t.dataset.cov);S.days=p[1];S.hours=p[2];setSpd(Math.max(1,Math.ceil(p[2]/8)));renderInputs();update();}
+  else if(t.dataset.spd){setSpd(+t.dataset.spd);renderInputs();update();}
+  else if(t.dataset.step){const [k,d]=t.dataset.step.split(":");S.perShift[k]=Math.max(0,Math.min(9,S.perShift[k]+(+d)));$("out"+k).textContent=S.perShift[k];update();}
+  else if(t.dataset.rmloc){const id=t.dataset.rmloc;S.locations=S.locations.filter(l=>l.id!==id);S.assign=S.assign.map(a=>a===id?S.locations[0].id:a);renderInputs();update();}
+  else if(t.id==="locAddBtn"){const id=$("locAdd").value;if(id){S.locations.push(pickLoc(id));renderInputs();update();}}
+  else if(t.dataset.rmassume!=null){S.assumptions.splice(+t.dataset.rmassume,1);renderAssumptions();update();}
+  else if(t.dataset.rmrisk){S.risks=S.risks.filter(r=>r.id!==t.dataset.rmrisk);renderRisks();update();}
+  else if(t.id==="resetBtn"){if(t.dataset.armed){S=defaults();renderInputs();update();t.textContent="Reset";delete t.dataset.armed;}else{t.dataset.armed="1";t.textContent="Click again to reset";setTimeout(()=>{t.textContent="Reset";delete t.dataset.armed},3000);}}
+  else if(t.id==="copyBtn"){copySummary();}
+});
+document.addEventListener("input",e=>{
+  const t=e.target;
+  if(t.id==="dealName"){S.deal=t.value;save();return}
+  if(t.id==="hours"){const v=Math.round(+t.value);if(v>=1&&v<=24){S.hours=v;update();$("spdSeg").querySelectorAll("button").forEach(b=>{const n=+b.dataset.spd;b.textContent=`${n} × ${fmt(S.hours/n,S.hours%n?1:0)}h`});}return}
+  if(t.id==="fteHours"){const v=+t.value;if(v>=20&&v<=60){S.fteHours=v;update()}return}
+  if(t.dataset.f){const id=t.closest("tr").dataset.loc;const l=S.locations.find(x=>x.id===id);const v=+t.value;if(v>=0&&v<=100){l[t.dataset.f]=v;update()}return}
+  if(t.dataset.assume!=null){S.assumptions[+t.dataset.assume]=t.value;save();return}
+  if(t.dataset.rf&&t.dataset.rf!=="on"){const r=S.risks.find(x=>x.id===t.closest("[data-risk]").dataset.risk);if(t.dataset.rf==="pct"){const v=+t.value;if(isFinite(v)&&v>=-50&&v<=100){r.pct=v;update()}}else{r[t.dataset.rf]=t.value;save()}return}
+});
+document.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.id==="days"){S.days=+t.value;update();return}
+  if(t.id==="hours"){renderInputs();update();return}
+  if(t.id==="backfill"){S.backfill=t.checked;update();return}
+  if(t.id==="rounding"){S.rounding=t.value;update();return}
+  if(t.dataset.assign!=null){S.assign[+t.dataset.assign]=t.value;renderInputs();update();return}
+  if(t.dataset.rf==="on"){const el=t.closest("[data-risk]");const r=S.risks.find(x=>x.id===el.dataset.risk);r.on=t.checked;el.classList.toggle("off",!r.on);update();return}
+});
+$("assumeForm").addEventListener("submit",e=>{e.preventDefault();const v=$("assumeInput").value.trim();if(!v)return;S.assumptions.push(v);$("assumeInput").value="";renderAssumptions();update();});
+$("riskForm").addEventListener("submit",e=>{e.preventDefault();const v=$("riskInput").value.trim();if(!v)return;S.risks.push({id:uid(),on:true,pct:0,title:v,note:"Describe the impact and the mitigation. Set an FTE modifier if it changes the team."});$("riskInput").value="";renderRisks();update();});
+
+/* ---------- summary export ---------- */
+function summary(){
+  const R=compute(S);
+  const L=[];
+  L.push(`# ${S.deal||"DAMO deal"} — estimate workflow`,"",`## Stage 1 · Base team (${covLabel()}, ${S.spd} shifts)`);
+  L.push(`- a  Shifts to cover per week: ${S.spd} × ${S.days} = ${fmt(R.a,0)}`);
+  L.push(`- b  Shifts per FTE per week: ${S.fteHours}h ÷ ${fmt(R.shiftLen,1)}h = ${fmt(R.b,2)}`);
+  L.push(`- c  People per shift: ${S.perShift.L2} L2 + ${S.perShift.L3} L3 = ${R.c}`);
+  L.push(`- Roster FTE (a×c)÷b: ${fmt(R.roster,2)}`);
+  L.push(`- Leave & holiday backfill: ${sgn(R.leaveAdd,2)}`);
+  L.push(`- Risk modifiers (${fmt(R.riskPct*100,1)}%): ${sgn(R.riskAdd,2)}`);
+  L.push(`- Stage 1 FTE: ${fmt(R.risked,2)}`);
+  if(S.rounding!=="none")L.push(`- Rostered headcount: ${fmt(R.people,0)} (rounding ${sgn(R.roundAdd,2)})`);
+  L.push("","| Location | Shifts/wk | Roster | +Leave | +Risk | People |","|---|---|---|---|---|---|");
+  R.locs.forEach(l=>L.push(`| ${l.name} | ${l.sw} | ${fmt(l.roster,2)} | ${fmt(l.buffered-l.roster,2)} | ${fmt(l.risked-l.buffered,2)} | ${S.rounding==="cell"||S.rounding==="loc"?fmt(l.people,0):fmt(l.risked,2)} |`));
+  L.push("","### Assumptions");
+  document.querySelectorAll("#autoAssume li").forEach(li=>L.push(`- ${li.children[1].textContent}`));
+  S.assumptions.filter(a=>a.trim()).forEach(a=>L.push(`- ${a}`));
+  L.push("","### Risks");
+  S.risks.forEach(r=>L.push(`- ${r.on?"[applied]":"[not applied]"} ${r.title} — ${r.pct}% FTE modifier. ${r.note}`));
+  return L.join("\n");
+}
+function toast(msg){const d=document.createElement("div");d.className="toast";d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
+function copySummary(){
+  const txt=summary();
+  const fallback=()=>{$("copyWrap").hidden=false;$("copybox").value=txt;$("copybox").focus();$("copybox").select();$("copyWrap").scrollIntoView({block:"center"})};
+  try{navigator.clipboard.writeText(txt).then(()=>toast("Summary copied"),fallback)}catch(e){fallback()}
+}
+
+/* ---------- boot ---------- */
+renderRail();
+renderInputs();
+update();
+})();
+</script>
+</body>
+</html>
