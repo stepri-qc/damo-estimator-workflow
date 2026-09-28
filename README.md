@@ -24,8 +24,8 @@ Values not taken from either source are marked `proposed`.
 | 4 | Transformation capacity: scenario, POD share, AIOps ratio | Built |
 | 5 | Governance (SDM 1:8) and coverage-led vs effort-led comparison | Built |
 | 6 | Seniority pyramid and contingency by complexity | Built |
-| 7 | Commitment term and YoY savings | Next |
-| 8 | Brownfield existing capacity | Planned |
+| 7 | Term and YoY savings as reduced FTE; 1- to 5-year comparison | Built |
+| 8 | Brownfield existing capacity | Next |
 
 ## Stage 1: base team
 
@@ -101,7 +101,7 @@ Default example: AMS "Customer apps" (2 S, 3 M, 1 L apps), IMS "Cloud platform" 
 
 ## Stage 3: skill coverage by shift
 
-Skill sets marked **Base has skill** in Stage 2 are on every shift through the Stage 1 roster, so they add nothing here. For every other skill set, you pick the Stage 1 shifts where it must be **live** (default: shift 1) and the people per live shift (default 1). On the remaining shifts it is **on call**, costed at 15% of a staffed shift (`proposed`, editable).
+Skill sets marked **Base has skill** in Stage 2 are on every shift through the Stage 1 roster, so they add nothing here. For every other skill set, you pick the Stage 1 shifts where it must be **live** (default: shift 1) and the people per live shift (default 1). On the remaining shifts it is **on call**, counted as 15% of a staffed shift (`proposed`, editable).
 
 ```
 floor(skill, loc) = (live shifts at loc × people + on-call shifts at loc × on-call %) × days ÷ b ÷ 85% utilisation
@@ -184,10 +184,26 @@ stage 6     = contingency × (1 + Σ active stage 6 risk %)
 ```
 
 - **Contingency** is added as FTE and spread across L2/L3 in each location, in proportion to each cell.
-- **The pyramid is cost only.** It splits L2 and L3 FTE into Lead / Senior / Consultant without changing headcount. SDMs are graded Lead. Whole people per grade are allocated by largest remainder.
-- Grade costs from the pricing sheet (Lead $35–36/h, Senior $16–23/h) are applied in the pricing stage.
+- **The pyramid sets the grade mix only.** It splits L2 and L3 FTE into Lead / Senior / Consultant without changing headcount. SDMs are graded Lead. Whole people per grade are allocated by largest remainder.
 
 Default example (Medium): 20.74 × 7.5% = +1.56, so the team is 22.3 FTE, rostered as 23 people. By grade: 6 Lead (including 2 SDMs), 7 Senior, 10 Consultant.
+
+## Stage 7: term and YoY savings
+
+This stage is **FTE only**. No cost or rate factors are used anywhere in the tool.
+
+```
+floor      = Stage 1 base team (kept whole every year; can be switched off)
+base(Yn)   = floor + (Stages 1–5 − floor) × (1 − savings %)^(n−1)
+FTE(Yn)    = base(Yn) × (1 + contingency(Yn)) × (1 + Σ active stage 7 risk %, from Y2)
+             contingency(Y1) = Stage 6 %, contingency(Y2+) = min(Stage 6 %, 6%)
+```
+
+- **Savings % per year from Y2** defaults to the scenario's YoY savings target midpoint ([F] Part 3): Sc1 13.5%, Sc2 11%, Sc3 13.5%, Sc4 17.5%. It can be edited. Nothing is committed in Y1.
+- **Contingency tapers** after Y1, following the framework's Y1 8–10% → Y2+ 5–7% ([F] 1.6).
+- **Term comparison:** a table shows 1- to 5-year terms with FTE by year, FTE-years, average FTE a year and the reduction against a 1-year contract. A generated sentence explains why a 3-year or longer term is better.
+
+Default example (3-year term): 22.3 → 20.3 → 18.8, averaging 20.44 FTE a year. That is 8% below a 1-year contract; 5 years averages 19.0 (−15%). Without the coverage floor, a 3-year term averages 19.3 (−14%).
 
 ### Copy summary
 **Copy summary** puts each stage's working, the location table, the assumptions and the risks on the clipboard as Markdown, ready for the deal-review deck or notes.

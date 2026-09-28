@@ -321,6 +321,16 @@ details.bench h4{margin:14px 0 0;font:600 11px var(--body);letter-spacing:.08em;
 @media (max-width:520px){.cplx{grid-template-columns:minmax(0,1fr)}}
 .pyr{display:grid;gap:6px;justify-items:center;padding:8px 0}
 .pyr div{height:30px;border-radius:4px;display:flex;align-items:center;justify-content:center;font:600 12px var(--mono);color:#fff;min-width:64px;max-width:100%;white-space:nowrap}
+/* stage 7 */
+.yrs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;align-items:end;height:190px;padding:8px 0 0;position:relative}
+.yr{display:grid;gap:4px;justify-items:center;align-self:end}
+.yr .col{width:70%;max-width:64px;border-radius:4px 4px 0 0;background:var(--accent);position:relative}
+.yr.off .col{background:var(--line)}
+.yr .n{font:600 12px var(--mono)}
+.yr .l{font-size:11.5px;color:var(--muted)}
+.floorline{position:absolute;left:0;right:0;border-top:2px dashed var(--add);pointer-events:none}
+.floorline span{position:absolute;right:0;top:-18px;font:600 11px var(--mono);color:var(--add);background:var(--surface);padding:0 4px}
+tr.sel td{background:var(--accent-soft)}
 </style>
 </head>
 <body>
@@ -750,7 +760,7 @@ details.bench h4{margin:14px 0 0;font:600 11px var(--body);letter-spacing:.08em;
     <div class="stage-head">
       <span class="eyebrow">Stage 6 of 8</span>
       <h2 id="s6h">Seniority and contingency</h2>
-      <p>The engagement's complexity sets two things. The seniority pyramid decides the grade mix, which changes cost later but not headcount. The contingency adds 5–10% FTE on top of the team.</p>
+      <p>The engagement's complexity sets two things. The seniority pyramid decides the grade mix of the team without changing headcount. The contingency adds 5–10% FTE on top of the team.</p>
     </div>
 
     <div class="cols">
@@ -807,7 +817,80 @@ details.bench h4{margin:14px 0 0;font:600 11px var(--body);letter-spacing:.08em;
       </div>
     </div>
 
-    <div class="stage-nav"><button class="btn" type="button" data-go="5">← Governance</button><span class="hint">Stage 7, term and savings, comes next.</span></div>
+    <div class="stage-nav"><button class="btn" type="button" data-go="5">← Governance</button><button class="btn primary" type="button" data-go="7">Next: term &amp; savings →</button></div>
+  </section>
+
+  <!-- ===================== STAGE 7 ===================== -->
+  <section id="stage7" class="stage" aria-labelledby="s7h" hidden>
+    <div class="stage-head">
+      <span class="eyebrow">Stage 7 of 8</span>
+      <h2 id="s7h">Term and YoY savings</h2>
+      <p>Year 1 is the team from Stage 6. From Year 2 the team gets smaller as runbooks mature and automation lands, and contingency tapers once transition risk has passed. A longer term captures more of those years, so the average team per year falls as the term grows.</p>
+    </div>
+
+    <div class="cols">
+      <div class="panel">
+        <header><h3>Inputs</h3><span class="sub">FTE only</span></header>
+        <div class="field">
+          <div class="lbl">Contract term</div>
+          <div class="seg" id="termSeg"></div>
+        </div>
+        <div class="field">
+          <div class="lbl">YoY FTE savings from Year 2 <span class="tag">[F] Part 3 · YoY savings target</span></div>
+          <label class="inline" for="savePct"><input id="savePct" type="number" min="0" max="30" step="0.5">% a year</label>
+          <div class="hint" id="saveHint"></div>
+        </div>
+        <div class="field">
+          <div class="lbl">Contingency from Year 2 <span class="tag">[F] 1.6 · Y2+ 5–7%</span></div>
+          <label class="inline" for="cont2"><input id="cont2" type="number" min="0" max="20" step="0.5">%</label>
+          <div class="hint" id="cont2Hint"></div>
+        </div>
+        <label class="switch" for="protectFloor">
+          <input type="checkbox" id="protectFloor">
+          <div><b>Keep the coverage floor</b><span>Savings don't reduce the Stage 1 base team, because every shift still needs its people.</span></div>
+        </label>
+      </div>
+
+      <div class="panel">
+        <header><h3>How the number is built</h3><span class="sub">Year-by-year FTE for the chosen term</span></header>
+        <div class="working" id="steps7"></div>
+        <div class="yrs" id="yrChart" aria-label="FTE by year"></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:20px">
+      <header><h3>Why a 3-year or longer term is better</h3><span class="sub">Same scope, different commitment lengths</span></header>
+      <div class="loc-table">
+        <table>
+          <thead><tr><th>Term</th><th class="r">Y1</th><th class="r">Y2</th><th class="r">Y3</th><th class="r">Y4</th><th class="r">Y5</th><th class="r">FTE-years</th><th class="r">Avg FTE / yr</th><th class="r">vs 1-year</th></tr></thead>
+          <tbody id="termCalc"></tbody>
+        </table>
+      </div>
+      <div class="verdict" id="termVerdict"></div>
+    </div>
+
+    <div class="cols even" data-stage="s7">
+      <div class="panel">
+        <header><h3>Assumptions</h3><span class="sub">Stage 7</span></header>
+        <ul class="alist" id="auto-s7"></ul>
+        <ul class="alist" id="user-s7"></ul>
+        <form class="addrow" data-addassume="s7">
+          <input type="text" id="ai-s7" placeholder="Add an assumption agreed in the review" aria-label="New assumption">
+          <button class="btn sm" type="submit">Add</button>
+        </form>
+      </div>
+      <div class="panel">
+        <header><h3>Risks &amp; FTE modifiers</h3><span class="sub">Each risk's % is added to Year 2+ FTE</span></header>
+        <div class="risks" id="risks-s7"></div>
+        <form class="addrow" data-addrisk="s7">
+          <input type="text" id="ri-s7" placeholder="Add a risk" aria-label="New risk">
+          <button class="btn sm" type="submit">Add</button>
+        </form>
+        <div class="risk-sum"><span>Stage 7 risk modifier</span><span class="num" id="rt-s7"></span></div>
+      </div>
+    </div>
+
+    <div class="stage-nav"><button class="btn" type="button" data-go="6">← Seniority</button><span class="hint">Stage 8, brownfield capacity, comes next.</span></div>
   </section>
 
   <div class="upcoming">
@@ -850,7 +933,7 @@ const STAGES=[
   {n:4,t:"Transformation",d:"Transformation POD share and AIOps engineers by scenario.",built:true},
   {n:5,t:"Governance",d:"SDM at 1:8 and coverage-led vs effort-led comparison.",built:true},
   {n:6,t:"Seniority",d:"Complexity sets the grade pyramid and a 5–10% contingency.",built:true},
-  {n:7,t:"Term & savings",d:"Cost across 1–5 year commitments and YoY productivity savings."},
+  {n:7,t:"Term & savings",d:"Year-by-year FTE and the benefit of a longer term.",built:true},
   {n:8,t:"Brownfield capacity",d:"Offset by existing client or incumbent capacity we take over."}
 ];
 const COV_PRESETS=[["8x5",5,8],["16x5",5,16],["24x5",5,24],["8x7",7,8],["16x7",7,16],["24x7",7,24]];
@@ -919,6 +1002,12 @@ const CPLX={
   high:{name:"High",desc:"Legacy or regulated core, heavy integrations, data/ML pipelines",pyr:[1,2,2],cont:10}
 };
 const GRADES=["Lead","Senior","Consultant"];
+/* [F] Part 3 YoY savings targets, midpoints: Sc1 12–15, Sc2 10–12, Sc3 12–15, Sc4 15–20 */
+const SAVE_BY_SC={1:13.5,2:11,3:13.5,4:17.5};
+const RISKS_S7=()=>[
+  {id:uid(),on:false,pct:5,title:"Volume growth beyond the baseline",note:"Ticket volume grows and eats the savings. Mitigation: volume band clause with a re-baseline trigger ([F] Sc.3 risk log)."},
+  {id:uid(),on:true,pct:0,title:"Savings depend on client access and tooling",note:"Tracked only: productivity gains are contingent on AI maturity assessment and client system access approval ([F] Sc.1)."}
+];
 const RISKS_S6=()=>[
   {id:uid(),on:true,pct:0,title:"Senior talent availability",note:"A senior-heavy pyramid needs more Leads and Seniors than the chosen locations may supply in time. Tracked only: confirm bench before signing."},
   {id:uid(),on:false,pct:0,title:"Client pushback on grade mix",note:"The client's rate card caps senior grades. Tracked only: agree the pyramid in the commercial assumptions."}
@@ -929,7 +1018,7 @@ const RISKS_S5=()=>[
 ];
 const RISKS_S4=()=>[
   {id:uid(),on:true,pct:5,title:"AI tool integration complexity",note:"Client tooling needs more work to integrate than planned. Mitigation: 2-week technical spike during transition ([F] Sc.2 risk log)."},
-  {id:uid(),on:true,pct:0,title:"AI roadmap slippage",note:"Use cases land later than planned. Tracked only: PoC-gated commitments and no AI savings in Y1 pricing ([F] Sc.1 risk log)."},
+  {id:uid(),on:true,pct:0,title:"AI roadmap slippage",note:"Use cases land later than planned. Tracked only: PoC-gated commitments and no AI savings committed in Y1 ([F] Sc.1 risk log)."},
   {id:uid(),on:false,pct:3,title:"Incumbent AI lock-in",note:"Proprietary incumbent tooling can't be reused. Mitigation: tooling portability requirements in the SOW assumptions ([F] Sc.2 risk log)."}
 ];
 const RISKS_S3=()=>[
@@ -962,9 +1051,10 @@ function defaults(){
     aiMaturity:"low",transPct:null,aiRatio:"auto",
     sdmRatio:8,sdmLoc:null,
     cplx:"medium",pyr:{},contPct:null,
+    term:3,savePct:null,cont2:null,protectFloor:true,
     cov:{},
-    assumptions:{s1:["Service desk (L1) is provided by the client and is out of scope for this team."],s2:[],s3:[],s4:[],s5:[],s6:[]},
-    risks:{s1:RISKS_S1(),s2:RISKS_S2(),s3:RISKS_S3(),s4:RISKS_S4(),s5:RISKS_S5(),s6:RISKS_S6()}
+    assumptions:{s1:["Service desk (L1) is provided by the client and is out of scope for this team."],s2:[],s3:[],s4:[],s5:[],s6:[],s7:[]},
+    risks:{s1:RISKS_S1(),s2:RISKS_S2(),s3:RISKS_S3(),s4:RISKS_S4(),s5:RISKS_S5(),s6:RISKS_S6(),s7:RISKS_S7()}
   };
 }
 function pickLoc(id){const c=LOC_CATALOG.find(l=>l.id===id);return {id:c.id,name:c.name,kind:c.kind,leave:c.leave,hol:c.hol}}
@@ -1117,7 +1207,7 @@ function compute(){
   const sdmLoc=sdmLocOf();
   locs.forEach(l=>{l.g=l.id===sdmLoc?s5:0});
 
-  /* Stage 6: contingency by complexity on Stages 1–5, spread over delivery L2/L3 cells; pyramid is cost-only */
+  /* Stage 6: contingency by complexity on Stages 1–5, spread over delivery L2/L3 cells; pyramid splits by grade only */
   const sub5=sub4+s5;
   const CX=CPLX[S.cplx]||CPLX.medium;
   const contPct=S.contPct==null?CX.cont:+S.contPct;
@@ -1132,6 +1222,23 @@ function compute(){
   const pyr=pyrOf();
   const pSum=pyr.reduce((x,v)=>x+v,0)||1;
   const shares=pyr.map(v=>v/pSum);
+
+  /* Stage 7: year-by-year FTE. Savings compound from Y2 on the part above the coverage floor; contingency tapers from Y2 */
+  const savePct=S.savePct==null?SAVE_BY_SC[sc]:+S.savePct;
+  const r7=savePct/100;
+  const cont2=S.cont2==null?Math.min(contPct,6):+S.cont2;
+  const floor=S.protectFloor!==false?Math.min(s1,sub5):0;
+  const rp7=riskPctOf("s7");
+  const years=[1,2,3,4,5].map(n=>{
+    const base=floor+(sub5-floor)*Math.pow(1-r7,n-1);
+    const c=(n===1?contPct:cont2)/100*(1+rp6);
+    let f=base*(1+c);
+    if(n>1)f*=1+rp7;
+    return {n,base,cont:base*c,fte:f};
+  });
+  const termRows=[1,2,3,4,5].map(T=>{const ys=years.slice(0,T);const sumY=ys.reduce((x,y)=>x+y.fte,0);return {T,ys,sum:sumY,avg:sumY/T}});
+  termRows.forEach(t=>t.vs1=1-t.avg/termRows[0].avg);
+  const term=Math.min(5,Math.max(1,+S.term||3));
   towers.filter(t=>t.skills.length&&t.shareSum!==100).forEach(t=>warnings2.push(`${t.name}: skill shares add up to ${fmt(t.shareSum,0)}%. They are scaled to 100%.`));
   towers.filter(t=>!t.skills.length).forEach(t=>warnings2.push(`${t.name} has no skill sets, so its ${fmt(t.fte,2)} FTE is not staffed. Add at least one skill set.`));
 
@@ -1151,6 +1258,7 @@ function compute(){
     volShare,volAvail,sc,SC,transPct,pod,autoRatio,ratio:aiRatioN,aiops,stage4raw,otherTrans,rp4,s4,risk4Add:s4-stage4raw,
     sub4,sdmRatio,sdmRaw,rp5,s5,risk5Add:s5-sdmRaw,sdmLoc,
     sub5,CX,contPct,contRaw,rp6,s6,risk6Add:s6-contRaw,pyr,shares,
+    savePct,cont2,floor,rp7,years,termRows,term,
     total,people,roundAdd:people-total,
     L2:sum(locs,"c2"),L3:sum(locs,"c3"),G:sum(locs,"g"),L2p:sum(locs,"p2"),L3p:sum(locs,"p3"),Gp:sum(locs,"pg")};
 }
@@ -1174,7 +1282,7 @@ function renderRail(){
   $("upcoming").innerHTML=STAGES.filter(s=>!s.built).map(s=>`<div class="ucard"><span class="n">STAGE ${s.n}</span><b>${esc(s.t)}</b><span>${esc(s.d)}</span></div>`).join("");
   document.querySelectorAll(".stage").forEach(sec=>{sec.hidden=sec.id!=="stage"+S.active});
 }
-function go(n){S.active=n;if(n===3){renderS3();update();}if(n===4){renderS4();update();}if(n===5){renderS5();update();}if(n===6){renderS6();update();}renderRail();save();window.scrollTo({top:0,behavior:"auto"})}
+function go(n){S.active=n;if(n===3){renderS3();update();}if(n===4){renderS4();update();}if(n===5){renderS5();update();}if(n===6){renderS6();update();}if(n===7){renderS7();update();}renderRail();save();window.scrollTo({top:0,behavior:"auto"})}
 
 /* ---------- stage 1 static render ---------- */
 function renderS1(){
@@ -1285,7 +1393,7 @@ function updateRiskDeltas(k,base,add,pct){
 let R;
 function update(){
   R=compute();
-  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); updateS6(); renderBar(); save();
+  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); updateS6(); updateS7(); renderBar(); save();
 }
 function updateS1(){
   document.querySelectorAll("[data-cov]").forEach(b=>{const p=COV_PRESETS.find(x=>x[0]===b.dataset.cov);b.setAttribute("aria-pressed",String(S.days===p[1]&&S.hours===p[2]))});
@@ -1321,7 +1429,7 @@ function updateS1(){
     ["A4",`At least ${S.perShift.L2} L2 and ${S.perShift.L3} L3 on every shift, whatever the ticket volume. Ticket-driven effort is added in Stage 2.`,"[F] p.3 c"],
     ["A5",`Shifts are covered from ${R.locs.filter(l=>l.slots).map(l=>`${l.name} (${l.slots})`).join(", ")}. Each location keeps its own roster.`,"[F] G3"],
     ["A6",S.backfill?`Leave and public holidays are backfilled on a ${WORK_DAYS}-day working year per location.`:"No backfill for leave or public holidays. The client accepts reduced cover on those days.","proposed"],
-    ["A7","Location rates are not applied here. Cost is added in the pricing stage from the DAMO pricing sheet.","[P]"]
+    ["A7","The tool sizes FTE only. Rates, cost and price are out of scope.","agreed"]
   ]);
 }
 function updateS2(){
@@ -1405,7 +1513,7 @@ function updateS3(){
   const base=R.skills.filter(k=>k.absorb).map(k=>k.name);
   renderAuto("s3",[
     ["C1",`Skill sets the base team has are present on every shift through the Stage 1 roster: ${base.length?[...new Set(base)].join(", "):"none"}.`,"Stage 1"],
-    ["C2",`Other skill sets are live on the shifts picked here, with the stated people per shift. Outside them they are on call, costed at ${S.onCallPct}% of a staffed shift.`,"proposed"],
+    ["C2",`Other skill sets are live on the shifts picked here, with the stated people per shift. Outside them they are on call, counted as ${S.onCallPct}% of a staffed shift.`,"proposed"],
     ["C3","A skill set's FTE is the higher of its Stage 2 effort and its shift coverage floor. This stage adds only the difference.","proposed"],
     ["C4",`Specialists sit in the locations covering their shifts${S.backfill?", with the same leave and holiday backfill as Stage 1":""}.`,"[F] G3"]
   ]);
@@ -1501,7 +1609,7 @@ function renderS6(){
 function updateS6(){
   const CX=R.CX;
   document.querySelectorAll("[data-cplx]").forEach(b=>b.setAttribute("aria-pressed",String(S.cplx===b.dataset.cplx)));
-  $("pyrHint").textContent=`${CX.name} complexity default ${CX.pyr.join(" : ")}. Grade mix changes cost in the pricing stage, not headcount.`;
+  $("pyrHint").textContent=`${CX.name} complexity default ${CX.pyr.join(" : ")}. The grade mix does not change headcount.`;
   $("contPct").placeholder=String(CX.cont);
   $("contHint").textContent=`${CX.name} complexity default ${CX.cont}%. Low 5%, Medium 7.5%, High 10%. Leave blank to use the default.`;
   const nR=S.risks.s6.filter(r=>r.on&&+r.pct).length;
@@ -1533,9 +1641,48 @@ function updateS6(){
   updateRiskDeltas("s6",R.contRaw,R.risk6Add,R.rp6);
   renderAuto("s6",[
     ["F1",`Engagement complexity is ${CX.name}: ${CX.desc.toLowerCase()}. Set by the deal team.`,"input"],
-    ["F2",`Grade pyramid Lead : Senior : Consultant = ${R.pyr.join(" : ")} across L2 and L3. SDMs are Lead. The pyramid changes cost, not headcount.`,"DAMO pyramid 1:2:4 · proposed"],
+    ["F2",`Grade pyramid Lead : Senior : Consultant = ${R.pyr.join(" : ")} across L2 and L3. SDMs are Lead. The pyramid does not change headcount.`,"DAMO pyramid 1:2:4 · proposed"],
     ["F3",`Contingency is ${R.contPct}% of the team from Stages 1–5, added as FTE and spread across L2/L3 in each location.`,"[F] 1.6 · 5–10%"],
-    ["F4","Grade costs come from the DAMO pricing sheet (e.g. Lead $35–36/h, Senior $16–23/h) and are applied in the pricing stage.","[P]"]
+    ["F4","Grades describe the team shape only. No rates or cost are applied.","agreed"]
+  ]);
+}
+
+function renderS7(){
+  $("termSeg").innerHTML=[1,2,3,4,5].map(n=>`<button type="button" data-term="${n}" aria-pressed="${S.term===n}">${n} year${n>1?"s":""}</button>`).join("");
+  $("savePct").value=S.savePct==null?"":S.savePct;
+  $("cont2").value=S.cont2==null?"":S.cont2;
+  $("protectFloor").checked=S.protectFloor!==false;
+}
+function updateS7(){
+  document.querySelectorAll("[data-term]").forEach(b=>b.setAttribute("aria-pressed",String(S.term===+b.dataset.term)));
+  $("savePct").placeholder=String(SAVE_BY_SC[R.sc]);
+  $("saveHint").textContent=`Scenario ${R.sc} target ${R.SC.savings}. Leave blank to use ${SAVE_BY_SC[R.sc]}%.`;
+  $("cont2").placeholder=String(Math.min(R.contPct,6));
+  $("cont2Hint").textContent=`Year 1 uses ${R.contPct}% from Stage 6. Leave blank to use ${Math.min(R.contPct,6)}% from Year 2.`;
+  const T=R.term, tr=R.termRows[T-1], y=R.years;
+  const nR=S.risks.s7.filter(r=>r.on&&+r.pct).length;
+  let h="";
+  h+=wstep("1","Year 1 team",fmt(y[0].fte,2),"The Stage 6 team, with Year 1 contingency");
+  h+=wstep("2","Coverage floor",fmt(R.floor,2),S.protectFloor!==false?"Stage 1 base team, kept whole every year":"Off: savings apply to the whole team");
+  h+=wstep("3","YoY savings",`−${R.savePct}%`,`Applied each year from Y2 to the ${fmt(R.sub5-R.floor,2)} FTE above the floor, compounding`);
+  h+=wstep("4","Contingency taper",`${R.contPct}% → ${R.cont2}%`,"Year 1 carries transition risk; later years carry less");
+  if(nR)h+=wstep("5","Risk modifiers",`+${fmt(R.rp7*100,1)}%`,"Added to Year 2+ FTE");
+  h+=wstep("=",`${T}-year term`,`${fmt(tr.avg,2)} <small style="font-size:13px;color:var(--muted)">avg FTE / yr</small>`,`${y.slice(0,T).map(v=>fmt(v.fte,1)).join(" → ")} · ${fmt(tr.sum,1)} FTE-years`,"total");
+  $("steps7").innerHTML=h;
+  const mx=Math.max(...y.map(v=>v.fte),0.0001);
+  $("yrChart").innerHTML=y.map(v=>`<div class="yr ${v.n>T?"off":""}"><span class="n">${fmt(v.fte,1)}</span><span class="col" style="height:${v.fte/mx*140}px"></span><span class="l">Y${v.n}${v.n>T?" · outside term":""}</span></div>`).join("")
+    +(R.floor>0?`<div class="floorline" style="bottom:${R.floor/mx*140+22}px"><span>floor ${fmt(R.floor,1)}</span></div>`:"");
+  $("termCalc").innerHTML=R.termRows.map(t=>`<tr class="${t.T===T?"sel":""}"><td class="loc-name">${t.T} year${t.T>1?"s":""}</td>${[0,1,2,3,4].map(i=>`<td class="r num">${i<t.T?fmt(y[i].fte,1):"–"}</td>`).join("")}<td class="r num">${fmt(t.sum,1)}</td><td class="r num"><b>${fmt(t.avg,2)}</b></td><td class="r num">${t.T===1?"–":"−"+fmt(t.vs1*100,1)+"%"}</td></tr>`).join("");
+  const t1=R.termRows[0], t3=R.termRows[2], t5=R.termRows[4];
+  $("termVerdict").innerHTML=`<b>A 3-year term averages ${fmt(t3.avg,1)} FTE a year, ${fmt(t3.vs1*100,0)}% below a 1-year contract (${fmt(t1.avg,1)}); 5 years averages ${fmt(t5.avg,1)} (−${fmt(t5.vs1*100,0)}%).</b> A 1-year contract pays for transition, hypercare risk and the full Year 1 contingency, then ends before automation and runbook maturity reduce the team. From Year 3 the team is ${fmt(y[2].fte,1)} FTE against ${fmt(y[0].fte,1)} in Year 1.`;
+  updateRiskDeltas("s7",y.slice(1,T).reduce((x,v)=>x+v.fte/(1+R.rp7),0)/Math.max(1,T-1),0,R.rp7);
+  $("rt-s7").textContent=`${sgn(R.rp7*100,1)}% on Year 2+ FTE`;
+  renderAuto("s7",[
+    ["G1",`Year 1 is the Stage 6 team. Savings start in Year 2; nothing is committed in Year 1.`,"[F] Sc.2 · Sc.3 Step 5"],
+    ["G2",`FTE falls ${R.savePct}% a year from Year 2 (Scenario ${R.sc} target ${R.SC.savings}), from runbook maturity, lower pass-through and automation.`,"[F] Part 3"],
+    ["G3",S.protectFloor!==false?`Savings do not reduce the Stage 1 base team (${fmt(R.floor,1)} FTE), which the support window needs.`:"Savings apply to the whole team, including the Stage 1 base team.","proposed"],
+    ["G4",`Contingency is ${R.contPct}% in Year 1 and ${R.cont2}% from Year 2.`,"[F] 1.6"],
+    ["G5","Scope and volumes stay at the baseline for the whole term. Growth beyond the volume band is re-baselined, not absorbed.","[F] Part 3 volume band"]
   ]);
 }
 
@@ -1555,6 +1702,8 @@ function renderBar(){
   h+=chip("add","5 · SDM",sgn(R.sdmRaw),5)+chip("risk","+ Risk",sgn(R.risk5Add),5)+chip("base","Stage 5",fmt(R.sub5,1),5);
   h+=`<div class="chip sep">›</div>`;
   h+=chip("add","6 · Contingency",sgn(R.contRaw),6)+chip("risk","+ Risk",sgn(R.risk6Add),6)+chip("base","Stage 6",fmt(R.total,1),6);
+  h+=`<div class="chip sep">›</div>`;
+  h+=chip("base",`7 · ${R.term}-yr avg`,fmt(R.termRows[R.term-1].avg,1),7)+chip("add","vs 1-year",R.term>1?"−"+fmt(R.termRows[R.term-1].vs1*100,0)+"%":"–",7);
   h+=`<div class="chip sep">›</div>`;
   h+=STAGES.filter(s=>!s.built).map(s=>chip("todo",`${s.n} · ${esc(s.t)}`,"—")).join("");
   if(whole)h+=`<div class="chip sep">›</div>`+chip("round","Rounding",sgn(R.roundAdd));
@@ -1594,6 +1743,7 @@ document.addEventListener("click",e=>{
   else if(d.tbasis){twr(t).amsBasis=d.tbasis;renderS2();update();}
   else if(d.testate){twr(t).estate=d.testate;renderS2();update();}
   else if(d.addskill){const tw=S.towers.find(x=>x.id===d.addskill);const id=$("sk-add-"+tw.id).value;if(id){tw.skills.push(mkSkill(id,0,id==="spec"?"Special skill":null));renderS2();update();}}
+  else if(d.term){S.term=+d.term;update();}
   else if(d.cplx){S.cplx=d.cplx;renderS6();update();}
   else if(d.ai){S.aiMaturity=d.ai;update();}
   else if(d.kshift){const [id,i]=pair(d.kshift);const cv=covOf(id);const n=+i;cv.shifts=cv.shifts.includes(n)?cv.shifts.filter(x=>x!==n):[...cv.shifts,n].sort();renderS3();update();}
@@ -1614,6 +1764,8 @@ document.addEventListener("input",e=>{
   if(t.id==="hours"){const v=Math.round(+t.value);if(v>=1&&v<=24){S.hours=v;renderSpd();update();}return}
   if(t.id==="util1"){const v=+t.value;if(t.value!==""&&v>=50&&v<=100){S.util1=v;update()}return}
   if(t.id==="fteHours"){const v=+t.value;if(v>=20&&v<=60){S.fteHours=v;update()}return}
+  if(t.id==="savePct"){if(t.value===""){S.savePct=null;update()}else{const v=+t.value;if(v>=0&&v<=30){S.savePct=v;update()}}return}
+  if(t.id==="cont2"){if(t.value===""){S.cont2=null;update()}else{const v=+t.value;if(v>=0&&v<=20){S.cont2=v;update()}}return}
   if(t.id==="contPct"){if(t.value===""){S.contPct=null;update()}else{const v=+t.value;if(v>=0&&v<=20){S.contPct=v;update()}}return}
   if(d.pyr){const v=+t.value;if(t.value!==""&&v>=0&&v<=20){const p=pyrOf().slice();p[+d.pyr]=v;S.pyr=Object.assign({},S.pyr,{[S.cplx]:p});update()}return}
   if(t.id==="sdmRatio"){const v=Math.round(+t.value);if(v>=4&&v<=20){S.sdmRatio=v;update()}return}
@@ -1635,6 +1787,7 @@ document.addEventListener("change",e=>{
   const t=e.target, d=t.dataset;
   if(t.id==="days"){S.days=+t.value;update();return}
   if(t.id==="hours"){renderS1();update();return}
+  if(t.id==="protectFloor"){S.protectFloor=t.checked;update();return}
   if(t.id==="backfill"){S.backfill=t.checked;update();return}
   if(t.id==="sdmLoc"){S.sdmLoc=t.value;update();return}
   if(t.id==="aiRatio"){S.aiRatio=t.value;update();return}
@@ -1706,9 +1859,15 @@ function summary(){
   L.push("","## Stage 6 · Seniority and contingency");
   L.push(`- Complexity: ${R.CX.name}. Contingency ${R.contPct}%: ${fmt(R.sub5,2)} × ${R.contPct}% = ${fmt(R.contRaw,2)}; risk modifiers ${sgn(R.risk6Add,2)}`);
   L.push(`- **Stage 6 adds: ${fmt(R.s6,2)} FTE. Team ${fmt(R.total,2)} FTE**`);
-  L.push(`- Pyramid Lead : Senior : Consultant = ${R.pyr.join(" : ")} (cost only)`);
+  L.push(`- Pyramid Lead : Senior : Consultant = ${R.pyr.join(" : ")} (grade mix only, no FTE change)`);
   if(R.gradeRows){L.push("","| Grade | Share | FTE | People |","|---|---|---|---|");R.gradeRows.forEach(r=>L.push(`| ${r.g} | ${fmt(r.sh*100,0)}% | ${fmt(r.fte,2)} | ${S.rounding!=="none"?r.people:"–"} |`));}
   rows("s6");
+  L.push("","## Stage 7 · Term and YoY savings");
+  L.push(`- Savings ${R.savePct}% a year from Y2${S.protectFloor!==false?`, above the ${fmt(R.floor,2)} FTE coverage floor`:""}; contingency ${R.contPct}% in Y1, ${R.cont2}% from Y2`);
+  L.push("","| Term | Y1 | Y2 | Y3 | Y4 | Y5 | FTE-years | Avg FTE/yr | vs 1-year |","|---|---|---|---|---|---|---|---|---|");
+  R.termRows.forEach(t=>L.push(`| ${t.T} yr${t.T>1?"s":""}${t.T===R.term?" (selected)":""} | ${[0,1,2,3,4].map(i=>i<t.T?fmt(R.years[i].fte,1):"–").join(" | ")} | ${fmt(t.sum,1)} | ${fmt(t.avg,2)} | ${t.T===1?"–":"−"+fmt(t.vs1*100,1)+"%"} |`));
+  L.push("",$("termVerdict").textContent);
+  rows("s7");
   if(S.rounding!=="none")L.push("",`## Rounding`,`- ${fmt(R.total,2)} FTE rounded to ${fmt(R.people,0)} people (${sgn(R.roundAdd,2)}). By location: ${R.locs.filter(l=>l.fte>0).map(l=>`${l.name} ${S.rounding==="total"?fmt(l.fte,2):fmt(l.people,0)}`).join(", ")}`);
   return L.join("\n");
 }
@@ -1720,7 +1879,7 @@ function copySummary(){
 }
 
 /* ---------- boot ---------- */
-function renderAll(){renderRail();renderS1();renderS2();renderS3();renderS4();renderS5();renderS6();["s1","s2","s3","s4","s5","s6"].forEach(k=>{renderAssume(k);renderRisks(k)});update();}
+function renderAll(){renderRail();renderS1();renderS2();renderS3();renderS4();renderS5();renderS6();renderS7();["s1","s2","s3","s4","s5","s6","s7"].forEach(k=>{renderAssume(k);renderRisks(k)});update();}
 renderAll();
 })();
 </script>
