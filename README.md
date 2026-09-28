@@ -22,8 +22,8 @@ Values not taken from either source are marked `proposed`.
 | 2 | Service towers and complexity (FE, BE, Mobile, Infra, SRE, Data, special skills) | Built |
 | 3 | Skill coverage by shift: live shifts, on call outside them | Built |
 | 4 | Transformation capacity: scenario, POD share, AIOps ratio | Built |
-| 5 | Governance and reconciliation | Next |
-| 6 | Seniority and risk multipliers | Planned |
+| 5 | Governance (SDM 1:8) and coverage-led vs effort-led comparison | Built |
+| 6 | Seniority and risk multipliers | Next |
 | 7 | Commitment term and YoY savings | Planned |
 | 8 | Brownfield existing capacity | Planned |
 
@@ -139,6 +139,31 @@ stage 4     = added × (1 + Σ active stage 4 risk %)
 Transformation FTE is counted as L3 and spread across locations like the Stage 1 roster. The stage also shows the scenario's guidance from the comparison matrix (confidence, Y1 contingency, team shape, AIOps timeline, commercial model, volume band clause, YoY savings target) for the deal review.
 
 Default example: no tower has ticket history and AI adoption is Low, so this is Scenario 1. The team so far is 14.60. The POD is 1.83 and AIOps at 1:4 is 3.65, so 3.65 is added, or 3.83 with a 5% risk. The team is 18.4 FTE, rostered as 21 people. With Moderate AI (Scenario 2), the POD of 2.56 exceeds AIOps at 1:8 (1.83), so Stage 4 adds 2.68 instead.
+
+## Stage 5: governance and reconciliation
+
+**SDM only**, at the DAMO convention of one Service Delivery Manager per 8 delivery FTE (editable):
+
+```
+delivery team = Stages 1–4
+SDM           = delivery team ÷ 8
+stage 5       = SDM × (1 + Σ active stage 5 risk %)
+```
+
+The SDM is a separate governance tier (not L2/L3) and is based in one Stage 1 location: onshore by default, then nearshore, then the first location. With whole-person rounding, SDMs round to the nearest person (at least one), not up.
+
+**Side-by-side comparison** for the review:
+
+| View | What sets it | Calculation |
+|---|---|---|
+| Coverage-led | Support window and shifts | Stage 1 roster ÷ utilisation ÷ leave availability (before risk) |
+| Effort-led | Ticket volume and complexity | Stage 2 tower (A + B) ÷ 160h (before absorption and risk) |
+| Single-method estimate | Larger of the two | Coverage as a floor on effort ([F] 1.1 C) |
+| This workflow, delivery | Stages 1–3 with risk | Base team + tower work not absorbed + specialist cover |
+
+A generated sentence says which one sets the team, by how much, how much spare time a single team would have, and why the workflow's delivery team is above the single-method estimate.
+
+Default example: coverage-led 8.00, effort-led 5.53, single-method 8.00, workflow delivery 14.60. The support window sets the team (45% above effort, about 31% spare time). The SDM is 18.44 ÷ 8 = 2.30, so the team is 20.7 FTE, rostered as 23 people (9 L2, 12 L3, 2 SDM).
 
 ### Copy summary
 **Copy summary** puts each stage's working, the location table, the assumptions and the risks on the clipboard as Markdown, ready for the deal-review deck or notes.

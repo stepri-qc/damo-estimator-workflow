@@ -300,6 +300,17 @@ details.bench h4{margin:14px 0 0;font:600 11px var(--body);letter-spacing:.08em;
 .facts span{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em}
 .facts b{font-weight:600}
 @media (max-width:520px){.facts{grid-template-columns:minmax(0,1fr)}}
+/* stage 5 */
+.recon{display:grid;gap:10px}
+.rbar{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr) 64px;gap:10px;align-items:center;font-size:13px}
+.rbar .t{display:grid;gap:1px}
+.rbar .t b{font-weight:600}
+.rbar .t span{color:var(--muted);font-size:11.5px}
+.rbar .track{height:14px;border-radius:3px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}
+.rbar .track i{display:block;height:100%}
+.rbar .v{font:600 14px var(--mono);text-align:right}
+@media (max-width:520px){.rbar{grid-template-columns:minmax(0,1fr) 56px}.rbar .track{grid-column:1/3;grid-row:2}}
+.verdict{border-left:3px solid var(--accent);padding:8px 12px;background:var(--accent-soft);border-radius:0 6px 6px 0;font-size:14px}
 </style>
 </head>
 <body>
@@ -658,7 +669,70 @@ details.bench h4{margin:14px 0 0;font:600 11px var(--body);letter-spacing:.08em;
       </div>
     </div>
 
-    <div class="stage-nav"><button class="btn" type="button" data-go="3">← Skill coverage</button><span class="hint">Stage 5, governance, comes next.</span></div>
+    <div class="stage-nav"><button class="btn" type="button" data-go="3">← Skill coverage</button><button class="btn primary" type="button" data-go="5">Next: governance →</button></div>
+  </section>
+
+  <!-- ===================== STAGE 5 ===================== -->
+  <section id="stage5" class="stage" aria-labelledby="s5h" hidden>
+    <div class="stage-head">
+      <span class="eyebrow">Stage 5 of 8</span>
+      <h2 id="s5h">Governance and reconciliation</h2>
+      <p>A Service Delivery Manager is added at one per eight delivery FTE. Below it, the coverage-led and effort-led sizes are shown side by side, so the review can see which one sets the team and why the workflow total is higher than either.</p>
+    </div>
+
+    <div class="cols">
+      <div class="panel">
+        <header><h3>Inputs</h3><span class="sub">SDM only</span></header>
+        <div class="field">
+          <div class="lbl">SDM ratio <span class="tag">DAMO manual estimation convention</span></div>
+          <label class="inline" for="sdmRatio">1 SDM per <input id="sdmRatio" type="number" min="4" max="20" step="1"> delivery FTE</label>
+        </div>
+        <div class="field">
+          <div class="lbl">SDM location</div>
+          <select id="sdmLoc" aria-label="SDM location"></select>
+          <div class="hint">Usually close to the client. Only locations from Stage 1 are listed.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <header><h3>How the number is built</h3><span class="sub">Delivery team ÷ SDM ratio</span></header>
+        <div class="working" id="steps5"></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:20px">
+      <header><h3>Coverage-led vs effort-led</h3><span class="sub">Side by side, before risk modifiers unless stated</span></header>
+      <div class="recon" id="recon"></div>
+      <div class="loc-table">
+        <table>
+          <thead><tr><th>View</th><th>What sets it</th><th>How it is calculated</th><th class="r">FTE</th></tr></thead>
+          <tbody id="reconTable"></tbody>
+        </table>
+      </div>
+      <div class="verdict" id="verdict"></div>
+    </div>
+
+    <div class="cols even" data-stage="s5">
+      <div class="panel">
+        <header><h3>Assumptions</h3><span class="sub">Stage 5</span></header>
+        <ul class="alist" id="auto-s5"></ul>
+        <ul class="alist" id="user-s5"></ul>
+        <form class="addrow" data-addassume="s5">
+          <input type="text" id="ai-s5" placeholder="Add an assumption agreed in the review" aria-label="New assumption">
+          <button class="btn sm" type="submit">Add</button>
+        </form>
+      </div>
+      <div class="panel">
+        <header><h3>Risks &amp; FTE modifiers</h3><span class="sub">Each risk's % is applied to the SDM FTE</span></header>
+        <div class="risks" id="risks-s5"></div>
+        <form class="addrow" data-addrisk="s5">
+          <input type="text" id="ri-s5" placeholder="Add a risk" aria-label="New risk">
+          <button class="btn sm" type="submit">Add</button>
+        </form>
+        <div class="risk-sum"><span>Stage 5 risk modifier</span><span class="num" id="rt-s5"></span></div>
+      </div>
+    </div>
+
+    <div class="stage-nav"><button class="btn" type="button" data-go="4">← Transformation</button><span class="hint">Stage 6, seniority and risk, comes next.</span></div>
   </section>
 
   <div class="upcoming">
@@ -699,7 +773,7 @@ const STAGES=[
   {n:2,t:"Service towers",d:"AMS, IMS and DMS demand from volumetrics or complexity, then skill sets.",built:true},
   {n:3,t:"Skill coverage",d:"Live shifts per skill set, on call outside them.",built:true},
   {n:4,t:"Transformation",d:"Transformation POD share and AIOps engineers by scenario.",built:true},
-  {n:5,t:"Governance",d:"SDM and governance effort, and reconciliation of coverage-led and effort-led sizing."},
+  {n:5,t:"Governance",d:"SDM at 1:8 and coverage-led vs effort-led comparison.",built:true},
   {n:6,t:"Seniority & risk",d:"Grade mix and overall risk multipliers on the team."},
   {n:7,t:"Term & savings",d:"Cost across 1–5 year commitments and YoY productivity savings."},
   {n:8,t:"Brownfield capacity",d:"Offset by existing client or incumbent capacity we take over."}
@@ -763,6 +837,10 @@ const SCENARIOS={
   3:{name:"Low AI · volumetrics available",pct:12.5,range:"10–15% (proposed)",ratio:4,conf:"High",cont:"8%",shape:"Pyramid → Diamond by Y3",aiops:"Y2 onwards",comm:"Fixed Fee from Day 1",band:"Standard",savings:"12–15%"},
   4:{name:"Moderate AI · volumetrics available",pct:20,range:"20%+",ratio:8,conf:"Highest",cont:"5–6%",shape:"Inverted pyramid from Y1",aiops:"Y1 full deployment",comm:"Fixed Fee + outcome-based",band:"Minimal; still recommended",savings:"15–20%"}
 };
+const RISKS_S5=()=>[
+  {id:uid(),on:false,pct:25,title:"Heavy governance cadence",note:"Weekly exec reviews, monthly performance reviews, QBRs and CAB across several client stakeholder groups ([F] Sc.3 Step 4). Mitigation: agree the cadence in the SOW."},
+  {id:uid(),on:true,pct:0,title:"Single SDM is a key-person dependency",note:"Tracked only: a named deputy from the delivery leads covers leave and escalation."}
+];
 const RISKS_S4=()=>[
   {id:uid(),on:true,pct:5,title:"AI tool integration complexity",note:"Client tooling needs more work to integrate than planned. Mitigation: 2-week technical spike during transition ([F] Sc.2 risk log)."},
   {id:uid(),on:true,pct:0,title:"AI roadmap slippage",note:"Use cases land later than planned. Tracked only: PoC-gated commitments and no AI savings in Y1 pricing ([F] Sc.1 risk log)."},
@@ -796,9 +874,10 @@ function defaults(){
     sparePct:25,
     onCallPct:15,
     aiMaturity:"low",transPct:null,aiRatio:"auto",
+    sdmRatio:8,sdmLoc:null,
     cov:{},
-    assumptions:{s1:["Service desk (L1) is provided by the client and is out of scope for this team."],s2:[],s3:[],s4:[]},
-    risks:{s1:RISKS_S1(),s2:RISKS_S2(),s3:RISKS_S3(),s4:RISKS_S4()}
+    assumptions:{s1:["Service desk (L1) is provided by the client and is out of scope for this team."],s2:[],s3:[],s4:[],s5:[]},
+    risks:{s1:RISKS_S1(),s2:RISKS_S2(),s3:RISKS_S3(),s4:RISKS_S4(),s5:RISKS_S5()}
   };
 }
 function pickLoc(id){const c=LOC_CATALOG.find(l=>l.id===id);return {id:c.id,name:c.name,kind:c.kind,leave:c.leave,hol:c.hol}}
@@ -827,6 +906,11 @@ function load(){
   return defaults();
 }
 function covOf(id){if(!S.cov[id])S.cov[id]={shifts:[0],people:1};return S.cov[id]}
+function sdmLocOf(){
+  if(S.sdmLoc&&S.locations.some(l=>l.id===S.sdmLoc))return S.sdmLoc;
+  const pick=S.locations.find(l=>/Onshore/.test(l.kind))||S.locations.find(l=>/Nearshore/.test(l.kind))||S.locations[0];
+  return pick.id;
+}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 
 /* ---------- engine ---------- */
@@ -933,18 +1017,27 @@ function compute(){
   locs.forEach(l=>{
     const sh=roster>0?l.roster/shareBase:1/locs.length;
     l.v3=s4*sh;
-    l.c2=l.k2+l.t2+l.u2; l.c3=l.k3+l.t3+l.u3+l.v3; l.fte=l.c2+l.c3;
+    l.c2=l.k2+l.t2+l.u2; l.c3=l.k3+l.t3+l.u3+l.v3;
   });
+
+  /* Stage 5: SDM at 1:N of the delivery team (Stages 1–4), governance tier, in one location */
+  const sub4=sub3+s4;
+  const sdmRatio=Math.max(1,+S.sdmRatio||8);
+  const sdmRaw=sub4/sdmRatio;
+  const rp5=riskPctOf("s5");
+  const s5=sdmRaw*(1+rp5);
+  const sdmLoc=sdmLocOf();
+  locs.forEach(l=>{l.g=l.id===sdmLoc?s5:0; l.fte=l.c2+l.c3+l.g});
   towers.filter(t=>t.skills.length&&t.shareSum!==100).forEach(t=>warnings2.push(`${t.name}: skill shares add up to ${fmt(t.shareSum,0)}%. They are scaled to 100%.`));
   towers.filter(t=>!t.skills.length).forEach(t=>warnings2.push(`${t.name} has no skill sets, so its ${fmt(t.fte,2)} FTE is not staffed. Add at least one skill set.`));
 
   /* rounding on the combined team */
   const up=x=>Math.ceil(x-1e-6);
-  const total=s1+s2+s3+s4;
+  const total=s1+s2+s3+s4+s5;
   locs.forEach(l=>{
-    if(S.rounding==="cell"){l.p2=up(l.c2);l.p3=up(l.c3);l.people=l.p2+l.p3}
-    else if(S.rounding==="loc"){l.p2=l.c2;l.p3=l.c3;l.people=up(l.fte)}
-    else {l.p2=l.c2;l.p3=l.c3;l.people=l.fte}
+    if(S.rounding==="cell"){l.p2=up(l.c2);l.p3=up(l.c3);l.pg=l.g>0?Math.max(1,Math.round(l.g)):0;l.people=l.p2+l.p3+l.pg}
+    else if(S.rounding==="loc"){l.p2=l.c2;l.p3=l.c3;l.pg=l.g;l.people=up(l.fte)}
+    else {l.p2=l.c2;l.p3=l.c3;l.pg=l.g;l.people=l.fte}
   });
   const people=S.rounding==="total"?up(total):sum(locs,"people");
   return {days,spd,shiftLen,a,b,c,framework,rp1,locs,roster,buffered,s1,warnings,
@@ -952,8 +1045,9 @@ function compute(){
     towers,skills,demand,demAbs,capacity,absorbed,added,add2,add3,rp2,s2,risk2Add:s2-added,warnings2,
     covSkills,topUp,rp3,s3,risk3Add:s3-topUp,sub2:s1+s2,sub3,
     volShare,volAvail,sc,SC,transPct,pod,autoRatio,ratio:aiRatioN,aiops,stage4raw,otherTrans,rp4,s4,risk4Add:s4-stage4raw,
+    sub4,sdmRatio,sdmRaw,rp5,s5,risk5Add:s5-sdmRaw,sdmLoc,
     total,people,roundAdd:people-total,
-    L2:sum(locs,"c2"),L3:sum(locs,"c3"),L2p:sum(locs,"p2"),L3p:sum(locs,"p3")};
+    L2:sum(locs,"c2"),L3:sum(locs,"c3"),G:sum(locs,"g"),L2p:sum(locs,"p2"),L3p:sum(locs,"p3"),Gp:sum(locs,"pg")};
 }
 
 /* ---------- helpers ---------- */
@@ -975,7 +1069,7 @@ function renderRail(){
   $("upcoming").innerHTML=STAGES.filter(s=>!s.built).map(s=>`<div class="ucard"><span class="n">STAGE ${s.n}</span><b>${esc(s.t)}</b><span>${esc(s.d)}</span></div>`).join("");
   document.querySelectorAll(".stage").forEach(sec=>{sec.hidden=sec.id!=="stage"+S.active});
 }
-function go(n){S.active=n;if(n===3){renderS3();update();}if(n===4){renderS4();update();}renderRail();save();window.scrollTo({top:0,behavior:"auto"})}
+function go(n){S.active=n;if(n===3){renderS3();update();}if(n===4){renderS4();update();}if(n===5){renderS5();update();}renderRail();save();window.scrollTo({top:0,behavior:"auto"})}
 
 /* ---------- stage 1 static render ---------- */
 function renderS1(){
@@ -1086,7 +1180,7 @@ function updateRiskDeltas(k,base,add,pct){
 let R;
 function update(){
   R=compute();
-  updateS1(); updateS2(); updateS3(); updateS4(); renderBar(); save();
+  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); renderBar(); save();
 }
 function updateS1(){
   document.querySelectorAll("[data-cov]").forEach(b=>{const p=COV_PRESETS.find(x=>x[0]===b.dataset.cov);b.setAttribute("aria-pressed",String(S.days===p[1]&&S.hours===p[2]))});
@@ -1234,7 +1328,7 @@ function updateS4(){
   h+=wstep("4","AIOps engineers",fmt(R.aiops,2),`${fmt(R.sub3,2)} ÷ ${R.ratio} (1 AIOps engineer per ${R.ratio} delivery FTE)`);
   h+=wstep("5","Transformation added",`<span class="delta add">${sgn(R.stage4raw,2)}</span>`,`Larger of the two: AIOps ${fmt(R.aiops,2)} + other transformation (SRE, automation, CI/CD) ${fmt(R.otherTrans,2)}`);
   h+=wstep("6","Risk modifiers",`<span class="delta risk">${sgn(R.risk4Add,2)}</span>`,`${fmt(R.stage4raw,2)} × ${fmt(R.rp4*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
-  h+=wstep("=","Stage 4 adds",`${sgn(R.s4,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team so far: ${fmt(R.sub3,2)} + ${fmt(R.s4,2)} = ${fmt(R.total,2)} FTE`,"total");
+  h+=wstep("=","Stage 4 adds",`${sgn(R.s4,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team so far: ${fmt(R.sub3,2)} + ${fmt(R.s4,2)} = ${fmt(R.sub4,2)} FTE`,"total");
   $("steps4").innerHTML=h;
   $("scFacts").innerHTML=[["Estimation confidence",SC.conf],["Y1 contingency",SC.cont],["Team shape",SC.shape],["AIOps timeline",SC.aiops],["Commercial model",SC.comm],["Volume band clause",SC.band],["YoY savings target",SC.savings]].map(([k,v])=>`<div><span>${k}</span><b>${esc(v)}</b></div>`).join("");
   updateRiskDeltas("s4",R.stage4raw,R.risk4Add,R.rp4);
@@ -1245,6 +1339,51 @@ function updateS4(){
     ["D4",`AIOps timeline for this scenario: ${SC.aiops}. This stage sizes steady-state capacity; the year-by-year ramp is set in Stage 7.`,"[F] Part 3"],
     ["D5","AI tools, licences, tokens and hyperscaler AI API costs are paid by the client.","[F] G5"],
     ["D6","Transformation FTE is engineering capacity (L3) and is spread across locations like the Stage 1 roster.","proposed"]
+  ]);
+}
+
+function renderS5(){
+  $("sdmRatio").value=S.sdmRatio;
+  $("sdmLoc").innerHTML=S.locations.map(l=>`<option value="${l.id}">${esc(l.name)} · ${esc(l.kind)}</option>`).join("");
+  $("sdmLoc").value=sdmLocOf();
+}
+function updateS5(){
+  const loc=S.locations.find(l=>l.id===R.sdmLoc);
+  const nR=S.risks.s5.filter(r=>r.on&&+r.pct).length;
+  let h="";
+  h+=wstep("1","Delivery team",fmt(R.sub4,2),`Stages 1–4: ${fmt(R.s1,2)} + ${fmt(R.s2,2)} + ${fmt(R.s3,2)} + ${fmt(R.s4,2)}`);
+  h+=wstep("2","SDM",`<span class="delta add">${sgn(R.sdmRaw,2)}</span>`,`${fmt(R.sub4,2)} ÷ ${R.sdmRatio}, based in ${esc(loc?loc.name:"")}`);
+  h+=wstep("3","Risk modifiers",`<span class="delta risk">${sgn(R.risk5Add,2)}</span>`,`${fmt(R.sdmRaw,2)} × ${fmt(R.rp5*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
+  h+=wstep("=","Stage 5 adds",`${sgn(R.s5,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team so far: ${fmt(R.sub4,2)} + ${fmt(R.s5,2)} = ${fmt(R.total,2)} FTE${S.rounding==="cell"?`; SDMs round to the nearest whole person: ${fmt(R.Gp,0)}`:""}`,"total");
+  $("steps5").innerHTML=h;
+
+  /* reconciliation */
+  const cov=R.buffered, eff=R.demand, single=Math.max(cov,eff), wf=R.sub3;
+  const rows=[
+    ["Coverage-led","Support window and shifts",`Stage 1 roster ${fmt(R.roster,2)} ÷ ${S.util1}% ÷ leave availability`,cov,"var(--accent)"],
+    ["Effort-led","Ticket volume and complexity",`Stage 2 towers (A + B) ÷ ${S.bench.hrsMonth}h, ${fmt(R.towers.reduce((x,t)=>x+t.tickets,0),0)} tickets a month`,eff,"#6B7C93"],
+    ["Single-method estimate","Larger of the two",`Coverage acts as a floor on effort ([F] 1.1 C)`,single,"var(--faint)"],
+    ["This workflow, delivery","Stages 1–3 with risk",`Base team + towers not absorbed + specialist cover`,wf,"var(--add)"]
+  ];
+  const mx=Math.max(...rows.map(r=>r[3]),0.0001);
+  $("recon").innerHTML=rows.map(r=>`<div class="rbar"><span class="t"><b>${r[0]}</b><span>${r[1]}</span></span><span class="track"><i style="width:${r[3]/mx*100}%;background:${r[4]}"></i></span><span class="v">${fmt(r[3],2)}</span></div>`).join("");
+  $("reconTable").innerHTML=rows.map(r=>`<tr><td class="loc-name">${r[0]}</td><td>${r[1]}</td><td class="hint">${esc(r[2])}</td><td class="r num"><b>${fmt(r[3],2)}</b></td></tr>`).join("");
+  const binds=cov>=eff?"coverage":"effort";
+  const gap=Math.abs(cov-eff), pct=Math.min(cov,eff)>0?gap/Math.min(cov,eff)*100:0;
+  const idle=cov>0?Math.max(0,1-eff/cov)*100:0;
+  const over=wf-single;
+  let v=binds==="coverage"
+    ?`<b>The support window sets the team.</b> Covering ${covLabel()} needs ${fmt(cov,2)} FTE, ${fmt(gap,2)} (${fmt(pct,0)}%) more than the ${fmt(eff,2)} FTE the ticket work needs. If one team did all the work, about ${fmt(idle,0)}% of its time would be spare.`
+    :`<b>The work sets the team.</b> Ticket and non-ticketing effort needs ${fmt(eff,2)} FTE, ${fmt(gap,2)} (${fmt(pct,0)}%) more than the ${fmt(cov,2)} FTE needed to cover ${covLabel()}.`;
+  v+=` The workflow's delivery team of ${fmt(wf,2)} is ${fmt(over,2)} ${over>=0?"above":"below"} the single-method estimate because it keeps the shift roster, adds tower work the base team can't absorb (${fmt(R.added,2)}), adds specialist shift cover (${fmt(R.topUp,2)}), and applies risk modifiers.`;
+  $("verdict").innerHTML=v;
+
+  updateRiskDeltas("s5",R.sdmRaw,R.risk5Add,R.rp5);
+  renderAuto("s5",[
+    ["E1",`One Service Delivery Manager per ${R.sdmRatio} delivery FTE, graded Lead. The SDM owns governance: ops reviews, QBRs, SLA reporting and CAB.`,"DAMO convention · [F] 1.7"],
+    ["E2","The SDM is the only governance role. Delivery Principal, Solution Architect and similar roles are not included.","agreed"],
+    ["E3",`The SDM is based in ${loc?loc.name:""} and is not rostered on shifts. With whole-person rounding, SDMs round to the nearest person (at least one), not up.`,"proposed"],
+    ["E4","The comparison uses coverage before risk (Stage 1 after utilisation and leave) and tower effort before absorption and risk (Stage 2).","proposed"]
   ]);
 }
 
@@ -1259,7 +1398,9 @@ function renderBar(){
   h+=`<div class="chip sep">›</div>`;
   h+=chip("add","3 · Skill cover",sgn(R.topUp),3)+chip("risk","+ Risk",sgn(R.risk3Add),3)+chip("base","Stage 3",fmt(R.sub3,1),3);
   h+=`<div class="chip sep">›</div>`;
-  h+=chip("add","4 · Transform",sgn(R.stage4raw),4)+chip("risk","+ Risk",sgn(R.risk4Add),4)+chip("base","Stage 4",fmt(R.total,1),4);
+  h+=chip("add","4 · Transform",sgn(R.stage4raw),4)+chip("risk","+ Risk",sgn(R.risk4Add),4)+chip("base","Stage 4",fmt(R.sub4,1),4);
+  h+=`<div class="chip sep">›</div>`;
+  h+=chip("add","5 · SDM",sgn(R.sdmRaw),5)+chip("risk","+ Risk",sgn(R.risk5Add),5)+chip("base","Stage 5",fmt(R.total,1),5);
   h+=`<div class="chip sep">›</div>`;
   h+=STAGES.filter(s=>!s.built).map(s=>chip("todo",`${s.n} · ${esc(s.t)}`,"—")).join("");
   if(whole)h+=`<div class="chip sep">›</div>`+chip("round","Rounding",sgn(R.roundAdd));
@@ -1267,10 +1408,11 @@ function renderBar(){
   const tot=Math.max(R.people,R.total,0.0001);
   const seg=(v,c,t)=>`<span style="width:${Math.max(0,v)/tot*100}%;background:${c}" title="${t}"></span>`;
   $("barStack").innerHTML=seg(R.roster,"var(--accent)","Roster")+seg(R.utilAdd,"var(--accent-soft)","Utilisation")+seg(R.leaveAdd,"var(--add)","Leave backfill")+seg(R.risk1Add,"var(--risk)","Stage 1 risk")
-    +seg(R.added,"#6B7C93","Towers")+seg(R.risk2Add,"var(--risk)","Stage 2 risk")+seg(R.topUp,"#3F8C9B","Skill cover")+seg(R.risk3Add,"var(--risk)","Stage 3 risk")+seg(R.stage4raw,"#8C5FA8","Transformation")+seg(R.risk4Add,"var(--risk)","Stage 4 risk")+(whole?seg(R.roundAdd,"var(--round)","Rounding"):"");
+    +seg(R.added,"#6B7C93","Towers")+seg(R.risk2Add,"var(--risk)","Stage 2 risk")+seg(R.topUp,"#3F8C9B","Skill cover")+seg(R.risk3Add,"var(--risk)","Stage 3 risk")+seg(R.stage4raw,"#8C5FA8","Transformation")+seg(R.risk4Add,"var(--risk)","Stage 4 risk")+seg(R.sdmRaw,"#9B7B3F","SDM")+seg(R.risk5Add,"var(--risk)","Stage 5 risk")+(whole?seg(R.roundAdd,"var(--round)","Rounding"):"");
   const cell=S.rounding==="cell";
   $("barSplit").innerHTML=`<div class="r"><span>L2</span><b>${cell?fmt(R.L2p,0):fmt(R.L2,1)}</b></div>
     <div class="r"><span>L3</span><b>${cell?fmt(R.L3p,0):fmt(R.L3,1)}</b></div>
+    <div class="r"><span>SDM</span><b>${cell?fmt(R.Gp,0):fmt(R.G,1)}</b></div>
     <div class="locs">${R.locs.filter(l=>l.fte>0).map(l=>`${esc(l.name)} ${whole&&S.rounding!=="total"?fmt(l.people,0):fmt(l.fte,1)}`).join(" · ")} · ${covLabel()}</div>`;
 }
 
@@ -1317,6 +1459,7 @@ document.addEventListener("input",e=>{
   if(t.id==="hours"){const v=Math.round(+t.value);if(v>=1&&v<=24){S.hours=v;renderSpd();update();}return}
   if(t.id==="util1"){const v=+t.value;if(t.value!==""&&v>=50&&v<=100){S.util1=v;update()}return}
   if(t.id==="fteHours"){const v=+t.value;if(v>=20&&v<=60){S.fteHours=v;update()}return}
+  if(t.id==="sdmRatio"){const v=Math.round(+t.value);if(v>=4&&v<=20){S.sdmRatio=v;update()}return}
   if(t.id==="transPct"){if(t.value===""){S.transPct=null;update()}else{const v=+t.value;if(v>=0&&v<=50){S.transPct=v;update()}}return}
   if(t.id==="onCallPct"){const v=+t.value;if(t.value!==""&&v>=0&&v<=100){S.onCallPct=v;update()}return}
   if(d.cpeople){const v=Math.round(+t.value);if(v>=1&&v<=9){covOf(d.cpeople).people=v;update()}return}
@@ -1336,6 +1479,7 @@ document.addEventListener("change",e=>{
   if(t.id==="days"){S.days=+t.value;update();return}
   if(t.id==="hours"){renderS1();update();return}
   if(t.id==="backfill"){S.backfill=t.checked;update();return}
+  if(t.id==="sdmLoc"){S.sdmLoc=t.value;update();return}
   if(t.id==="aiRatio"){S.aiRatio=t.value;update();return}
   if(t.id==="rounding"){S.rounding=t.value;update();return}
   if(d.assign){S.assign[+d.assign]=t.value;renderS1();update();return}
@@ -1393,9 +1537,15 @@ function summary(){
   L.push(`- Transformation POD: ${fmt(R.sub3,2)} × ${R.transPct}% = ${fmt(R.pod,2)}`);
   L.push(`- AIOps engineers: ${fmt(R.sub3,2)} ÷ ${R.ratio} = ${fmt(R.aiops,2)}`);
   L.push(`- Added (larger of the two): ${fmt(R.stage4raw,2)}; risk modifiers (${fmt(R.rp4*100,1)}%): ${sgn(R.risk4Add,2)}`);
-  L.push(`- **Stage 4 adds: ${fmt(R.s4,2)} FTE. Team so far ${fmt(R.total,2)} FTE**`);
+  L.push(`- **Stage 4 adds: ${fmt(R.s4,2)} FTE. Team so far ${fmt(R.sub4,2)} FTE**`);
   L.push(`- Scenario guidance: confidence ${R.SC.conf}, Y1 contingency ${R.SC.cont}, ${R.SC.shape}, ${R.SC.comm}`);
   rows("s4");
+  L.push("","## Stage 5 · Governance and reconciliation");
+  L.push(`- SDM: ${fmt(R.sub4,2)} ÷ ${R.sdmRatio} = ${fmt(R.sdmRaw,2)}; risk modifiers (${fmt(R.rp5*100,1)}%): ${sgn(R.risk5Add,2)}`);
+  L.push(`- **Stage 5 adds: ${fmt(R.s5,2)} FTE. Team ${fmt(R.total,2)} FTE**`);
+  L.push("","| View | FTE |","|---|---|",`| Coverage-led (Stage 1 before risk) | ${fmt(R.buffered,2)} |`,`| Effort-led (Stage 2 tower FTE) | ${fmt(R.demand,2)} |`,`| Single-method (larger of the two) | ${fmt(Math.max(R.buffered,R.demand),2)} |`,`| This workflow, delivery (Stages 1–3) | ${fmt(R.sub3,2)} |`);
+  L.push("",$("verdict").textContent);
+  rows("s5");
   if(S.rounding!=="none")L.push("",`## Rounding`,`- ${fmt(R.total,2)} FTE rounded to ${fmt(R.people,0)} people (${sgn(R.roundAdd,2)}). By location: ${R.locs.filter(l=>l.fte>0).map(l=>`${l.name} ${S.rounding==="total"?fmt(l.fte,2):fmt(l.people,0)}`).join(", ")}`);
   return L.join("\n");
 }
@@ -1407,7 +1557,7 @@ function copySummary(){
 }
 
 /* ---------- boot ---------- */
-function renderAll(){renderRail();renderS1();renderS2();renderS3();renderS4();["s1","s2","s3","s4"].forEach(k=>{renderAssume(k);renderRisks(k)});update();}
+function renderAll(){renderRail();renderS1();renderS2();renderS3();renderS4();renderS5();["s1","s2","s3","s4","s5"].forEach(k=>{renderAssume(k);renderRisks(k)});update();}
 renderAll();
 })();
 </script>
