@@ -33,6 +33,7 @@ Inputs:
 - **Coverage window:** days a week and hours a day, with presets from 8×5 to 24×7.
 - **Shifts per day:** sets the shift length (hours ÷ shifts).
 - **Contracted hours per FTE a week:** 40 by default.
+- **Utilisation per resource:** 85% by default ([F] G6). Each person is productive 85% of contracted hours.
 - **Minimum L2 and L3 people on every shift.**
 - **Delivery locations:** each has its own leave days and public holidays, and each shift is assigned to one location (follow-the-sun).
 
@@ -44,19 +45,22 @@ b = contracted hours ÷ shift length                   shifts one FTE covers eac
 c = L2 per shift + L3 per shift                       people on every shift
 roster(loc, tier) = shifts per week at loc × people per shift(tier) ÷ b
                                                       Σ roster = (a × c) ÷ b
-backfill(loc)     = roster ÷ availability             availability = (260 − leave − holidays) ÷ 260
+utilised(loc)     = roster ÷ 85% utilisation
+backfill(loc)     = utilised ÷ availability           availability = (260 − leave − holidays) ÷ 260
 risk              = backfill × (1 + Σ active risk %)
 people            = rounded up per location and tier (or per location, total, or not at all)
 ```
 
 A framework check confirms that the roster total equals `(a × c) ÷ b`. The p.3 example (24×5, 2 people per shift, 8h shifts) gives 6 FTE.
 
-The default example is 24×5 with three 8h shifts: India covers two shifts and Romania covers one. The roster is 6.0 FTE, 6.8 FTE after backfill, and 7.35 FTE after an 8% risk modifier.
+The default example is 24×5 with three 8h shifts: India covers two shifts and Romania covers one. The roster is 6.0 FTE, 7.06 after 85% utilisation, 8.0 after leave backfill, and 8.65 after an 8% risk modifier.
+
+Utilisation covers productive time (training, meetings, admin). Leave and holidays are a separate step, so the two don't overlap.
 
 Rounding to whole people is applied once, to the final team, after all stages.
 
 ### Assumptions and risks
-- Auto assumptions (A1–A6) are generated from the inputs and cite their source. Assumptions added during the review (U1…) can be edited.
+- Auto assumptions (A1–A7) are generated from the inputs and cite their source. Assumptions added during the review (U1…) can be edited.
 - Each risk has a title, an impact/mitigation note, an on/off toggle and an **FTE modifier %**. Active modifiers are added up and applied to the stage's post-backfill FTE. A 0% risk is recorded but adds no FTE.
 
 ## Stage 2: service towers and complexity
@@ -93,14 +97,14 @@ stage 2  = added × (1 + Σ active stage 2 risk %)
 
 "Base has skill" is on by default for Front end, Back end and Infra / Cloud. Added FTE is spread across locations in the same proportion as the Stage 1 roster. Stage 3 will set which shifts each skill covers.
 
-Default example: AMS "Customer apps" (2 S, 3 M, 1 L apps), IMS "Cloud platform" (4 environments, 2 hosting platforms, 4 databases, security) and DMS "Analytics platform" (4 data products, 10 pipelines, 3 integrations, 3 upstream, 2 downstream). That is 172 tickets a month, 5.53 tower FTE, 1.50 absorbed, +4.03 added, +4.64 after 15% risk. The team is 12.0 FTE, rostered as 14 people.
+Default example: AMS "Customer apps" (2 S, 3 M, 1 L apps), IMS "Cloud platform" (4 environments, 2 hosting platforms, 4 databases, security) and DMS "Analytics platform" (4 data products, 10 pipelines, 3 integrations, 3 upstream, 2 downstream). That is 172 tickets a month, 5.53 tower FTE, 1.50 absorbed, +4.03 added, +4.64 after 15% risk. With the updated Stage 1, the team is 13.3 FTE.
 
 ## Stage 3: skill coverage by shift
 
 Skill sets marked **Base has skill** in Stage 2 are on every shift through the Stage 1 roster, so they add nothing here. For every other skill set, you pick the Stage 1 shifts where it must be **live** (default: shift 1) and the people per live shift (default 1). On the remaining shifts it is **on call**, costed at 15% of a staffed shift (`proposed`, editable).
 
 ```
-floor(skill, loc) = (live shifts at loc × people + on-call shifts at loc × on-call %) × days ÷ b
+floor(skill, loc) = (live shifts at loc × people + on-call shifts at loc × on-call %) × days ÷ b ÷ 85% utilisation
                     ÷ availability(loc) when leave backfill is on
 floor(skill)      = Σ floor(skill, loc)
 have(skill)       = Stage 2 FTE after absorption and risk
@@ -110,7 +114,7 @@ stage 3           = top-up × (1 + Σ active stage 3 risk %)
 
 Specialists sit in the locations covering their shifts. Top-up keeps the skill's L2/L3 effort split.
 
-Default example: Database (IMS) and Data engineering (DMS) are live on shift 1 (India) and on call on shifts 2–3. Each has a floor of 1.46 FTE. Database has 0.47 FTE of effort, so it adds 1.00. Data engineering already has 1.98, so it adds nothing. With a 5% risk, Stage 3 adds 1.05, so the team is 13.0 FTE, rostered as 15 people.
+Default example: Database (IMS) and Data engineering (DMS) are live on shift 1 (India) and on call on shifts 2–3. Each has a floor of 1.72 FTE. Database has 0.47 FTE of effort, so it adds 1.25. Data engineering already has 1.98, so it adds nothing. With a 5% risk, Stage 3 adds 1.31, so the team is 14.6 FTE, rostered as 17 people.
 
 ### Copy summary
 **Copy summary** puts each stage's working, the location table, the assumptions and the risks on the clipboard as Markdown, ready for the deal-review deck or notes.

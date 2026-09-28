@@ -339,6 +339,7 @@ details.bench h4{margin:14px 0 0;font:600 11px var(--body);letter-spacing:.08em;
           <div class="seg" id="spdSeg"></div>
           <div class="row">
             <label class="inline" for="fteHours">Contracted hours per FTE a week <input id="fteHours" type="number" min="20" max="60" step="1"></label>
+            <label class="inline" for="util1">Utilisation per resource <input id="util1" type="number" min="50" max="100" step="1">%</label>
           </div>
           <div class="hint" id="shiftHint"></div>
         </div>
@@ -401,7 +402,7 @@ details.bench h4{margin:14px 0 0;font:600 11px var(--body);letter-spacing:.08em;
         <div class="working" id="steps1"></div>
         <div class="loc-table">
           <table>
-            <thead><tr><th>Location</th><th class="r">Shifts / wk</th><th class="r">L2</th><th class="r">L3</th><th class="r">Roster</th><th class="r">+ Leave</th><th class="r">+ Risk</th><th class="r">FTE</th></tr></thead>
+            <thead><tr><th>Location</th><th class="r">Shifts / wk</th><th class="r">L2</th><th class="r">L3</th><th class="r">Roster</th><th class="r">+ Util</th><th class="r">+ Leave</th><th class="r">+ Risk</th><th class="r">FTE</th></tr></thead>
             <tbody id="locCalc"></tbody>
           </table>
         </div>
@@ -684,7 +685,7 @@ function mkTower(kind){
 function defaults(){
   return {
     deal:"",active:1,
-    days:5,hours:24,spd:3,fteHours:40,
+    days:5,hours:24,spd:3,fteHours:40,util1:85,
     perShift:{L2:1,L3:1},
     locations:[pickLoc("in"),pickLoc("ro")],
     assign:["in","in","ro"],
@@ -736,16 +737,18 @@ function compute(){
   const a=spd*days, b=S.fteHours/shiftLen, c=S.perShift.L2+S.perShift.L3;
   const framework=a*c/b;
   const rp1=riskPctOf("s1");
+  const u1=Math.min(1,Math.max(0.5,(+S.util1||85)/100));
   const locs=S.locations.map(l=>{
     const slots=S.assign.filter(x=>x===l.id).length, sw=slots*days;
     const r2=sw*S.perShift.L2/b, r3=sw*S.perShift.L3/b;
     const avail=Math.max(0.1,(WORK_DAYS-(+l.leave||0)-(+l.hol||0))/WORK_DAYS);
     const f=S.backfill?1/avail:1;
-    const b2=r2*f,b3=r3*f,k2=b2*(1+rp1),k3=b3*(1+rp1);
-    return {...l,slots,sw,r2,r3,roster:r2+r3,avail,b2,b3,buffered:b2+b3,k2,k3,risked:k2+k3};
+    const u2=r2/u1,u3=r3/u1;
+    const b2=u2*f,b3=u3*f,k2=b2*(1+rp1),k3=b3*(1+rp1);
+    return {...l,slots,sw,r2,r3,roster:r2+r3,u2,u3,utilised:u2+u3,avail,b2,b3,buffered:b2+b3,k2,k3,risked:k2+k3};
   });
   const sum=(arr,k)=>arr.reduce((s,x)=>s+x[k],0);
-  const roster=sum(locs,"roster"), buffered=sum(locs,"buffered"), s1=sum(locs,"risked");
+  const roster=sum(locs,"roster"), utilised=sum(locs,"utilised"), buffered=sum(locs,"buffered"), s1=sum(locs,"risked");
   const warnings=[], warnings2=[];
   if(shiftLen>12) warnings.push(`Each shift would be ${fmt(shiftLen,1)} hours. Add a shift so no shift runs longer than 12 hours.`);
   if(c<1) warnings.push("Every shift needs at least one person. Set L2 or L3 to 1 or more.");
@@ -797,7 +800,7 @@ function compute(){
       let ls=0,os=0;
       S.assign.forEach((id,i)=>{if(id!==l.id)return;if(live.includes(i))ls++;else os++});
       const f=S.backfill?1/l.avail:1;
-      return {id:l.id,floor:(ls*days*cv.people+os*days*oc)/b*f};
+      return {id:l.id,floor:(ls*days*cv.people+os*days*oc)/b/u1*f};
     });
     const floor=byLoc.reduce((s3,x)=>s3+x.floor,0);
     const have=k.added*(1+rp2);
@@ -822,7 +825,7 @@ function compute(){
   });
   const people=S.rounding==="total"?up(total):sum(locs,"people");
   return {days,spd,shiftLen,a,b,c,framework,rp1,locs,roster,buffered,s1,warnings,
-    leaveAdd:buffered-roster,risk1Add:s1-buffered,
+    u1,utilised,utilAdd:utilised-roster,leaveAdd:buffered-utilised,risk1Add:s1-buffered,
     towers,skills,demand,demAbs,capacity,absorbed,added,add2,add3,rp2,s2,risk2Add:s2-added,warnings2,
     covSkills,topUp,rp3,s3,risk3Add:s3-topUp,sub2:s1+s2,
     total,people,roundAdd:people-total,
@@ -858,6 +861,7 @@ function renderS1(){
   $("hours").value=S.hours;
   renderSpd();
   $("fteHours").value=S.fteHours;
+  $("util1").value=S.util1;
   $("outL2").textContent=S.perShift.L2;
   $("outL3").textContent=S.perShift.L3;
   $("backfill").checked=!!S.backfill;
@@ -975,13 +979,14 @@ function updateS1(){
   h+=wstep("b","Shifts one FTE covers each week",fmt(R.b,2),`${S.fteHours} contracted hours ÷ ${sl}h shift`);
   h+=wstep("c","People on every shift",fmt(R.c,0),`${S.perShift.L2} L2 + ${S.perShift.L3} L3`);
   h+=wstep("1","Roster FTE",fmt(R.roster,2),`(a × c) ÷ b = (${fmt(R.a,0)} × ${R.c}) ÷ ${fmt(R.b,2)}, split by the locations covering each shift`);
-  h+=wstep("2","Leave &amp; holiday backfill",`<span class="delta add">${sgn(R.leaveAdd,2)}</span>`,S.backfill?"Roster ÷ availability per location: "+R.locs.filter(l=>l.slots).map(l=>`${esc(l.name)} ${Math.round(l.avail*100)}%`).join(", "):"Off. The roster assumes people are always available.");
-  h+=wstep("3","Risk modifiers",`<span class="delta risk">${sgn(R.risk1Add,2)}</span>`,`${fmt(R.buffered,2)} × ${fmt(R.rp1*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
+  h+=wstep("2","Utilisation per resource",`<span class="delta add">${sgn(R.utilAdd,2)}</span>`,`Roster ÷ ${S.util1}%: each person is productive ${S.util1}% of contracted hours`);
+  h+=wstep("3","Leave &amp; holiday backfill",`<span class="delta add">${sgn(R.leaveAdd,2)}</span>`,S.backfill?"Utilised FTE ÷ availability per location: "+R.locs.filter(l=>l.slots).map(l=>`${esc(l.name)} ${Math.round(l.avail*100)}%`).join(", "):"Off. The roster assumes people are always available.");
+  h+=wstep("4","Risk modifiers",`<span class="delta risk">${sgn(R.risk1Add,2)}</span>`,`${fmt(R.buffered,2)} × ${fmt(R.rp1*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
   h+=wstep("=","Stage 1 base team",`${fmt(R.s1,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,null,"total");
   $("steps1").innerHTML=h;
   const tot=k=>R.locs.reduce((s,l)=>s+l[k],0);
-  $("locCalc").innerHTML=R.locs.map(l=>`<tr><td class="loc-name">${esc(l.name)}</td><td class="r num">${l.sw}</td><td class="r num">${fmt(l.r2,2)}</td><td class="r num">${fmt(l.r3,2)}</td><td class="r num">${fmt(l.roster,2)}</td><td class="r num">${fmt(l.buffered-l.roster,2)}</td><td class="r num">${fmt(l.risked-l.buffered,2)}</td><td class="r num"><b>${fmt(l.risked,2)}</b></td></tr>`).join("")
-    +`<tr><td><b>Total</b></td><td class="r num">${fmt(R.a,0)}</td><td class="r num">${fmt(tot("r2"),2)}</td><td class="r num">${fmt(tot("r3"),2)}</td><td class="r num">${fmt(R.roster,2)}</td><td class="r num">${fmt(R.leaveAdd,2)}</td><td class="r num">${fmt(R.risk1Add,2)}</td><td class="r num"><b>${fmt(R.s1,2)}</b></td></tr>`;
+  $("locCalc").innerHTML=R.locs.map(l=>`<tr><td class="loc-name">${esc(l.name)}</td><td class="r num">${l.sw}</td><td class="r num">${fmt(l.r2,2)}</td><td class="r num">${fmt(l.r3,2)}</td><td class="r num">${fmt(l.roster,2)}</td><td class="r num">${fmt(l.utilised-l.roster,2)}</td><td class="r num">${fmt(l.buffered-l.utilised,2)}</td><td class="r num">${fmt(l.risked-l.buffered,2)}</td><td class="r num"><b>${fmt(l.risked,2)}</b></td></tr>`).join("")
+    +`<tr><td><b>Total</b></td><td class="r num">${fmt(R.a,0)}</td><td class="r num">${fmt(tot("r2"),2)}</td><td class="r num">${fmt(tot("r3"),2)}</td><td class="r num">${fmt(R.roster,2)}</td><td class="r num">${fmt(R.utilAdd,2)}</td><td class="r num">${fmt(R.leaveAdd,2)}</td><td class="r num">${fmt(R.risk1Add,2)}</td><td class="r num"><b>${fmt(R.s1,2)}</b></td></tr>`;
   const ok=Math.abs(R.framework-R.roster)<1e-6;
   $("fwCheck").className="check"+(ok?"":" off");
   $("fwCheck").textContent=(ok?"✓ ":"")+`Framework check: (a × c) ÷ b = ${fmt(R.framework,2)} FTE, the same as the roster line. The framework's p.3 example (24×5, 2 per shift) gives 6.`;
@@ -989,10 +994,11 @@ function updateS1(){
   renderAuto("s1",[
     ["A1",`Coverage is ${covLabel()}: ${S.hours} hours a day, ${S.days} days a week, split into ${S.spd} shift${S.spd>1?"s":""} of ${sl} hours. Shift handover overlap is absorbed inside the shift.`,"[F] 1.1 C"],
     ["A2",`Each FTE works ${S.fteHours} contracted hours a week, so covers ${fmt(R.b,2)} shifts.`,"[F] p.3 b"],
-    ["A3",`At least ${S.perShift.L2} L2 and ${S.perShift.L3} L3 on every shift, whatever the ticket volume. Ticket-driven effort is added in Stage 2.`,"[F] p.3 c"],
-    ["A4",`Shifts are covered from ${R.locs.filter(l=>l.slots).map(l=>`${l.name} (${l.slots})`).join(", ")}. Each location keeps its own roster.`,"[F] G3"],
-    ["A5",S.backfill?`Leave and public holidays are backfilled on a ${WORK_DAYS}-day working year per location.`:"No backfill for leave or public holidays. The client accepts reduced cover on those days.","proposed"],
-    ["A6","Location rates are not applied here. Cost is added in the pricing stage from the DAMO pricing sheet.","[P]"]
+    ["A3",`Each resource is productive ${S.util1}% of contracted hours (training, meetings, admin), so the roster is divided by ${S.util1}%. Leave and holidays are handled separately.`,"[F] G6"],
+    ["A4",`At least ${S.perShift.L2} L2 and ${S.perShift.L3} L3 on every shift, whatever the ticket volume. Ticket-driven effort is added in Stage 2.`,"[F] p.3 c"],
+    ["A5",`Shifts are covered from ${R.locs.filter(l=>l.slots).map(l=>`${l.name} (${l.slots})`).join(", ")}. Each location keeps its own roster.`,"[F] G3"],
+    ["A6",S.backfill?`Leave and public holidays are backfilled on a ${WORK_DAYS}-day working year per location.`:"No backfill for leave or public holidays. The client accepts reduced cover on those days.","proposed"],
+    ["A7","Location rates are not applied here. Cost is added in the pricing stage from the DAMO pricing sheet.","[P]"]
   ]);
 }
 function updateS2(){
@@ -1063,7 +1069,7 @@ function updateS3(){
   const fl=R.covSkills.reduce((s3,k)=>s3+k.floor,0), hv=R.covSkills.reduce((s3,k)=>s3+k.have,0);
   let h="";
   h+=wstep("1","Skill sets needing their own cover",fmt(R.covSkills.length,0),R.covSkills.length?esc(R.covSkills.map(k=>k.name).join(", ")):"All skill sets are held by the base team");
-  h+=wstep("2","Coverage floor",fmt(fl,2),`(live shifts × people + on-call shifts × ${S.onCallPct}%) × ${S.days} days ÷ ${fmt(R.b,2)} shifts per FTE${S.backfill?", with Stage 1 leave backfill":""}`);
+  h+=wstep("2","Coverage floor",fmt(fl,2),`(live shifts × people + on-call shifts × ${S.onCallPct}%) × ${S.days} days ÷ ${fmt(R.b,2)} shifts per FTE ÷ ${S.util1}% utilisation${S.backfill?", with Stage 1 leave backfill":""}`);
   h+=wstep("3","Already staffed from Stage 2",fmt(hv,2),"Each skill set's Stage 2 FTE after absorption and risk");
   h+=wstep("4","Top-up for coverage",`<span class="delta add">${sgn(R.topUp,2)}</span>`,"Sum over skill sets of max(0, floor − Stage 2 FTE)");
   h+=wstep("5","Risk modifiers",`<span class="delta risk">${sgn(R.risk3Add,2)}</span>`,`${fmt(R.topUp,2)} × ${fmt(R.rp3*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
@@ -1087,7 +1093,7 @@ function renderBar(){
   $("barFte").innerHTML=`${fmt(R.total,1)}<small>FTE</small>`;
   $("barHc").innerHTML=whole?`Rostered as <b>${fmt(R.people,0)}</b> people`:"No rounding applied";
   const chip=(cls,l,v,go)=>`<div class="chip ${cls}" ${go?`data-gochip="${go}" style="cursor:pointer"`:""}><span class="l">${l}</span><span class="v">${v}</span></div>`;
-  let h=chip("base","Roster",fmt(R.roster,1),1)+chip("add","+ Leave",sgn(R.leaveAdd),1)+chip("risk","+ Risk",sgn(R.risk1Add),1)+chip("base","Stage 1",fmt(R.s1,1),1);
+  let h=chip("base","Roster",fmt(R.roster,1),1)+chip("add","+ Util",sgn(R.utilAdd),1)+chip("add","+ Leave",sgn(R.leaveAdd),1)+chip("risk","+ Risk",sgn(R.risk1Add),1)+chip("base","Stage 1",fmt(R.s1,1),1);
   h+=`<div class="chip sep">›</div>`;
   h+=chip("add","2 · Towers",sgn(R.added),2)+chip("risk","+ Risk",sgn(R.risk2Add),2)+chip("base","Stage 2",fmt(R.sub2,1),2);
   h+=`<div class="chip sep">›</div>`;
@@ -1098,7 +1104,7 @@ function renderBar(){
   $("barChips").innerHTML=h;
   const tot=Math.max(R.people,R.total,0.0001);
   const seg=(v,c,t)=>`<span style="width:${Math.max(0,v)/tot*100}%;background:${c}" title="${t}"></span>`;
-  $("barStack").innerHTML=seg(R.roster,"var(--accent)","Roster")+seg(R.leaveAdd,"var(--add)","Leave backfill")+seg(R.risk1Add,"var(--risk)","Stage 1 risk")
+  $("barStack").innerHTML=seg(R.roster,"var(--accent)","Roster")+seg(R.utilAdd,"var(--accent-soft)","Utilisation")+seg(R.leaveAdd,"var(--add)","Leave backfill")+seg(R.risk1Add,"var(--risk)","Stage 1 risk")
     +seg(R.added,"#6B7C93","Towers")+seg(R.risk2Add,"var(--risk)","Stage 2 risk")+seg(R.topUp,"#3F8C9B","Skill cover")+seg(R.risk3Add,"var(--risk)","Stage 3 risk")+(whole?seg(R.roundAdd,"var(--round)","Rounding"):"");
   const cell=S.rounding==="cell";
   $("barSplit").innerHTML=`<div class="r"><span>L2</span><b>${cell?fmt(R.L2p,0):fmt(R.L2,1)}</b></div>
@@ -1146,6 +1152,7 @@ document.addEventListener("input",e=>{
   const t=e.target, d=t.dataset;
   if(t.id==="dealName"){S.deal=t.value;save();return}
   if(t.id==="hours"){const v=Math.round(+t.value);if(v>=1&&v<=24){S.hours=v;renderSpd();update();}return}
+  if(t.id==="util1"){const v=+t.value;if(t.value!==""&&v>=50&&v<=100){S.util1=v;update()}return}
   if(t.id==="fteHours"){const v=+t.value;if(v>=20&&v<=60){S.fteHours=v;update()}return}
   if(t.id==="onCallPct"){const v=+t.value;if(t.value!==""&&v>=0&&v<=100){S.onCallPct=v;update()}return}
   if(d.cpeople){const v=Math.round(+t.value);if(v>=1&&v<=9){covOf(d.cpeople).people=v;update()}return}
@@ -1192,11 +1199,12 @@ function summary(){
   L.push(`- b  Shifts per FTE per week: ${S.fteHours}h ÷ ${hrs(R.shiftLen)}h = ${fmt(R.b,2)}`);
   L.push(`- c  People per shift: ${S.perShift.L2} L2 + ${S.perShift.L3} L3 = ${R.c}`);
   L.push(`- Roster FTE (a×c)÷b: ${fmt(R.roster,2)}`);
+  L.push(`- Utilisation ${S.util1}% per resource: ${sgn(R.utilAdd,2)}`);
   L.push(`- Leave & holiday backfill: ${sgn(R.leaveAdd,2)}`);
   L.push(`- Risk modifiers (${fmt(R.rp1*100,1)}%): ${sgn(R.risk1Add,2)}`);
   L.push(`- **Stage 1 FTE: ${fmt(R.s1,2)}**`);
-  L.push("","| Location | Shifts/wk | Roster | +Leave | +Risk | FTE |","|---|---|---|---|---|---|");
-  R.locs.forEach(l=>L.push(`| ${l.name} | ${l.sw} | ${fmt(l.roster,2)} | ${fmt(l.buffered-l.roster,2)} | ${fmt(l.risked-l.buffered,2)} | ${fmt(l.risked,2)} |`));
+  L.push("","| Location | Shifts/wk | Roster | +Util | +Leave | +Risk | FTE |","|---|---|---|---|---|---|---|");
+  R.locs.forEach(l=>L.push(`| ${l.name} | ${l.sw} | ${fmt(l.roster,2)} | ${fmt(l.utilised-l.roster,2)} | ${fmt(l.buffered-l.utilised,2)} | ${fmt(l.risked-l.buffered,2)} | ${fmt(l.risked,2)} |`));
   rows("s1");
   L.push("","## Stage 2 · Service towers");
   L.push("","| Tower | Demand from | Tickets/mo | L2 | L3 | A hrs | B hrs | FTE |","|---|---|---|---|---|---|---|---|");
