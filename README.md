@@ -25,7 +25,7 @@ Values not taken from either source are marked `proposed`.
 | 5 | Governance (SDM 1:8) and coverage-led vs effort-led comparison | Built |
 | 6 | Seniority pyramid and contingency by complexity | Built |
 | 7 | Term and YoY savings as reduced FTE; 1- to 5-year comparison | Built |
-| 8 | Brownfield existing capacity | Next |
+| 8 | Fact check against the existing team | Built |
 
 ## Stage 1: base team
 
@@ -204,6 +204,27 @@ FTE(Yn)    = base(Yn) × (1 + contingency(Yn)) × (1 + Σ active stage 7 risk %,
 - **Term comparison:** a table shows 1- to 5-year terms with FTE by year, FTE-years, average FTE a year and the reduction against a 1-year contract. A generated sentence explains why a 3-year or longer term is better.
 
 Default example (3-year term): 22.3 → 20.3 → 18.8, averaging 20.44 FTE a year. That is 8% below a 1-year contract; 5 years averages 19.0 (−15%). Without the coverage floor, a 3-year term averages 19.3 (−14%).
+
+## Stage 8: fact check against the existing team
+
+This stage **does not change the estimate**. You enter the team running the estate today (client or incumbent) by tier: L2 support, L3 engineering, SRE/automation, service/delivery managers and other roles. You also record where the numbers come from (org chart, RFP/handover pack, or verbal estimate) and a tolerance (default ±10%).
+
+| Existing | Compared with |
+|---|---|
+| L2 support | Our L2 |
+| L3 engineering + SRE/automation | Our L3 (includes transformation capacity) |
+| Service/delivery managers | Our SDMs |
+| Other roles | Not in our model: flagged "not in our scope" |
+
+Each tier and the total is marked consistent, above or below. Bars compare today's team with our Year 1, our term average and our final year. A generated sentence explains the result:
+
+- **Consistent:** Year 1 is within tolerance.
+- **Above:** it shows how much is transformation capacity and contingency the existing team may not carry, and what we would be without them.
+- **Below:** it points to out-of-scope roles and base-team absorption, then frames the gap as the productivity case.
+
+It always ends with where the team lands by the end of the term against today, and it flags verbal estimates as directional. Risks in this stage are tracked only.
+
+Default example: the existing team is 24 FTE (11 L2, 8 L3, 1 SRE, 2 managers, 2 other). Our Year 1 is 22.3 (−7%, consistent), and Year 3 is 18.8 (−22% against today).
 
 ### Copy summary
 **Copy summary** puts each stage's working, the location table, the assumptions and the risks on the clipboard as Markdown, ready for the deal-review deck or notes.

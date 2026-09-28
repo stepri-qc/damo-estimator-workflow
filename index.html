@@ -331,6 +331,11 @@ details.bench h4{margin:14px 0 0;font:600 11px var(--body);letter-spacing:.08em;
 .floorline{position:absolute;left:0;right:0;border-top:2px dashed var(--add);pointer-events:none}
 .floorline span{position:absolute;right:0;top:-18px;font:600 11px var(--mono);color:var(--add);background:var(--surface);padding:0 4px}
 tr.sel td{background:var(--accent-soft)}
+/* stage 8 */
+.band{display:inline-block;font:600 12px var(--mono);padding:3px 8px;border-radius:4px}
+.band.ok{background:var(--add-soft);color:var(--add)}
+.band.hi{background:var(--risk-soft);color:var(--risk)}
+.band.lo{background:var(--round-soft);color:var(--round)}
 </style>
 </head>
 <body>
@@ -890,10 +895,77 @@ tr.sel td{background:var(--accent-soft)}
       </div>
     </div>
 
-    <div class="stage-nav"><button class="btn" type="button" data-go="6">← Seniority</button><span class="hint">Stage 8, brownfield capacity, comes next.</span></div>
+    <div class="stage-nav"><button class="btn" type="button" data-go="6">← Seniority</button><button class="btn primary" type="button" data-go="8">Next: fact check →</button></div>
   </section>
 
-  <div class="upcoming">
+  <!-- ===================== STAGE 8 ===================== -->
+  <section id="stage8" class="stage" aria-labelledby="s8h" hidden>
+    <div class="stage-head">
+      <span class="eyebrow">Stage 8 of 8</span>
+      <h2 id="s8h">Fact check against the existing team</h2>
+      <p>Enter the team running the estate today. This stage does not change the estimate. It puts our numbers next to the existing team, tier by tier and across the term, so the review can see whether the estimate is credible and what explains any gap.</p>
+    </div>
+
+    <div class="cols">
+      <div class="panel">
+        <header><h3>Existing team today</h3><span class="sub">Client or incumbent</span></header>
+        <div class="tgrid" id="exInputs"></div>
+        <div class="field">
+          <div class="lbl">Where the numbers come from</div>
+          <select id="exSource">
+            <option value="org">Client org chart or contract schedule</option>
+            <option value="rfp">RFP or incumbent handover pack</option>
+            <option value="verbal">Verbal estimate from discovery</option>
+          </select>
+        </div>
+        <div class="field">
+          <div class="lbl">Tolerance</div>
+          <label class="inline" for="exTol">Within ±<input id="exTol" type="number" min="0" max="50" step="1">% counts as consistent</label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <header><h3>Our estimate against today</h3><span class="sub">No FTE is added in this stage</span></header>
+        <div class="recon" id="exBars"></div>
+        <div class="loc-table">
+          <table>
+            <thead><tr><th>Tier</th><th class="r">Existing</th><th class="r">Our Y1 FTE</th><th class="r">Our Y1 people</th><th class="r">Difference</th><th>Check</th></tr></thead>
+            <tbody id="exTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:20px">
+      <header><h3>What the fact check says</h3><span class="sub">Generated from the numbers above</span></header>
+      <div class="verdict" id="exVerdict"></div>
+    </div>
+
+    <div class="cols even" data-stage="s8">
+      <div class="panel">
+        <header><h3>Assumptions</h3><span class="sub">Stage 8</span></header>
+        <ul class="alist" id="auto-s8"></ul>
+        <ul class="alist" id="user-s8"></ul>
+        <form class="addrow" data-addassume="s8">
+          <input type="text" id="ai-s8" placeholder="Add an assumption agreed in the review" aria-label="New assumption">
+          <button class="btn sm" type="submit">Add</button>
+        </form>
+      </div>
+      <div class="panel">
+        <header><h3>Risks</h3><span class="sub">Tracked only: this stage does not change FTE</span></header>
+        <div class="risks" id="risks-s8"></div>
+        <form class="addrow" data-addrisk="s8">
+          <input type="text" id="ri-s8" placeholder="Add a risk" aria-label="New risk">
+          <button class="btn sm" type="submit">Add</button>
+        </form>
+        <div class="risk-sum"><span>Stage 8 risk modifier</span><span class="num" id="rt-s8">not applied</span></div>
+      </div>
+    </div>
+
+    <div class="stage-nav"><button class="btn" type="button" data-go="7">← Term &amp; savings</button><button class="btn" type="button" id="copyBtn2">Copy summary</button></div>
+  </section>
+
+  <div class="upcoming" id="upcomingWrap">
     <h3>Coming stages</h3>
     <div class="ulist" id="upcoming"></div>
   </div>
@@ -934,7 +1006,7 @@ const STAGES=[
   {n:5,t:"Governance",d:"SDM at 1:8 and coverage-led vs effort-led comparison.",built:true},
   {n:6,t:"Seniority",d:"Complexity sets the grade pyramid and a 5–10% contingency.",built:true},
   {n:7,t:"Term & savings",d:"Year-by-year FTE and the benefit of a longer term.",built:true},
-  {n:8,t:"Brownfield capacity",d:"Offset by existing client or incumbent capacity we take over."}
+  {n:8,t:"Fact check",d:"Our estimate against the existing team.",built:true}
 ];
 const COV_PRESETS=[["8x5",5,8],["16x5",5,16],["24x5",5,24],["8x7",7,8],["16x7",7,16],["24x7",7,24]];
 /* proposed defaults, not from [F]/[P] */
@@ -1004,6 +1076,13 @@ const CPLX={
 const GRADES=["Lead","Senior","Consultant"];
 /* [F] Part 3 YoY savings targets, midpoints: Sc1 12–15, Sc2 10–12, Sc3 12–15, Sc4 15–20 */
 const SAVE_BY_SC={1:13.5,2:11,3:13.5,4:17.5};
+const EX_TIERS=[["L2","L2 support"],["L3","L3 engineering"],["trans","SRE / automation"],["gov","Service / delivery managers"],["other","Other roles"]];
+const EX_SOURCE={org:"client org chart or contract schedule",rfp:"RFP or incumbent handover pack",verbal:"verbal estimate from discovery"};
+const RISKS_S8=()=>[
+  {id:uid(),on:true,pct:0,title:"Existing team includes out-of-scope work",note:"Today's team may also do L1, projects or enhancements that are not in our scope. Check role by role before comparing."},
+  {id:uid(),on:true,pct:0,title:"Hidden capacity in the existing team",note:"Client staff or shared incumbent teams quietly absorb L2/L3 work, so today's headcount understates the real effort ([F] Annexure 2: hidden work content)."},
+  {id:uid(),on:false,pct:0,title:"Existing team is over-staffed",note:"A large incumbent team reflects low automation, not the work. Use Stage 7 savings to show the path down."}
+];
 const RISKS_S7=()=>[
   {id:uid(),on:false,pct:5,title:"Volume growth beyond the baseline",note:"Ticket volume grows and eats the savings. Mitigation: volume band clause with a re-baseline trigger ([F] Sc.3 risk log)."},
   {id:uid(),on:true,pct:0,title:"Savings depend on client access and tooling",note:"Tracked only: productivity gains are contingent on AI maturity assessment and client system access approval ([F] Sc.1)."}
@@ -1052,9 +1131,10 @@ function defaults(){
     sdmRatio:8,sdmLoc:null,
     cplx:"medium",pyr:{},contPct:null,
     term:3,savePct:null,cont2:null,protectFloor:true,
+    ex:{L2:11,L3:8,trans:1,gov:2,other:2},exSource:"rfp",exTol:10,
     cov:{},
-    assumptions:{s1:["Service desk (L1) is provided by the client and is out of scope for this team."],s2:[],s3:[],s4:[],s5:[],s6:[],s7:[]},
-    risks:{s1:RISKS_S1(),s2:RISKS_S2(),s3:RISKS_S3(),s4:RISKS_S4(),s5:RISKS_S5(),s6:RISKS_S6(),s7:RISKS_S7()}
+    assumptions:{s1:["Service desk (L1) is provided by the client and is out of scope for this team."],s2:[],s3:[],s4:[],s5:[],s6:[],s7:[],s8:[]},
+    risks:{s1:RISKS_S1(),s2:RISKS_S2(),s3:RISKS_S3(),s4:RISKS_S4(),s5:RISKS_S5(),s6:RISKS_S6(),s7:RISKS_S7(),s8:RISKS_S8()}
   };
 }
 function pickLoc(id){const c=LOC_CATALOG.find(l=>l.id===id);return {id:c.id,name:c.name,kind:c.kind,leave:c.leave,hol:c.hol}}
@@ -1279,10 +1359,11 @@ function renderRail(){
   $("stageRail").innerHTML=STAGES.map(s=>{
     const cls=s.n===S.active?"on":(s.built?"ready":"locked");
     return `<li class="${cls}"><button type="button" ${s.built?`data-go="${s.n}"`:'disabled aria-disabled="true"'} ${s.n===S.active?'aria-current="step"':""}><span class="n">${s.n}</span>${esc(s.t)}${s.built?"":' <span class="d" style="color:var(--faint)">soon</span>'}</button></li>`}).join("");
+  $("upcomingWrap").hidden=!STAGES.some(s=>!s.built);
   $("upcoming").innerHTML=STAGES.filter(s=>!s.built).map(s=>`<div class="ucard"><span class="n">STAGE ${s.n}</span><b>${esc(s.t)}</b><span>${esc(s.d)}</span></div>`).join("");
   document.querySelectorAll(".stage").forEach(sec=>{sec.hidden=sec.id!=="stage"+S.active});
 }
-function go(n){S.active=n;if(n===3){renderS3();update();}if(n===4){renderS4();update();}if(n===5){renderS5();update();}if(n===6){renderS6();update();}if(n===7){renderS7();update();}renderRail();save();window.scrollTo({top:0,behavior:"auto"})}
+function go(n){S.active=n;if(n===3){renderS3();update();}if(n===4){renderS4();update();}if(n===5){renderS5();update();}if(n===6){renderS6();update();}if(n===7){renderS7();update();}if(n===8){renderS8();update();}renderRail();save();window.scrollTo({top:0,behavior:"auto"})}
 
 /* ---------- stage 1 static render ---------- */
 function renderS1(){
@@ -1376,12 +1457,12 @@ function renderRisks(k){
       <input type="text" id="rti-${r.id}" data-rf="title" value="${esc(r.title)}" aria-label="Risk title">
       <textarea id="rno-${r.id}" data-rf="note" rows="2" aria-label="Impact and mitigation">${esc(r.note)}</textarea>
     </div>
-    <div class="pct">
+    <div class="pct">${k==="s8"?`<button type="button" class="btn ghost sm" data-rmrisk="${k}:${r.id}">Remove</button></div></div>`:""}${k==="s8"?"":`
       <label for="rpc-${r.id}">FTE modifier</label>
       <span class="pin"><input type="number" id="rpc-${r.id}" data-rf="pct" min="-50" max="100" step="0.5" value="${r.pct}">%</span>
       <span class="delta risk" id="rd-${r.id}"></span>
       <button type="button" class="btn ghost sm" data-rmrisk="${k}:${r.id}">Remove</button>
-    </div></div>`).join("");
+    </div></div>`}`).join("");
 }
 function renderAuto(k,list){$("auto-"+k).innerHTML=list.map(a=>`<li class="auto"><span class="i">${a[0]}</span><span>${esc(a[1])}</span><span class="src">${a[2]}</span></li>`).join("")}
 function updateRiskDeltas(k,base,add,pct){
@@ -1393,7 +1474,7 @@ function updateRiskDeltas(k,base,add,pct){
 let R;
 function update(){
   R=compute();
-  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); updateS6(); updateS7(); renderBar(); save();
+  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); updateS6(); updateS7(); updateS8(); renderBar(); save();
 }
 function updateS1(){
   document.querySelectorAll("[data-cov]").forEach(b=>{const p=COV_PRESETS.find(x=>x[0]===b.dataset.cov);b.setAttribute("aria-pressed",String(S.days===p[1]&&S.hours===p[2]))});
@@ -1686,6 +1767,49 @@ function updateS7(){
   ]);
 }
 
+function renderS8(){
+  $("exInputs").innerHTML=EX_TIERS.map(([k,l])=>`<label for="ex-${k}">${l}<input type="number" id="ex-${k}" data-ex="${k}" min="0" max="1000" step="0.5" value="${(S.ex||{})[k]??0}"></label>`).join("");
+  $("exSource").value=S.exSource||"rfp";
+  $("exTol").value=S.exTol;
+}
+function updateS8(){
+  const ex=S.ex||{}, n=k=>Math.max(0,+ex[k]||0);
+  const exTot=EX_TIERS.reduce((x,[k])=>x+n(k),0);
+  const tol=(+S.exTol||0)/100;
+  const cell=S.rounding==="cell";
+  const T=R.term, yEnd=R.years[T-1].fte, avg=R.termRows[T-1].avg;
+  const band=(ours,theirs)=>{if(!(theirs>0))return ours>0?`<span class="band hi">new</span>`:"–";const p=(ours-theirs)/theirs;return Math.abs(p)<=tol?`<span class="band ok">consistent</span>`:p>0?`<span class="band hi">${fmt(p*100,0)}% above</span>`:`<span class="band lo">${fmt(-p*100,0)}% below</span>`};
+  const rows=[
+    ["L2",n("L2"),R.L2,cell?R.L2p:null],
+    ["L3 incl. SRE / automation",n("L3")+n("trans"),R.L3,cell?R.L3p:null],
+    ["Governance (SDM)",n("gov"),R.G,cell?R.Gp:null],
+    ["Other roles",n("other"),0,cell?0:null]
+  ];
+  $("exTable").innerHTML=rows.map(r=>`<tr><td class="loc-name">${r[0]}</td><td class="r num">${fmt(r[1],1)}</td><td class="r num">${fmt(r[2],2)}</td><td class="r num">${r[3]==null?"–":fmt(r[3],0)}</td><td class="r num">${sgn(r[2]-r[1],1)}</td><td>${r[0]==="Other roles"&&r[1]>0?`<span class="band lo">not in our scope</span>`:band(r[2],r[1])}</td></tr>`).join("")
+    +`<tr><td><b>Total</b></td><td class="r num"><b>${fmt(exTot,1)}</b></td><td class="r num"><b>${fmt(R.total,2)}</b></td><td class="r num"><b>${S.rounding!=="none"?fmt(R.people,0):"–"}</b></td><td class="r num"><b>${sgn(R.total-exTot,1)}</b></td><td>${band(R.total,exTot)}</td></tr>`;
+  const bars=[["Existing team","today",exTot,"var(--faint)"],["Our Year 1","Stage 6 team",R.total,"var(--accent)"],[`Our ${T}-year average`,"Stage 7",avg,"#8C5FA8"],[`Our Year ${T}`,"end of term",yEnd,"var(--add)"]];
+  const mx=Math.max(...bars.map(b=>b[2]),0.0001);
+  $("exBars").innerHTML=bars.map(b=>`<div class="rbar"><span class="t"><b>${b[0]}</b><span>${b[1]}${exTot>0&&b[0]!=="Existing team"?` · ${sgn((b[2]-exTot)/exTot*100,0)}%`:""}</span></span><span class="track"><i style="width:${b[2]/mx*100}%;background:${b[3]}"></i></span><span class="v">${fmt(b[2],1)}</span></div>`).join("");
+  let v;
+  if(!(exTot>0)){v="Enter the existing team to run the fact check.";}
+  else{
+    const d=R.total-exTot, p=d/exTot;
+    if(Math.abs(p)<=tol)v=`<b>Consistent with today's team.</b> Our Year 1 is ${fmt(R.total,1)} FTE against ${fmt(exTot,1)} today (${sgn(p*100,0)}%), inside the ±${S.exTol}% tolerance.`;
+    else if(p>0){const core=R.total-R.s4-R.s6;v=`<b>Our Year 1 is ${fmt(d,1)} FTE (${fmt(p*100,0)}%) above today's team.</b> ${fmt(R.s4,1)} FTE is transformation capacity and ${fmt(R.s6,1)} is contingency, which the existing team may not carry; without them we would be at ${fmt(core,1)} (${sgn((core-exTot)/exTot*100,0)}%). Check that today's team covers the same ${covLabel()} window, and whether it runs Year 1 transition risk.`;}
+    else v=`<b>Our Year 1 is ${fmt(-d,1)} FTE (${fmt(-p*100,0)}%) below today's team.</b> Check nothing is missing from scope: today's team has ${fmt(n("other"),1)} FTE in roles outside our model, and our base team absorbs ${fmt(R.absorbed,1)} FTE of tower work. If the scope matches, the gap is the productivity case to present.`;
+    const pe=(yEnd-exTot)/exTot;
+    v+=` By Year ${T} our team is ${fmt(yEnd,1)} FTE, ${sgn(pe*100,0)}% against today${pe<0?", which is the saving the client sees over the term":""}.`;
+    if(S.exSource==="verbal")v+=" Today's numbers are a verbal estimate, so treat this check as directional.";
+  }
+  $("exVerdict").innerHTML=v;
+  renderAuto("s8",[
+    ["H1",`The existing team is ${fmt(exTot,1)} FTE, taken from the ${EX_SOURCE[S.exSource]||EX_SOURCE.rfp}.`,"input"],
+    ["H2","Existing L3 and SRE/automation roles are compared with our L3, which includes transformation capacity. Existing service and delivery managers are compared with our SDMs.","proposed"],
+    ["H3",`Differences within ±${S.exTol}% count as consistent.`,"proposed"],
+    ["H4","This stage is a check only. It does not change the estimate in Stages 1–7.","agreed"]
+  ]);
+}
+
 function renderBar(){
   const whole=S.rounding!=="none";
   $("barFte").innerHTML=`${fmt(R.total,1)}<small>FTE</small>`;
@@ -1704,6 +1828,7 @@ function renderBar(){
   h+=chip("add","6 · Contingency",sgn(R.contRaw),6)+chip("risk","+ Risk",sgn(R.risk6Add),6)+chip("base","Stage 6",fmt(R.total,1),6);
   h+=`<div class="chip sep">›</div>`;
   h+=chip("base",`7 · ${R.term}-yr avg`,fmt(R.termRows[R.term-1].avg,1),7)+chip("add","vs 1-year",R.term>1?"−"+fmt(R.termRows[R.term-1].vs1*100,0)+"%":"–",7);
+  {const exTot=EX_TIERS.reduce((x,[k])=>x+Math.max(0,+(S.ex||{})[k]||0),0);h+=`<div class="chip sep">›</div>`+chip("base","8 · vs existing",exTot>0?sgn((R.total-exTot)/exTot*100,0)+"%":"–",8);}
   h+=`<div class="chip sep">›</div>`;
   h+=STAGES.filter(s=>!s.built).map(s=>chip("todo",`${s.n} · ${esc(s.t)}`,"—")).join("");
   if(whole)h+=`<div class="chip sep">›</div>`+chip("round","Rounding",sgn(R.roundAdd));
@@ -1753,7 +1878,7 @@ document.addEventListener("click",e=>{
   else if(d.rmassume){const [k,i]=pair(d.rmassume);S.assumptions[k].splice(+i,1);renderAssume(k);update();}
   else if(d.rmrisk){const [k,id]=pair(d.rmrisk);S.risks[k]=S.risks[k].filter(r=>r.id!==id);renderRisks(k);update();}
   else if(t.id==="resetBtn"){if(d.armed){S=defaults();renderAll();t.textContent="Reset";delete d.armed;}else{d.armed="1";t.textContent="Click again to reset";setTimeout(()=>{t.textContent="Reset";delete t.dataset.armed},3000);}}
-  else if(t.id==="copyBtn"){copySummary();}
+  else if(t.id==="copyBtn"||t.id==="copyBtn2"){copySummary();}
 });
 function twr(el){return S.towers.find(x=>x.id===el.closest("[data-tower]").dataset.tower)}
 function skl(el){const tw=twr(el);return tw.skills.find(k=>k.id===el.closest("[data-skill]").dataset.skill)}
@@ -1764,6 +1889,8 @@ document.addEventListener("input",e=>{
   if(t.id==="hours"){const v=Math.round(+t.value);if(v>=1&&v<=24){S.hours=v;renderSpd();update();}return}
   if(t.id==="util1"){const v=+t.value;if(t.value!==""&&v>=50&&v<=100){S.util1=v;update()}return}
   if(t.id==="fteHours"){const v=+t.value;if(v>=20&&v<=60){S.fteHours=v;update()}return}
+  if(d.ex){const v=+t.value;if(t.value!==""&&v>=0){S.ex=Object.assign({},S.ex,{[d.ex]:v});update()}return}
+  if(t.id==="exTol"){const v=+t.value;if(t.value!==""&&v>=0&&v<=50){S.exTol=v;update()}return}
   if(t.id==="savePct"){if(t.value===""){S.savePct=null;update()}else{const v=+t.value;if(v>=0&&v<=30){S.savePct=v;update()}}return}
   if(t.id==="cont2"){if(t.value===""){S.cont2=null;update()}else{const v=+t.value;if(v>=0&&v<=20){S.cont2=v;update()}}return}
   if(t.id==="contPct"){if(t.value===""){S.contPct=null;update()}else{const v=+t.value;if(v>=0&&v<=20){S.contPct=v;update()}}return}
@@ -1787,6 +1914,7 @@ document.addEventListener("change",e=>{
   const t=e.target, d=t.dataset;
   if(t.id==="days"){S.days=+t.value;update();return}
   if(t.id==="hours"){renderS1();update();return}
+  if(t.id==="exSource"){S.exSource=t.value;update();return}
   if(t.id==="protectFloor"){S.protectFloor=t.checked;update();return}
   if(t.id==="backfill"){S.backfill=t.checked;update();return}
   if(t.id==="sdmLoc"){S.sdmLoc=t.value;update();return}
@@ -1868,6 +1996,11 @@ function summary(){
   R.termRows.forEach(t=>L.push(`| ${t.T} yr${t.T>1?"s":""}${t.T===R.term?" (selected)":""} | ${[0,1,2,3,4].map(i=>i<t.T?fmt(R.years[i].fte,1):"–").join(" | ")} | ${fmt(t.sum,1)} | ${fmt(t.avg,2)} | ${t.T===1?"–":"−"+fmt(t.vs1*100,1)+"%"} |`));
   L.push("",$("termVerdict").textContent);
   rows("s7");
+  {const ex=S.ex||{}, n=k=>Math.max(0,+ex[k]||0), exTot=EX_TIERS.reduce((x,[k])=>x+n(k),0);
+  L.push("","## Stage 8 · Fact check against the existing team","","| Tier | Existing | Our Y1 FTE |","|---|---|---|",
+    `| L2 | ${fmt(n("L2"),1)} | ${fmt(R.L2,2)} |`,`| L3 incl. SRE / automation | ${fmt(n("L3")+n("trans"),1)} | ${fmt(R.L3,2)} |`,`| Governance (SDM) | ${fmt(n("gov"),1)} | ${fmt(R.G,2)} |`,`| Other roles | ${fmt(n("other"),1)} | 0.00 |`,`| **Total** | **${fmt(exTot,1)}** | **${fmt(R.total,2)}** |`);
+  L.push("",$("exVerdict").textContent);}
+  rows("s8");
   if(S.rounding!=="none")L.push("",`## Rounding`,`- ${fmt(R.total,2)} FTE rounded to ${fmt(R.people,0)} people (${sgn(R.roundAdd,2)}). By location: ${R.locs.filter(l=>l.fte>0).map(l=>`${l.name} ${S.rounding==="total"?fmt(l.fte,2):fmt(l.people,0)}`).join(", ")}`);
   return L.join("\n");
 }
@@ -1879,7 +2012,7 @@ function copySummary(){
 }
 
 /* ---------- boot ---------- */
-function renderAll(){renderRail();renderS1();renderS2();renderS3();renderS4();renderS5();renderS6();renderS7();["s1","s2","s3","s4","s5","s6","s7"].forEach(k=>{renderAssume(k);renderRisks(k)});update();}
+function renderAll(){renderRail();renderS1();renderS2();renderS3();renderS4();renderS5();renderS6();renderS7();renderS8();["s1","s2","s3","s4","s5","s6","s7","s8"].forEach(k=>{renderAssume(k);renderRisks(k)});update();}
 renderAll();
 })();
 </script>
