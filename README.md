@@ -23,8 +23,8 @@ Values not taken from either source are marked `proposed`.
 | 3 | Skill coverage by shift: live shifts, on call outside them | Built |
 | 4 | Transformation capacity: scenario, POD share, AIOps ratio | Built |
 | 5 | Governance (SDM 1:8) and coverage-led vs effort-led comparison | Built |
-| 6 | Seniority and risk multipliers | Next |
-| 7 | Commitment term and YoY savings | Planned |
+| 6 | Seniority pyramid and contingency by complexity | Built |
+| 7 | Commitment term and YoY savings | Next |
 | 8 | Brownfield existing capacity | Planned |
 
 ## Stage 1: base team
@@ -164,6 +164,30 @@ The SDM is a separate governance tier (not L2/L3) and is based in one Stage 1 lo
 A generated sentence says which one sets the team, by how much, how much spare time a single team would have, and why the workflow's delivery team is above the single-method estimate.
 
 Default example: coverage-led 8.00, effort-led 5.53, single-method 8.00, workflow delivery 14.60. The support window sets the team (45% above effort, about 31% spare time). The SDM is 18.44 ÷ 8 = 2.30, so the team is 20.7 FTE, rostered as 23 people (9 L2, 12 L3, 2 SDM).
+
+## Stage 6: seniority and contingency
+
+**Engagement complexity** is a deal-team input. It sets both the grade pyramid and the contingency:
+
+| Complexity | Lead : Senior : Consultant | Contingency |
+|---|---|---|
+| Low: modern estate, standard CRUD apps, few integrations | 1 : 2 : 4 | 5% |
+| Medium: mixed estate, several integrations, some regulated flows | 1 : 2 : 3 | 7.5% |
+| High: legacy or regulated core, heavy integrations, data/ML pipelines | 1 : 2 : 2 | 10% |
+
+1 : 2 : 4 is the DAMO manual-estimation pyramid. The Medium and High ratios are `proposed`. The pyramid and the contingency % can both be overridden.
+
+```
+team so far = Stages 1–5
+contingency = team so far × contingency %            (5–10%, [F] 1.6)
+stage 6     = contingency × (1 + Σ active stage 6 risk %)
+```
+
+- **Contingency** is added as FTE and spread across L2/L3 in each location, in proportion to each cell.
+- **The pyramid is cost only.** It splits L2 and L3 FTE into Lead / Senior / Consultant without changing headcount. SDMs are graded Lead. Whole people per grade are allocated by largest remainder.
+- Grade costs from the pricing sheet (Lead $35–36/h, Senior $16–23/h) are applied in the pricing stage.
+
+Default example (Medium): 20.74 × 7.5% = +1.56, so the team is 22.3 FTE, rostered as 23 people. By grade: 6 Lead (including 2 SDMs), 7 Senior, 10 Consultant.
 
 ### Copy summary
 **Copy summary** puts each stage's working, the location table, the assumptions and the risks on the clipboard as Markdown, ready for the deal-review deck or notes.

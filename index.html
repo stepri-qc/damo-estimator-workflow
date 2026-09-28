@@ -311,6 +311,16 @@ details.bench h4{margin:14px 0 0;font:600 11px var(--body);letter-spacing:.08em;
 .rbar .v{font:600 14px var(--mono);text-align:right}
 @media (max-width:520px){.rbar{grid-template-columns:minmax(0,1fr) 56px}.rbar .track{grid-column:1/3;grid-row:2}}
 .verdict{border-left:3px solid var(--accent);padding:8px 12px;background:var(--accent-soft);border-radius:0 6px 6px 0;font-size:14px}
+/* stage 6 */
+.cplx{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.cplx button{border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:10px 12px;text-align:left;cursor:pointer;display:grid;gap:3px}
+.cplx button b{font:700 15px var(--display)}
+.cplx button span{font-size:12px;color:var(--muted)}
+.cplx button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.cplx button[aria-pressed="true"] b{color:var(--accent)}
+@media (max-width:520px){.cplx{grid-template-columns:minmax(0,1fr)}}
+.pyr{display:grid;gap:6px;justify-items:center;padding:8px 0}
+.pyr div{height:30px;border-radius:4px;display:flex;align-items:center;justify-content:center;font:600 12px var(--mono);color:#fff;min-width:64px;max-width:100%;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -732,7 +742,72 @@ details.bench h4{margin:14px 0 0;font:600 11px var(--body);letter-spacing:.08em;
       </div>
     </div>
 
-    <div class="stage-nav"><button class="btn" type="button" data-go="4">← Transformation</button><span class="hint">Stage 6, seniority and risk, comes next.</span></div>
+    <div class="stage-nav"><button class="btn" type="button" data-go="4">← Transformation</button><button class="btn primary" type="button" data-go="6">Next: seniority &amp; contingency →</button></div>
+  </section>
+
+  <!-- ===================== STAGE 6 ===================== -->
+  <section id="stage6" class="stage" aria-labelledby="s6h" hidden>
+    <div class="stage-head">
+      <span class="eyebrow">Stage 6 of 8</span>
+      <h2 id="s6h">Seniority and contingency</h2>
+      <p>The engagement's complexity sets two things. The seniority pyramid decides the grade mix, which changes cost later but not headcount. The contingency adds 5–10% FTE on top of the team.</p>
+    </div>
+
+    <div class="cols">
+      <div class="panel">
+        <header><h3>Inputs</h3><span class="sub">Complexity drives both</span></header>
+        <div class="field">
+          <div class="lbl">Engagement complexity</div>
+          <div class="cplx" id="cplxSeg"></div>
+        </div>
+        <div class="field">
+          <div class="lbl">Seniority pyramid <span class="tag">Lead : Senior : Consultant</span></div>
+          <div class="tgrid" id="pyrInputs"></div>
+          <div class="hint" id="pyrHint"></div>
+        </div>
+        <div class="divider"></div>
+        <div class="field">
+          <div class="lbl">Contingency <span class="tag">[F] 1.6 · 5–10%</span></div>
+          <label class="inline" for="contPct"><input id="contPct" type="number" min="0" max="20" step="0.5">% of the team from Stages 1–5</label>
+          <div class="hint" id="contHint"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <header><h3>How the number is built</h3><span class="sub">Contingency on the team, then the grade mix</span></header>
+        <div class="working" id="steps6"></div>
+        <div class="pyr" id="pyrViz" aria-hidden="true"></div>
+        <div class="loc-table">
+          <table>
+            <thead><tr><th>Grade</th><th class="r">Share</th><th class="r">L2</th><th class="r">L3</th><th class="r">SDM</th><th class="r">FTE</th><th class="r">People</th></tr></thead>
+            <tbody id="gradeCalc"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="cols even" data-stage="s6">
+      <div class="panel">
+        <header><h3>Assumptions</h3><span class="sub">Stage 6</span></header>
+        <ul class="alist" id="auto-s6"></ul>
+        <ul class="alist" id="user-s6"></ul>
+        <form class="addrow" data-addassume="s6">
+          <input type="text" id="ai-s6" placeholder="Add an assumption agreed in the review" aria-label="New assumption">
+          <button class="btn sm" type="submit">Add</button>
+        </form>
+      </div>
+      <div class="panel">
+        <header><h3>Risks &amp; FTE modifiers</h3><span class="sub">Each risk's % is applied to the contingency FTE</span></header>
+        <div class="risks" id="risks-s6"></div>
+        <form class="addrow" data-addrisk="s6">
+          <input type="text" id="ri-s6" placeholder="Add a risk" aria-label="New risk">
+          <button class="btn sm" type="submit">Add</button>
+        </form>
+        <div class="risk-sum"><span>Stage 6 risk modifier</span><span class="num" id="rt-s6"></span></div>
+      </div>
+    </div>
+
+    <div class="stage-nav"><button class="btn" type="button" data-go="5">← Governance</button><span class="hint">Stage 7, term and savings, comes next.</span></div>
   </section>
 
   <div class="upcoming">
@@ -774,7 +849,7 @@ const STAGES=[
   {n:3,t:"Skill coverage",d:"Live shifts per skill set, on call outside them.",built:true},
   {n:4,t:"Transformation",d:"Transformation POD share and AIOps engineers by scenario.",built:true},
   {n:5,t:"Governance",d:"SDM at 1:8 and coverage-led vs effort-led comparison.",built:true},
-  {n:6,t:"Seniority & risk",d:"Grade mix and overall risk multipliers on the team."},
+  {n:6,t:"Seniority",d:"Complexity sets the grade pyramid and a 5–10% contingency.",built:true},
   {n:7,t:"Term & savings",d:"Cost across 1–5 year commitments and YoY productivity savings."},
   {n:8,t:"Brownfield capacity",d:"Offset by existing client or incumbent capacity we take over."}
 ];
@@ -837,6 +912,17 @@ const SCENARIOS={
   3:{name:"Low AI · volumetrics available",pct:12.5,range:"10–15% (proposed)",ratio:4,conf:"High",cont:"8%",shape:"Pyramid → Diamond by Y3",aiops:"Y2 onwards",comm:"Fixed Fee from Day 1",band:"Standard",savings:"12–15%"},
   4:{name:"Moderate AI · volumetrics available",pct:20,range:"20%+",ratio:8,conf:"Highest",cont:"5–6%",shape:"Inverted pyramid from Y1",aiops:"Y1 full deployment",comm:"Fixed Fee + outcome-based",band:"Minimal; still recommended",savings:"15–20%"}
 };
+/* complexity → pyramid (Lead:Senior:Consultant) and contingency; Low 1:2:4 is the DAMO manual-estimation pyramid, rest proposed */
+const CPLX={
+  low:{name:"Low",desc:"Modern estate, standard CRUD apps, few integrations",pyr:[1,2,4],cont:5},
+  medium:{name:"Medium",desc:"Mixed estate, several integrations, some regulated flows",pyr:[1,2,3],cont:7.5},
+  high:{name:"High",desc:"Legacy or regulated core, heavy integrations, data/ML pipelines",pyr:[1,2,2],cont:10}
+};
+const GRADES=["Lead","Senior","Consultant"];
+const RISKS_S6=()=>[
+  {id:uid(),on:true,pct:0,title:"Senior talent availability",note:"A senior-heavy pyramid needs more Leads and Seniors than the chosen locations may supply in time. Tracked only: confirm bench before signing."},
+  {id:uid(),on:false,pct:0,title:"Client pushback on grade mix",note:"The client's rate card caps senior grades. Tracked only: agree the pyramid in the commercial assumptions."}
+];
 const RISKS_S5=()=>[
   {id:uid(),on:false,pct:25,title:"Heavy governance cadence",note:"Weekly exec reviews, monthly performance reviews, QBRs and CAB across several client stakeholder groups ([F] Sc.3 Step 4). Mitigation: agree the cadence in the SOW."},
   {id:uid(),on:true,pct:0,title:"Single SDM is a key-person dependency",note:"Tracked only: a named deputy from the delivery leads covers leave and escalation."}
@@ -875,9 +961,10 @@ function defaults(){
     onCallPct:15,
     aiMaturity:"low",transPct:null,aiRatio:"auto",
     sdmRatio:8,sdmLoc:null,
+    cplx:"medium",pyr:{},contPct:null,
     cov:{},
-    assumptions:{s1:["Service desk (L1) is provided by the client and is out of scope for this team."],s2:[],s3:[],s4:[],s5:[]},
-    risks:{s1:RISKS_S1(),s2:RISKS_S2(),s3:RISKS_S3(),s4:RISKS_S4(),s5:RISKS_S5()}
+    assumptions:{s1:["Service desk (L1) is provided by the client and is out of scope for this team."],s2:[],s3:[],s4:[],s5:[],s6:[]},
+    risks:{s1:RISKS_S1(),s2:RISKS_S2(),s3:RISKS_S3(),s4:RISKS_S4(),s5:RISKS_S5(),s6:RISKS_S6()}
   };
 }
 function pickLoc(id){const c=LOC_CATALOG.find(l=>l.id===id);return {id:c.id,name:c.name,kind:c.kind,leave:c.leave,hol:c.hol}}
@@ -911,6 +998,7 @@ function sdmLocOf(){
   const pick=S.locations.find(l=>/Onshore/.test(l.kind))||S.locations.find(l=>/Nearshore/.test(l.kind))||S.locations[0];
   return pick.id;
 }
+function pyrOf(){const p=S.pyr&&S.pyr[S.cplx];return Array.isArray(p)&&p.length===3?p:(CPLX[S.cplx]||CPLX.medium).pyr}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 
 /* ---------- engine ---------- */
@@ -1027,13 +1115,29 @@ function compute(){
   const rp5=riskPctOf("s5");
   const s5=sdmRaw*(1+rp5);
   const sdmLoc=sdmLocOf();
-  locs.forEach(l=>{l.g=l.id===sdmLoc?s5:0; l.fte=l.c2+l.c3+l.g});
+  locs.forEach(l=>{l.g=l.id===sdmLoc?s5:0});
+
+  /* Stage 6: contingency by complexity on Stages 1–5, spread over delivery L2/L3 cells; pyramid is cost-only */
+  const sub5=sub4+s5;
+  const CX=CPLX[S.cplx]||CPLX.medium;
+  const contPct=S.contPct==null?CX.cont:+S.contPct;
+  const contRaw=sub5*contPct/100;
+  const rp6=riskPctOf("s6");
+  const s6=contRaw*(1+rp6);
+  const deliv=locs.reduce((x,l)=>x+l.c2+l.c3,0);
+  locs.forEach(l=>{
+    if(deliv>0){l.c2+=s6*l.c2/deliv; l.c3+=s6*l.c3/deliv}
+    l.fte=l.c2+l.c3+l.g;
+  });
+  const pyr=pyrOf();
+  const pSum=pyr.reduce((x,v)=>x+v,0)||1;
+  const shares=pyr.map(v=>v/pSum);
   towers.filter(t=>t.skills.length&&t.shareSum!==100).forEach(t=>warnings2.push(`${t.name}: skill shares add up to ${fmt(t.shareSum,0)}%. They are scaled to 100%.`));
   towers.filter(t=>!t.skills.length).forEach(t=>warnings2.push(`${t.name} has no skill sets, so its ${fmt(t.fte,2)} FTE is not staffed. Add at least one skill set.`));
 
   /* rounding on the combined team */
   const up=x=>Math.ceil(x-1e-6);
-  const total=s1+s2+s3+s4+s5;
+  const total=s1+s2+s3+s4+s5+s6;
   locs.forEach(l=>{
     if(S.rounding==="cell"){l.p2=up(l.c2);l.p3=up(l.c3);l.pg=l.g>0?Math.max(1,Math.round(l.g)):0;l.people=l.p2+l.p3+l.pg}
     else if(S.rounding==="loc"){l.p2=l.c2;l.p3=l.c3;l.pg=l.g;l.people=up(l.fte)}
@@ -1046,6 +1150,7 @@ function compute(){
     covSkills,topUp,rp3,s3,risk3Add:s3-topUp,sub2:s1+s2,sub3,
     volShare,volAvail,sc,SC,transPct,pod,autoRatio,ratio:aiRatioN,aiops,stage4raw,otherTrans,rp4,s4,risk4Add:s4-stage4raw,
     sub4,sdmRatio,sdmRaw,rp5,s5,risk5Add:s5-sdmRaw,sdmLoc,
+    sub5,CX,contPct,contRaw,rp6,s6,risk6Add:s6-contRaw,pyr,shares,
     total,people,roundAdd:people-total,
     L2:sum(locs,"c2"),L3:sum(locs,"c3"),G:sum(locs,"g"),L2p:sum(locs,"p2"),L3p:sum(locs,"p3"),Gp:sum(locs,"pg")};
 }
@@ -1069,7 +1174,7 @@ function renderRail(){
   $("upcoming").innerHTML=STAGES.filter(s=>!s.built).map(s=>`<div class="ucard"><span class="n">STAGE ${s.n}</span><b>${esc(s.t)}</b><span>${esc(s.d)}</span></div>`).join("");
   document.querySelectorAll(".stage").forEach(sec=>{sec.hidden=sec.id!=="stage"+S.active});
 }
-function go(n){S.active=n;if(n===3){renderS3();update();}if(n===4){renderS4();update();}if(n===5){renderS5();update();}renderRail();save();window.scrollTo({top:0,behavior:"auto"})}
+function go(n){S.active=n;if(n===3){renderS3();update();}if(n===4){renderS4();update();}if(n===5){renderS5();update();}if(n===6){renderS6();update();}renderRail();save();window.scrollTo({top:0,behavior:"auto"})}
 
 /* ---------- stage 1 static render ---------- */
 function renderS1(){
@@ -1180,7 +1285,7 @@ function updateRiskDeltas(k,base,add,pct){
 let R;
 function update(){
   R=compute();
-  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); renderBar(); save();
+  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); updateS6(); renderBar(); save();
 }
 function updateS1(){
   document.querySelectorAll("[data-cov]").forEach(b=>{const p=COV_PRESETS.find(x=>x[0]===b.dataset.cov);b.setAttribute("aria-pressed",String(S.days===p[1]&&S.hours===p[2]))});
@@ -1354,7 +1459,7 @@ function updateS5(){
   h+=wstep("1","Delivery team",fmt(R.sub4,2),`Stages 1–4: ${fmt(R.s1,2)} + ${fmt(R.s2,2)} + ${fmt(R.s3,2)} + ${fmt(R.s4,2)}`);
   h+=wstep("2","SDM",`<span class="delta add">${sgn(R.sdmRaw,2)}</span>`,`${fmt(R.sub4,2)} ÷ ${R.sdmRatio}, based in ${esc(loc?loc.name:"")}`);
   h+=wstep("3","Risk modifiers",`<span class="delta risk">${sgn(R.risk5Add,2)}</span>`,`${fmt(R.sdmRaw,2)} × ${fmt(R.rp5*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
-  h+=wstep("=","Stage 5 adds",`${sgn(R.s5,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team so far: ${fmt(R.sub4,2)} + ${fmt(R.s5,2)} = ${fmt(R.total,2)} FTE${S.rounding==="cell"?`; SDMs round to the nearest whole person: ${fmt(R.Gp,0)}`:""}`,"total");
+  h+=wstep("=","Stage 5 adds",`${sgn(R.s5,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team so far: ${fmt(R.sub4,2)} + ${fmt(R.s5,2)} = ${fmt(R.sub5,2)} FTE${S.rounding==="cell"?`; SDMs round to the nearest whole person: ${fmt(R.Gp,0)}`:""}`,"total");
   $("steps5").innerHTML=h;
 
   /* reconciliation */
@@ -1387,6 +1492,53 @@ function updateS5(){
   ]);
 }
 
+function renderS6(){
+  $("cplxSeg").innerHTML=Object.entries(CPLX).map(([k,c])=>`<button type="button" data-cplx="${k}" aria-pressed="${S.cplx===k}"><b>${c.name}</b><span>${esc(c.desc)}</span><span>Pyramid ${c.pyr.join(" : ")} · contingency ${c.cont}%</span></button>`).join("");
+  const p=pyrOf();
+  $("pyrInputs").innerHTML=GRADES.map((g,i)=>`<label for="pyr-${i}">${g}<input type="number" id="pyr-${i}" data-pyr="${i}" min="0" max="20" step="0.5" value="${p[i]}"></label>`).join("");
+  $("contPct").value=S.contPct==null?"":S.contPct;
+}
+function updateS6(){
+  const CX=R.CX;
+  document.querySelectorAll("[data-cplx]").forEach(b=>b.setAttribute("aria-pressed",String(S.cplx===b.dataset.cplx)));
+  $("pyrHint").textContent=`${CX.name} complexity default ${CX.pyr.join(" : ")}. Grade mix changes cost in the pricing stage, not headcount.`;
+  $("contPct").placeholder=String(CX.cont);
+  $("contHint").textContent=`${CX.name} complexity default ${CX.cont}%. Low 5%, Medium 7.5%, High 10%. Leave blank to use the default.`;
+  const nR=S.risks.s6.filter(r=>r.on&&+r.pct).length;
+  let h="";
+  h+=wstep("1","Team so far",fmt(R.sub5,2),`Stages 1–5`);
+  h+=wstep("2","Contingency",`<span class="delta add">${sgn(R.contRaw,2)}</span>`,`${fmt(R.sub5,2)} × ${R.contPct}% (${CX.name} complexity)`);
+  h+=wstep("3","Risk modifiers",`<span class="delta risk">${sgn(R.risk6Add,2)}</span>`,`${fmt(R.contRaw,2)} × ${fmt(R.rp6*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
+  h+=wstep("=","Stage 6 adds",`${sgn(R.s6,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team: ${fmt(R.sub5,2)} + ${fmt(R.s6,2)} = ${fmt(R.total,2)} FTE. Contingency is spread across L2 and L3 in each location.`,"total");
+  h+=wstep("4","Grade mix",R.pyr.join(" : "),`Lead : Senior : Consultant on L2 and L3. SDMs are graded Lead. No change to FTE.`);
+  $("steps6").innerHTML=h;
+  /* grade table */
+  const L2=R.L2, L3=R.L3, G=R.G;
+  const rowsF=GRADES.map((g,i)=>({g,sh:R.shares[i],l2:L2*R.shares[i],l3:L3*R.shares[i],sdm:i===0?G:0}));
+  rowsF.forEach(r=>r.fte=r.l2+r.l3+r.sdm);
+  const whole=S.rounding!=="none";
+  const sdmP=whole?(S.rounding==="cell"?R.Gp:Math.max(G>0?1:0,Math.round(G))):G;
+  const delivP=whole?Math.max(0,R.people-sdmP):0;
+  if(whole){
+    const raw=R.shares.map(x=>x*delivP), fl=raw.map(Math.floor); let left=delivP-fl.reduce((a,b)=>a+b,0);
+    raw.map((v,i)=>[v-fl[i],i]).sort((a,b)=>b[0]-a[0]).forEach(([,i])=>{if(left>0){fl[i]++;left--}});
+    rowsF.forEach((r,i)=>r.people=fl[i]+(i===0?sdmP:0));
+  }
+  $("gradeCalc").innerHTML=rowsF.map(r=>`<tr><td class="loc-name">${r.g}</td><td class="r num">${fmt(r.sh*100,0)}%</td><td class="r num">${fmt(r.l2,2)}</td><td class="r num">${fmt(r.l3,2)}</td><td class="r num">${fmt(r.sdm,2)}</td><td class="r num">${fmt(r.fte,2)}</td><td class="r num"><b>${whole?r.people:"–"}</b></td></tr>`).join("")
+    +`<tr><td><b>Total</b></td><td class="r num">100%</td><td class="r num">${fmt(L2,2)}</td><td class="r num">${fmt(L3,2)}</td><td class="r num">${fmt(G,2)}</td><td class="r num">${fmt(R.total,2)}</td><td class="r num"><b>${whole?fmt(R.people,0):"–"}</b></td></tr>`;
+  const mx=Math.max(...rowsF.map(r=>r.fte),0.0001);
+  const cols=["var(--accent)","#6B7C93","var(--round)"];
+  $("pyrViz").innerHTML=rowsF.map((r,i)=>`<div style="width:${Math.max(18,r.fte/mx*100)}%;background:${cols[i]}">${r.g} ${fmt(r.fte,1)}</div>`).join("");
+  R.gradeRows=rowsF;
+  updateRiskDeltas("s6",R.contRaw,R.risk6Add,R.rp6);
+  renderAuto("s6",[
+    ["F1",`Engagement complexity is ${CX.name}: ${CX.desc.toLowerCase()}. Set by the deal team.`,"input"],
+    ["F2",`Grade pyramid Lead : Senior : Consultant = ${R.pyr.join(" : ")} across L2 and L3. SDMs are Lead. The pyramid changes cost, not headcount.`,"DAMO pyramid 1:2:4 · proposed"],
+    ["F3",`Contingency is ${R.contPct}% of the team from Stages 1–5, added as FTE and spread across L2/L3 in each location.`,"[F] 1.6 · 5–10%"],
+    ["F4","Grade costs come from the DAMO pricing sheet (e.g. Lead $35–36/h, Senior $16–23/h) and are applied in the pricing stage.","[P]"]
+  ]);
+}
+
 function renderBar(){
   const whole=S.rounding!=="none";
   $("barFte").innerHTML=`${fmt(R.total,1)}<small>FTE</small>`;
@@ -1400,7 +1552,9 @@ function renderBar(){
   h+=`<div class="chip sep">›</div>`;
   h+=chip("add","4 · Transform",sgn(R.stage4raw),4)+chip("risk","+ Risk",sgn(R.risk4Add),4)+chip("base","Stage 4",fmt(R.sub4,1),4);
   h+=`<div class="chip sep">›</div>`;
-  h+=chip("add","5 · SDM",sgn(R.sdmRaw),5)+chip("risk","+ Risk",sgn(R.risk5Add),5)+chip("base","Stage 5",fmt(R.total,1),5);
+  h+=chip("add","5 · SDM",sgn(R.sdmRaw),5)+chip("risk","+ Risk",sgn(R.risk5Add),5)+chip("base","Stage 5",fmt(R.sub5,1),5);
+  h+=`<div class="chip sep">›</div>`;
+  h+=chip("add","6 · Contingency",sgn(R.contRaw),6)+chip("risk","+ Risk",sgn(R.risk6Add),6)+chip("base","Stage 6",fmt(R.total,1),6);
   h+=`<div class="chip sep">›</div>`;
   h+=STAGES.filter(s=>!s.built).map(s=>chip("todo",`${s.n} · ${esc(s.t)}`,"—")).join("");
   if(whole)h+=`<div class="chip sep">›</div>`+chip("round","Rounding",sgn(R.roundAdd));
@@ -1408,7 +1562,7 @@ function renderBar(){
   const tot=Math.max(R.people,R.total,0.0001);
   const seg=(v,c,t)=>`<span style="width:${Math.max(0,v)/tot*100}%;background:${c}" title="${t}"></span>`;
   $("barStack").innerHTML=seg(R.roster,"var(--accent)","Roster")+seg(R.utilAdd,"var(--accent-soft)","Utilisation")+seg(R.leaveAdd,"var(--add)","Leave backfill")+seg(R.risk1Add,"var(--risk)","Stage 1 risk")
-    +seg(R.added,"#6B7C93","Towers")+seg(R.risk2Add,"var(--risk)","Stage 2 risk")+seg(R.topUp,"#3F8C9B","Skill cover")+seg(R.risk3Add,"var(--risk)","Stage 3 risk")+seg(R.stage4raw,"#8C5FA8","Transformation")+seg(R.risk4Add,"var(--risk)","Stage 4 risk")+seg(R.sdmRaw,"#9B7B3F","SDM")+seg(R.risk5Add,"var(--risk)","Stage 5 risk")+(whole?seg(R.roundAdd,"var(--round)","Rounding"):"");
+    +seg(R.added,"#6B7C93","Towers")+seg(R.risk2Add,"var(--risk)","Stage 2 risk")+seg(R.topUp,"#3F8C9B","Skill cover")+seg(R.risk3Add,"var(--risk)","Stage 3 risk")+seg(R.stage4raw,"#8C5FA8","Transformation")+seg(R.risk4Add,"var(--risk)","Stage 4 risk")+seg(R.sdmRaw,"#9B7B3F","SDM")+seg(R.risk5Add,"var(--risk)","Stage 5 risk")+seg(R.s6,"#B0476F","Contingency")+(whole?seg(R.roundAdd,"var(--round)","Rounding"):"");
   const cell=S.rounding==="cell";
   $("barSplit").innerHTML=`<div class="r"><span>L2</span><b>${cell?fmt(R.L2p,0):fmt(R.L2,1)}</b></div>
     <div class="r"><span>L3</span><b>${cell?fmt(R.L3p,0):fmt(R.L3,1)}</b></div>
@@ -1440,6 +1594,7 @@ document.addEventListener("click",e=>{
   else if(d.tbasis){twr(t).amsBasis=d.tbasis;renderS2();update();}
   else if(d.testate){twr(t).estate=d.testate;renderS2();update();}
   else if(d.addskill){const tw=S.towers.find(x=>x.id===d.addskill);const id=$("sk-add-"+tw.id).value;if(id){tw.skills.push(mkSkill(id,0,id==="spec"?"Special skill":null));renderS2();update();}}
+  else if(d.cplx){S.cplx=d.cplx;renderS6();update();}
   else if(d.ai){S.aiMaturity=d.ai;update();}
   else if(d.kshift){const [id,i]=pair(d.kshift);const cv=covOf(id);const n=+i;cv.shifts=cv.shifts.includes(n)?cv.shifts.filter(x=>x!==n):[...cv.shifts,n].sort();renderS3();update();}
   else if(d.callall){const cv=covOf(d.callall);cv.shifts=Array.from({length:S.spd},(_,i)=>i);renderS3();update();}
@@ -1459,6 +1614,8 @@ document.addEventListener("input",e=>{
   if(t.id==="hours"){const v=Math.round(+t.value);if(v>=1&&v<=24){S.hours=v;renderSpd();update();}return}
   if(t.id==="util1"){const v=+t.value;if(t.value!==""&&v>=50&&v<=100){S.util1=v;update()}return}
   if(t.id==="fteHours"){const v=+t.value;if(v>=20&&v<=60){S.fteHours=v;update()}return}
+  if(t.id==="contPct"){if(t.value===""){S.contPct=null;update()}else{const v=+t.value;if(v>=0&&v<=20){S.contPct=v;update()}}return}
+  if(d.pyr){const v=+t.value;if(t.value!==""&&v>=0&&v<=20){const p=pyrOf().slice();p[+d.pyr]=v;S.pyr=Object.assign({},S.pyr,{[S.cplx]:p});update()}return}
   if(t.id==="sdmRatio"){const v=Math.round(+t.value);if(v>=4&&v<=20){S.sdmRatio=v;update()}return}
   if(t.id==="transPct"){if(t.value===""){S.transPct=null;update()}else{const v=+t.value;if(v>=0&&v<=50){S.transPct=v;update()}}return}
   if(t.id==="onCallPct"){const v=+t.value;if(t.value!==""&&v>=0&&v<=100){S.onCallPct=v;update()}return}
@@ -1542,10 +1699,16 @@ function summary(){
   rows("s4");
   L.push("","## Stage 5 · Governance and reconciliation");
   L.push(`- SDM: ${fmt(R.sub4,2)} ÷ ${R.sdmRatio} = ${fmt(R.sdmRaw,2)}; risk modifiers (${fmt(R.rp5*100,1)}%): ${sgn(R.risk5Add,2)}`);
-  L.push(`- **Stage 5 adds: ${fmt(R.s5,2)} FTE. Team ${fmt(R.total,2)} FTE**`);
+  L.push(`- **Stage 5 adds: ${fmt(R.s5,2)} FTE. Team so far ${fmt(R.sub5,2)} FTE**`);
   L.push("","| View | FTE |","|---|---|",`| Coverage-led (Stage 1 before risk) | ${fmt(R.buffered,2)} |`,`| Effort-led (Stage 2 tower FTE) | ${fmt(R.demand,2)} |`,`| Single-method (larger of the two) | ${fmt(Math.max(R.buffered,R.demand),2)} |`,`| This workflow, delivery (Stages 1–3) | ${fmt(R.sub3,2)} |`);
   L.push("",$("verdict").textContent);
   rows("s5");
+  L.push("","## Stage 6 · Seniority and contingency");
+  L.push(`- Complexity: ${R.CX.name}. Contingency ${R.contPct}%: ${fmt(R.sub5,2)} × ${R.contPct}% = ${fmt(R.contRaw,2)}; risk modifiers ${sgn(R.risk6Add,2)}`);
+  L.push(`- **Stage 6 adds: ${fmt(R.s6,2)} FTE. Team ${fmt(R.total,2)} FTE**`);
+  L.push(`- Pyramid Lead : Senior : Consultant = ${R.pyr.join(" : ")} (cost only)`);
+  if(R.gradeRows){L.push("","| Grade | Share | FTE | People |","|---|---|---|---|");R.gradeRows.forEach(r=>L.push(`| ${r.g} | ${fmt(r.sh*100,0)}% | ${fmt(r.fte,2)} | ${S.rounding!=="none"?r.people:"–"} |`));}
+  rows("s6");
   if(S.rounding!=="none")L.push("",`## Rounding`,`- ${fmt(R.total,2)} FTE rounded to ${fmt(R.people,0)} people (${sgn(R.roundAdd,2)}). By location: ${R.locs.filter(l=>l.fte>0).map(l=>`${l.name} ${S.rounding==="total"?fmt(l.fte,2):fmt(l.people,0)}`).join(", ")}`);
   return L.join("\n");
 }
@@ -1557,7 +1720,7 @@ function copySummary(){
 }
 
 /* ---------- boot ---------- */
-function renderAll(){renderRail();renderS1();renderS2();renderS3();renderS4();renderS5();["s1","s2","s3","s4","s5"].forEach(k=>{renderAssume(k);renderRisks(k)});update();}
+function renderAll(){renderRail();renderS1();renderS2();renderS3();renderS4();renderS5();renderS6();["s1","s2","s3","s4","s5","s6"].forEach(k=>{renderAssume(k);renderRisks(k)});update();}
 renderAll();
 })();
 </script>
