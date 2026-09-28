@@ -22,7 +22,7 @@ Values not taken from either source are marked `proposed`.
 | 2 | Service towers and complexity (FE, BE, Mobile, Infra, SRE, Data, special skills) | Built |
 | 3 | Skill coverage by shift: live shifts, on call outside them | Built |
 | 4 | Transformation capacity: scenario, POD share, AIOps ratio | Built |
-| 5 | Governance (SDM 1:8) and coverage-led vs effort-led comparison | Built |
+| 5 | Reconciliation (work team vs base team, larger wins) and SDM 1:8 | Built |
 | 6 | Seniority pyramid and contingency by complexity | Built |
 | 7 | Term and YoY savings as reduced FTE; 1- to 5-year comparison | Built |
 | 8 | Fact check against the existing team | Built |
@@ -57,6 +57,8 @@ The default example is 24×5 with three 8h shifts: India covers two shifts and R
 
 Utilisation covers productive time (training, meetings, admin). Leave and holidays are a separate step, so the two don't overlap.
 
+This base team is the **floor**. Stages 2–4 build a second team from the work (towers, specialist shift cover, transformation), and Stage 5 compares the two: the larger one is used.
+
 Rounding to whole people is applied once, to the final team, after all stages.
 
 ### Assumptions and risks
@@ -90,18 +92,15 @@ tower FTE  = (A + B) ÷ 160 hours a month, keeping the L2/L3 split from the effo
 
 **Skill sets** form the bottom layer. Each tower lists the skill sets it needs (Front end, Back end / APIs, Mobile, Infra / Cloud, SRE, Database, Data engineering, named special skills) with a share %. The tower's FTE is split by those shares (scaled to 100% if they don't add up). Defaults: AMS Back end 60 / Front end 40, IMS Infra 80 / Database 20, DMS Data engineering 100.
 
-The base team absorbs work first, at skill-set level:
+The tower team is built from the work alone. It does **not** sit on top of the base team:
 
 ```
-capacity = Stage 1 roster × spare capacity %                  (proposed 25%)
-absorbed = min(FTE of skill sets marked "Base has skill", capacity)
-added    = tower FTE − absorbed
-stage 2  = added × (1 + Σ active stage 2 risk %)
+stage 2 tower team = tower FTE × (1 + Σ active stage 2 risk %)
 ```
 
-"Base has skill" is on by default for Front end, Back end and Infra / Cloud. Added FTE is spread across locations in the same proportion as the Stage 1 roster. Stage 3 will set which shifts each skill covers.
+"Base has skill" (on by default for Front end, Back end and Infra / Cloud) means the skill set is covered on every shift by the base roster. Other skill sets get their own shift cover in Stage 3. Tower FTE is spread across locations in the same proportion as the Stage 1 roster.
 
-Default example: AMS "Customer apps" (2 S, 3 M, 1 L apps), IMS "Cloud platform" (4 environments, 2 hosting platforms, 4 databases, security) and DMS "Analytics platform" (4 data products, 10 pipelines, 3 integrations, 3 upstream, 2 downstream). That is 172 tickets a month, 5.53 tower FTE, 1.50 absorbed, +4.03 added, +4.64 after 15% risk. With the updated Stage 1, the team is 13.3 FTE.
+Default example: AMS "Customer apps" (2 S, 3 M, 1 L apps), IMS "Cloud platform" (4 environments, 2 hosting platforms, 4 databases, security) and DMS "Analytics platform" (4 data products, 10 pipelines, 3 integrations, 3 upstream, 2 downstream). That is 172 tickets a month and 5.53 tower FTE, or 6.36 after 15% risk.
 
 ## Stage 3: skill coverage by shift
 
@@ -118,7 +117,7 @@ stage 3           = top-up × (1 + Σ active stage 3 risk %)
 
 Specialists sit in the locations covering their shifts. Top-up keeps the skill's L2/L3 effort split.
 
-Default example: Database (IMS) and Data engineering (DMS) are live on shift 1 (India) and on call on shifts 2–3. Each has a floor of 1.72 FTE. Database has 0.47 FTE of effort, so it adds 1.25. Data engineering already has 1.98, so it adds nothing. With a 5% risk, Stage 3 adds 1.31, so the team is 14.6 FTE, rostered as 17 people.
+Default example: Database (IMS) and Data engineering (DMS) are live on shift 1 (India) and on call on shifts 2–3. Each has a floor of 1.72 FTE. Database has 0.47 FTE of effort, so it adds 1.25. Data engineering already has 1.98, so it adds nothing. With a 5% risk, Stage 3 adds 1.32. The run team from the work is 6.36 + 1.32 = 7.68 FTE.
 
 ## Stage 4: transformation capacity
 
@@ -133,41 +132,43 @@ The framework scenario ([F] Part 2–3) is worked out, not picked:
 | **Moderate AI** | Scenario 2: POD 15–20% (17.5), AIOps 1:8 | Scenario 4: POD 20%+ (20), AIOps 1:8 |
 
 ```
-team so far = Stages 1–3
-POD         = team so far × transformation %      (scenario midpoint, overridable)
-AIOps       = team so far ÷ ratio                 (1:8 flexes to 1:6 over 20 FTE; overridable)
+run team    = Stages 2–3 (the team from the work)
+POD         = run team × transformation %         (scenario midpoint, overridable)
+AIOps       = run team ÷ ratio                    (1:8 flexes to 1:6 over 20 FTE; overridable)
 added       = max(POD, AIOps)                     AIOps engineers sit inside the Transformation POD
 stage 4     = added × (1 + Σ active stage 4 risk %)
 ```
 
 Transformation FTE is counted as L3 and spread across locations like the Stage 1 roster. The stage also shows the scenario's guidance from the comparison matrix (confidence, Y1 contingency, team shape, AIOps timeline, commercial model, volume band clause, YoY savings target) for the deal review.
 
-Default example: no tower has ticket history and AI adoption is Low, so this is Scenario 1. The team so far is 14.60. The POD is 1.83 and AIOps at 1:4 is 3.65, so 3.65 is added, or 3.83 with a 5% risk. The team is 18.4 FTE, rostered as 21 people. With Moderate AI (Scenario 2), the POD of 2.56 exceeds AIOps at 1:8 (1.83), so Stage 4 adds 2.68 instead.
+Default example: no tower has ticket history and AI adoption is Low, so this is Scenario 1. The run team is 7.68. The POD is 0.96 and AIOps at 1:4 is 1.92, so 1.92 is added, or 2.02 with a 5% risk. The team from the work is 9.70 FTE.
 
-## Stage 5: governance and reconciliation
+## Stage 5: reconciliation and governance
+
+**Reconciliation.** The team from the work is compared with the base team from coverage:
+
+```
+work team     = Stages 2–4 (towers + specialist cover + transformation, with risk)
+base team     = Stage 1 (coverage, with utilisation, leave and risk)
+delivery team = max(work team, base team)
+lift          = max(0, base team − work team)     spread over the base team's locations and tiers
+```
+
+- **Work team larger:** it is kept, and the shifts are staffed from within it.
+- **Work team smaller:** it is lifted to the base team size. The page shows the spare share of time, which is available for enhancements or transformation.
+
+The comparison is shown as bars and a table (base team, team from the work, delivery team used) with a generated sentence saying which one sets the team and by how much.
 
 **SDM only**, at the DAMO convention of one Service Delivery Manager per 8 delivery FTE (editable):
 
 ```
-delivery team = Stages 1–4
-SDM           = delivery team ÷ 8
-stage 5       = SDM × (1 + Σ active stage 5 risk %)
+SDM     = delivery team ÷ 8
+stage 5 = SDM × (1 + Σ active stage 5 risk %)
 ```
 
 The SDM is a separate governance tier (not L2/L3) and is based in one Stage 1 location: onshore by default, then nearshore, then the first location. With whole-person rounding, SDMs round to the nearest person (at least one), not up.
 
-**Side-by-side comparison** for the review:
-
-| View | What sets it | Calculation |
-|---|---|---|
-| Coverage-led | Support window and shifts | Stage 1 roster ÷ utilisation ÷ leave availability (before risk) |
-| Effort-led | Ticket volume and complexity | Stage 2 tower (A + B) ÷ 160h (before absorption and risk) |
-| Single-method estimate | Larger of the two | Coverage as a floor on effort ([F] 1.1 C) |
-| This workflow, delivery | Stages 1–3 with risk | Base team + tower work not absorbed + specialist cover |
-
-A generated sentence says which one sets the team, by how much, how much spare time a single team would have, and why the workflow's delivery team is above the single-method estimate.
-
-Default example: coverage-led 8.00, effort-led 5.53, single-method 8.00, workflow delivery 14.60. The support window sets the team (45% above effort, about 31% spare time). The SDM is 18.44 ÷ 8 = 2.30, so the team is 20.7 FTE, rostered as 23 people (9 L2, 12 L3, 2 SDM).
+Default example: the work team is 9.70 and the base team is 8.65, so the work sets the team (+12%) and 9.70 is kept. The SDM is 9.70 ÷ 8 = 1.21. If the work team were smaller, for example 2.59 with only one small tower, it would be lifted by +6.05 to 8.65.
 
 ## Stage 6: seniority and contingency
 
@@ -182,15 +183,15 @@ Default example: coverage-led 8.00, effort-led 5.53, single-method 8.00, workflo
 1 : 2 : 4 is the DAMO manual-estimation pyramid. The Medium and High ratios are `proposed`. The pyramid and the contingency % can both be overridden.
 
 ```
-team so far = Stages 1–5
-contingency = team so far × contingency %            (5–10%, [F] 1.6)
+delivery    = Stage 5 delivery team + SDM
+contingency = delivery × contingency %                  (5–10%, [F] 1.6)
 stage 6     = contingency × (1 + Σ active stage 6 risk %)
 ```
 
 - **Contingency** is added as FTE and spread across L2/L3 in each location, in proportion to each cell.
 - **The pyramid sets the grade mix only.** It splits L2 and L3 FTE into Lead / Senior / Consultant without changing headcount. SDMs are graded Lead. Whole people per grade are allocated by largest remainder.
 
-Default example (Medium): 20.74 × 7.5% = +1.56, so the team is 22.3 FTE, rostered as 23 people. By grade: 6 Lead (including 2 SDMs), 7 Senior, 10 Consultant.
+Default example (Medium): 10.91 × 7.5% = +0.82, so the team is 11.7 FTE, rostered as 13 people (6 L2, 6 L3, 1 SDM). By grade: 3 Lead (including the SDM), 4 Senior, 6 Consultant.
 
 ## Stage 7: term and YoY savings
 
@@ -198,7 +199,7 @@ This stage is **FTE only**. No cost or rate factors are used anywhere in the too
 
 ```
 floor      = Stage 1 base team (kept whole every year; can be switched off)
-base(Yn)   = floor + (Stages 1–5 − floor) × (1 − savings %)^(n−1)
+base(Yn)   = floor + (delivery team + SDM − floor) × (1 − savings %)^(n−1)
 FTE(Yn)    = base(Yn) × (1 + contingency(Yn)) × (1 + Σ active stage 7 risk %, from Y2)
              contingency(Y1) = Stage 6 %, contingency(Y2+) = min(Stage 6 %, 6%)
 ```
@@ -207,7 +208,7 @@ FTE(Yn)    = base(Yn) × (1 + contingency(Yn)) × (1 + Σ active stage 7 risk %,
 - **Contingency tapers** after Y1, following the framework's Y1 8–10% → Y2+ 5–7% ([F] 1.6).
 - **Term comparison:** a table shows 1- to 5-year terms with FTE by year, FTE-years, average FTE a year and the reduction against a 1-year contract. A generated sentence explains why a 3-year or longer term is better.
 
-Default example (3-year term): 22.3 → 20.3 → 18.8, averaging 20.44 FTE a year. That is 8% below a 1-year contract; 5 years averages 19.0 (−15%). Without the coverage floor, a 3-year term averages 19.3 (−14%).
+Default example (3-year term): 11.7 → 11.2 → 11.0, averaging 11.31 FTE a year. That is 4% below a 1-year contract; 5 years averages 11.03 (−6%). The savings are small here because the 8.65 FTE coverage floor is most of the team. Switch the floor off, or use a larger estate, to see the full effect.
 
 ## Stage 8: fact check against the existing team
 
@@ -228,7 +229,7 @@ Each tier and the total is marked consistent, above or below. Bars compare today
 
 It always ends with where the team lands by the end of the term against today, and it flags verbal estimates as directional. Risks in this stage are tracked only.
 
-Default example: the existing team is 24 FTE (11 L2, 8 L3, 1 SRE, 2 managers, 2 other). Our Year 1 is 22.3 (−7%, consistent), and Year 3 is 18.8 (−22% against today).
+Default example: the existing team is 13 FTE (6 L2, 4 L3, 1 SRE, 1 manager, 1 other). Our Year 1 is 11.7 (−10%, consistent), and Year 3 is 11.0 (−15% against today).
 
 ### Copy summary
 **Copy summary** puts each stage's working, the location table, the assumptions and the risks on the clipboard as Markdown, ready for the deal-review deck or notes.

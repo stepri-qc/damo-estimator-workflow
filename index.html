@@ -373,7 +373,7 @@ tr.sel td{background:var(--accent-soft)}
     <div class="stage-head">
       <span class="eyebrow">Stage 1 of 8</span>
       <h2 id="s1h">Base team from coverage, location and shifts</h2>
-      <p>The support window sets the smallest L2 + L3 team that can staff every shift. No ticket volumes are used yet. Later stages add to this number, and the bar at the bottom shows each change.</p>
+      <p>The support window sets the smallest L2 + L3 team that can staff every shift. No ticket volumes are used. Stages 2–4 build a second team from the work itself. The two are compared at Stage 5: the larger one is used, so the base team is the floor.</p>
     </div>
 
     <div class="cols">
@@ -519,12 +519,6 @@ tr.sel td{background:var(--accent-soft)}
 
         <div class="divider"></div>
 
-        <div class="field">
-          <div class="lbl">Base team spare capacity <span class="tag">proposed</span></div>
-          <label class="inline" for="sparePct"><input id="sparePct" type="number" min="0" max="80" step="5">% of the Stage 1 roster can take on tower work</label>
-          <div class="hint">A shift roster sized for coverage has quiet time. The base team uses it on skill sets it already has before anyone is added.</div>
-        </div>
-
         <details class="bench">
           <summary>Benchmarks used in this stage</summary>
           <div id="benchBox"></div>
@@ -542,7 +536,7 @@ tr.sel td{background:var(--accent-soft)}
         </div>
         <div class="loc-table">
           <table>
-            <thead><tr><th>Skill set</th><th class="r">Share</th><th class="r">FTE</th><th>Base has skill</th><th class="r">Absorbed</th><th class="r">Added</th></tr></thead>
+            <thead><tr><th>Skill set</th><th class="r">Share</th><th class="r">FTE</th><th>Base has skill</th></tr></thead>
             <tbody id="skillCalc"></tbody>
           </table>
         </div>
@@ -659,7 +653,7 @@ tr.sel td{background:var(--accent-soft)}
         <div class="divider"></div>
         <div class="field">
           <div class="lbl">Transformation POD share</div>
-          <label class="inline" for="transPct"><input id="transPct" type="number" min="0" max="50" step="0.5">% of the team so far</label>
+          <label class="inline" for="transPct"><input id="transPct" type="number" min="0" max="50" step="0.5">% of the run team from the work (Stages 2–3)</label>
           <div class="hint" id="transHint"></div>
         </div>
         <div class="field">
@@ -702,15 +696,15 @@ tr.sel td{background:var(--accent-soft)}
       </div>
     </div>
 
-    <div class="stage-nav"><button class="btn" type="button" data-go="3">← Skill coverage</button><button class="btn primary" type="button" data-go="5">Next: governance →</button></div>
+    <div class="stage-nav"><button class="btn" type="button" data-go="3">← Skill coverage</button><button class="btn primary" type="button" data-go="5">Next: reconcile &amp; SDM →</button></div>
   </section>
 
   <!-- ===================== STAGE 5 ===================== -->
   <section id="stage5" class="stage" aria-labelledby="s5h" hidden>
     <div class="stage-head">
       <span class="eyebrow">Stage 5 of 8</span>
-      <h2 id="s5h">Governance and reconciliation</h2>
-      <p>A Service Delivery Manager is added at one per eight delivery FTE. Below it, the coverage-led and effort-led sizes are shown side by side, so the review can see which one sets the team and why the workflow total is higher than either.</p>
+      <h2 id="s5h">Reconciliation and governance</h2>
+      <p>The team from the work (Stages 2–4) is compared with the base team from coverage (Stage 1). If the work team is larger it is kept; if it is smaller it is lifted to the base team. A Service Delivery Manager is then added at one per eight delivery FTE.</p>
     </div>
 
     <div class="cols">
@@ -733,7 +727,7 @@ tr.sel td{background:var(--accent-soft)}
     </div>
 
     <div class="panel" style="margin-top:20px">
-      <header><h3>Coverage-led vs effort-led</h3><span class="sub">Side by side, before risk modifiers unless stated</span></header>
+      <header><h3>Base team vs team from the work</h3><span class="sub">The larger one is used</span></header>
       <div class="recon" id="recon"></div>
       <div class="loc-table">
         <table>
@@ -791,7 +785,7 @@ tr.sel td{background:var(--accent-soft)}
         <div class="divider"></div>
         <div class="field">
           <div class="lbl">Contingency <span class="tag">[F] 1.6 · 5–10%</span></div>
-          <label class="inline" for="contPct"><input id="contPct" type="number" min="0" max="20" step="0.5">% of the team from Stages 1–5</label>
+          <label class="inline" for="contPct"><input id="contPct" type="number" min="0" max="20" step="0.5">% of the delivery team plus SDM</label>
           <div class="hint" id="contHint"></div>
         </div>
       </div>
@@ -830,7 +824,7 @@ tr.sel td{background:var(--accent-soft)}
       </div>
     </div>
 
-    <div class="stage-nav"><button class="btn" type="button" data-go="5">← Governance</button><button class="btn primary" type="button" data-go="7">Next: term &amp; savings →</button></div>
+    <div class="stage-nav"><button class="btn" type="button" data-go="5">← Reconcile &amp; SDM</button><button class="btn primary" type="button" data-go="7">Next: term &amp; savings →</button></div>
   </section>
 
   <!-- ===================== STAGE 7 ===================== -->
@@ -1011,7 +1005,7 @@ const STAGES=[
   {n:2,t:"Service towers",d:"AMS, IMS and DMS demand from volumetrics or complexity, then skill sets.",built:true},
   {n:3,t:"Skill coverage",d:"Live shifts per skill set, on call outside them.",built:true},
   {n:4,t:"Transformation",d:"Transformation POD share and AIOps engineers by scenario.",built:true},
-  {n:5,t:"Governance",d:"SDM at 1:8 and coverage-led vs effort-led comparison.",built:true},
+  {n:5,t:"Reconcile & SDM",d:"Work team vs base team, larger wins; SDM at 1:8.",built:true},
   {n:6,t:"Seniority",d:"Complexity sets the grade pyramid and a 5–10% contingency.",built:true},
   {n:7,t:"Term & savings",d:"Year-by-year FTE and the benefit of a longer term.",built:true},
   {n:8,t:"Fact check",d:"Our estimate against the existing team.",built:true}
@@ -1065,7 +1059,7 @@ const RISKS_S2=()=>[
   {id:uid(),on:true,pct:10,title:"No volumetrics for some towers",note:"Demand comes from a complexity or MAU proxy, not ticket history. Mitigation: volume band clause in the SOW and a request for 3–6 months of tickets ([F] Sc.1)."},
   {id:uid(),on:true,pct:5,title:"Undiscovered integrations and dependencies",note:"Hidden interfaces raise L3 effort after takeover. Mitigation: portfolio analysis as a pre-proposal investment ([F] Sc.1 risk log)."},
   {id:uid(),on:false,pct:5,title:"Niche skill availability",note:"Special or legacy skills are hard to hire in the chosen locations. Mitigation: named bench or partner capacity."},
-  {id:uid(),on:true,pct:0,title:"Base team spare capacity overestimated",note:"If quiet time on shifts is lower than assumed, the base team absorbs less. Tracked only; revisit in Stage 5."}
+  {id:uid(),on:true,pct:0,title:"Work team below the coverage floor",note:"If the work needs fewer people than the shifts, the team is lifted to the base team and has spare time. Tracked only: use it for transformation or enhancements."}
 ];
 /* [F] Part 2 scenarios and Part 3 comparison matrix. pct = Transformation POD share of effort
    (Sc1 10–15%, Sc2 15–20%, Sc4 20%+; Sc3 not stated, proposed 10–15% like Sc1) */
@@ -1139,7 +1133,7 @@ function defaults(){
     sdmRatio:8,sdmLoc:null,
     cplx:"medium",pyr:{},contPct:null,
     term:3,savePct:null,cont2:null,protectFloor:true,
-    ex:{L2:11,L3:8,trans:1,gov:2,other:2},exSource:"rfp",exTol:10,
+    ex:{L2:6,L3:4,trans:1,gov:1,other:1},exSource:"rfp",exTol:10,
     cov:{},
     assumptions:{s1:["Service desk (L1) is provided by the client and is out of scope for this team."],s2:[],s3:[],s4:[],s5:[],s6:[],s7:[],s8:[]},
     risks:{s1:RISKS_S1(),s2:RISKS_S2(),s3:RISKS_S3(),s4:RISKS_S4(),s5:RISKS_S5(),s6:RISKS_S6(),s7:RISKS_S7(),s8:RISKS_S8()}
@@ -1227,7 +1221,7 @@ function compute(){
   const skills=towers.flatMap(t=>t.skills);
   const demand=sum(towers,"fte");
   const demAbs=skills.filter(k=>k.absorb).reduce((s2,k)=>s2+k.fte,0);
-  const capacity=roster*S.sparePct/100;
+  const capacity=0; /* no absorption: the work team is compared with the base team after Stage 4 */
   const absorbed=Math.min(demAbs,capacity);
   const ratio=demAbs>0?absorbed/demAbs:0;
   skills.forEach(k=>{k.absorbed=k.absorb?k.fte*ratio:0;k.added=k.fte-k.absorbed;const f=k.fte>0?k.added/k.fte:0;k.a2=k.f2*f;k.a3=k.f3*f});
@@ -1263,7 +1257,7 @@ function compute(){
   const topUp=covSkills.reduce((s3,k)=>s3+k.top,0);
   const s3=topUp*(1+rp3);
   covSkills.forEach(k=>{if(!(k.top>0))return;k.byLoc.forEach(x=>{const l=locs.find(y=>y.id===x.id);const sh=k.floor>0?x.floor/k.floor:0;const v=k.top*(1+rp3)*sh;l.u2+=v*(1-k.l3s);l.u3+=v*k.l3s})});
-  const sub3=s1+s2+s3;
+  const sub3=s2+s3; /* run team from the work (Stages 2–3) */
 
   /* Stage 4: scenario from AI maturity × volumetric availability; Transformation POD % vs AIOps ratio, AIOps inside the POD */
   const volFte=towers.filter(t=>t.vol).reduce((x,t)=>x+t.fte,0);
@@ -1284,11 +1278,19 @@ function compute(){
   locs.forEach(l=>{
     const sh=roster>0?l.roster/shareBase:1/locs.length;
     l.v3=s4*sh;
-    l.c2=l.k2+l.t2+l.u2; l.c3=l.k3+l.t3+l.u3+l.v3;
+  });
+
+  /* Reconcile: team from the work (Stages 2–4) vs base team from coverage (Stage 1). Keep the larger;
+     if the work team is smaller, lift it to the base team using the base team's location/tier layout. */
+  const workTeam=sub3+s4;
+  const lift=Math.max(0,s1-workTeam);
+  locs.forEach(l=>{
+    const f2=l.t2+l.u2, f3=l.t3+l.u3+l.v3;
+    l.c2=f2+(s1>0?lift*l.k2/s1:0); l.c3=f3+(s1>0?lift*l.k3/s1:0);
   });
 
   /* Stage 5: SDM at 1:N of the delivery team (Stages 1–4), governance tier, in one location */
-  const sub4=sub3+s4;
+  const sub4=workTeam+lift; /* delivery team = max(work team, base team) */
   const sdmRatio=Math.max(1,+S.sdmRatio||8);
   const sdmRaw=sub4/sdmRatio;
   const rp5=riskPctOf("s5");
@@ -1333,7 +1335,7 @@ function compute(){
 
   /* rounding on the combined team */
   const up=x=>Math.ceil(x-1e-6);
-  const total=s1+s2+s3+s4+s5+s6;
+  const total=sub5+s6;
   locs.forEach(l=>{
     if(S.rounding==="cell"){l.p2=up(l.c2);l.p3=up(l.c3);l.pg=l.g>0?Math.max(1,Math.round(l.g)):0;l.people=l.p2+l.p3+l.pg}
     else if(S.rounding==="loc"){l.p2=l.c2;l.p3=l.c3;l.pg=l.g;l.people=up(l.fte)}
@@ -1343,7 +1345,7 @@ function compute(){
   return {days,spd,shiftLen,a,b,c,framework,rp1,locs,roster,buffered,s1,warnings,
     u1,utilised,utilAdd:utilised-roster,leaveAdd:buffered-utilised,risk1Add:s1-buffered,
     towers,skills,demand,demAbs,capacity,absorbed,added,add2,add3,rp2,s2,risk2Add:s2-added,warnings2,
-    covSkills,topUp,rp3,s3,risk3Add:s3-topUp,sub2:s1+s2,sub3,
+    covSkills,topUp,rp3,s3,risk3Add:s3-topUp,sub2:s2,sub3,workTeam,lift,
     volShare,volAvail,sc,SC,transPct,pod,autoRatio,ratio:aiRatioN,aiops,stage4raw,otherTrans,rp4,s4,risk4Add:s4-stage4raw,
     sub4,sdmRatio,sdmRaw,rp5,s5,risk5Add:s5-sdmRaw,sdmLoc,
     sub5,CX,contPct,contRaw,rp6,s6,risk6Add:s6-contRaw,pyr,shares,
@@ -1444,7 +1446,6 @@ function renderS2(){
         <div class="skfoot"><div class="addrow"><select id="sk-add-${t.id}" aria-label="Add a skill set">${opts}</select><button type="button" class="btn sm" data-addskill="${t.id}">Add skill set</button></div><span class="delta add" id="tadd-${t.id}"></span></div>
       </div>
     </div>`}).join(""):`<div class="empty">No towers yet. Add AMS, IMS or DMS.</div>`;
-  $("sparePct").value=S.sparePct;
   const B=S.bench;
   const bi=(path,label,val,step=1,max=1000)=>`<label for="bn-${path}">${label}<input type="number" id="bn-${path}" data-bn="${path}" min="0" max="${max}" step="${step}" value="${val}"></label>`;
   $("benchBox").innerHTML=`<h4>Ticket cascade and effort · [F] 1.1, 1.4, 1.5</h4><div class="tgrid">
@@ -1516,7 +1517,7 @@ function updateS1(){
     ["A1",`Coverage is ${covLabel()}: ${S.hours} hours a day, ${S.days} days a week, split into ${S.spd} shift${S.spd>1?"s":""} of ${sl} hours. Shift handover overlap is absorbed inside the shift.`,"[F] 1.1 C"],
     ["A2",`Each FTE works ${S.fteHours} contracted hours a week, so covers ${fmt(R.b,2)} shifts.`,"[F] p.3 b"],
     ["A3",`Each resource is productive ${S.util1}% of contracted hours (training, meetings, admin), so the roster is divided by ${S.util1}%. Leave and holidays are handled separately.`,"[F] G6"],
-    ["A4",`At least ${S.perShift.L2} L2 and ${S.perShift.L3} L3 on every shift, whatever the ticket volume. Ticket-driven effort is added in Stage 2.`,"[F] p.3 c"],
+    ["A4",`At least ${S.perShift.L2} L2 and ${S.perShift.L3} L3 on every shift, whatever the ticket volume. Ticket-driven effort is sized separately from Stage 2 and compared with this team.`,"[F] p.3 c"],
     ["A5",`Shifts are covered from ${R.locs.filter(l=>l.slots).map(l=>`${l.name} (${l.slots})`).join(", ")}. Each location keeps its own roster.`,"[F] G3"],
     ["A6",S.backfill?`Leave and public holidays are backfilled on a ${WORK_DAYS}-day working year per location.`:"No backfill for leave or public holidays. The client accepts reduced cover on those days.","proposed"],
     ["A7","The tool sizes FTE only. Rates, cost and price are out of scope.","agreed"]
@@ -1535,7 +1536,7 @@ function updateS2(){
       if(t.vol||cpxKnown(t))delete d.dataset.impl;
       d.innerHTML=`${esc(how)} ≈ <b>${fmt(t.tickets,0)}</b> tickets/mo → L2 ${fmt(t.l2t,1)}, L3 ${fmt(t.l3t,1)} → <b>${fmt(t.fte,2)} FTE</b> (L2 ${fmt(t.fte2,2)} · L3 ${fmt(t.fte3,2)})`+(d.dataset.impl?`<br>${esc(d.dataset.impl)}`:"");
     }
-    const a=$("tadd-"+t.id); if(a)a.textContent=`adds ${sgn(t.added,2)} after absorption`;
+    const a=$("tadd-"+t.id); if(a)a.textContent=`${fmt(t.fte,2)} FTE from the work`;
   });
   const nR=S.risks.s2.filter(r=>r.on&&+r.pct).length;
   const tk=R.towers.reduce((s2,t)=>s2+t.tickets,0), l2=R.towers.reduce((s2,t)=>s2+t.l2t,0), l3=R.towers.reduce((s2,t)=>s2+t.l3t,0);
@@ -1548,17 +1549,15 @@ function updateS2(){
   h+=wstep("3","A · Ticketing effort",`${fmt(A,0)} h`,`(L2 × ${B.are2}h + L3 × ${B.are3}h) ÷ ${B.util}% utilisation`);
   h+=wstep("4","B · Non-ticketing effort",`${fmt(Bh,0)} h`,`A × ${B.bModern}% modern or ${B.bLegacy}% legacy estate, per tower`);
   h+=wstep("5","Tower FTE",fmt(R.demand,2),`(A + B) ÷ ${B.hrsMonth} hours a month`);
-  h+=wstep("6","Absorbed by the base team",`<span class="delta round">${sgn(-R.absorbed,2)}</span>`,`Lower of skill-matched FTE ${fmt(R.demAbs,2)} and spare capacity ${fmt(R.roster,2)} × ${S.sparePct}% = ${fmt(R.capacity,2)}`);
-  h+=wstep("7","Added by towers",`<span class="delta add">${sgn(R.added,2)}</span>`,`${fmt(R.demand,2)} − ${fmt(R.absorbed,2)} · L2 ${fmt(R.add2,2)} · L3 ${fmt(R.add3,2)}`);
-  h+=wstep("8","Risk modifiers",`<span class="delta risk">${sgn(R.risk2Add,2)}</span>`,`${fmt(R.added,2)} × ${fmt(R.rp2*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
-  h+=wstep("=","Stage 2 adds",`${sgn(R.s2,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team so far: ${fmt(R.s1,2)} + ${fmt(R.s2,2)} = ${fmt(R.sub2,2)} FTE`,"total");
+  h+=wstep("6","Risk modifiers",`<span class="delta risk">${sgn(R.risk2Add,2)}</span>`,`${fmt(R.added,2)} × ${fmt(R.rp2*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
+  h+=wstep("=","Tower team",`${fmt(R.s2,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Built from the work, separately from the ${fmt(R.s1,2)} FTE base team · L2 ${fmt(R.add2,2)} · L3 ${fmt(R.add3,2)} before risk. The two are compared at Stage 5.`,"total");
   $("steps2").innerHTML=h;
   $("towerCalc").innerHTML=R.towers.length?R.towers.map(t=>`<tr><td class="loc-name">${esc(t.name)}<small>${t.kind}${t.estate==="legacy"?" · legacy":""}</small></td><td>${esc(t.src)}</td><td class="r num">${fmt(t.tickets,0)}</td><td class="r num">${fmt(t.l2t,1)}</td><td class="r num">${fmt(t.l3t,1)}</td><td class="r num">${fmt(t.A,0)}</td><td class="r num">${fmt(t.Bh,0)}</td><td class="r num"><b>${fmt(t.fte,2)}</b></td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td></td><td class="r num">${fmt(tk,0)}</td><td class="r num">${fmt(l2,1)}</td><td class="r num">${fmt(l3,1)}</td><td class="r num">${fmt(A,0)}</td><td class="r num">${fmt(Bh,0)}</td><td class="r num"><b>${fmt(R.demand,2)}</b></td></tr>`
     :`<tr><td colspan="8" class="hint">Add a tower to see its effect.</td></tr>`;
-  $("skillCalc").innerHTML=R.skills.length?R.skills.map(k=>`<tr><td class="loc-name">${esc(k.name)}<small>${esc(k.tower)}</small></td><td class="r num">${fmt(k.norm*100,0)}%</td><td class="r num">${fmt(k.fte,2)}</td><td>${k.absorb?'<span class="yes">Yes</span>':'<span class="no">No</span>'}</td><td class="r num">${fmt(k.absorbed,2)}</td><td class="r num"><b>${fmt(k.added,2)}</b></td></tr>`).join("")
-    +`<tr><td><b>Total</b></td><td></td><td class="r num">${fmt(R.demand,2)}</td><td></td><td class="r num">${fmt(R.absorbed,2)}</td><td class="r num"><b>${fmt(R.added,2)}</b></td></tr>`
-    :`<tr><td colspan="6" class="hint">No skill sets yet.</td></tr>`;
+  $("skillCalc").innerHTML=R.skills.length?R.skills.map(k=>`<tr><td class="loc-name">${esc(k.name)}<small>${esc(k.tower)}</small></td><td class="r num">${fmt(k.norm*100,0)}%</td><td class="r num">${fmt(k.fte,2)}</td><td>${k.absorb?'<span class="yes">Yes, every shift</span>':'<span class="no">No, set shifts in Stage 3</span>'}</td></tr>`).join("")
+    +`<tr><td><b>Total</b></td><td></td><td class="r num"><b>${fmt(R.demand,2)}</b></td><td></td></tr>`
+    :`<tr><td colspan="4" class="hint">No skill sets yet.</td></tr>`;
   updateRiskDeltas("s2",R.added,R.risk2Add,R.rp2);
   const proxy=R.towers.filter(t=>!t.vol), vol=R.towers.filter(t=>t.vol);
   renderAuto("s2",[
@@ -1572,7 +1571,7 @@ function updateS2(){
       if(!vol.length)parts.push("Treat Stage 2 as low-confidence until ticket history is shared.");
       return parts.join(" ")||"No towers.";})(),"[F] Sc.1 Steps 1–2"],
     ["B5",`IMS and DMS proxies use complexity points × tickets per point (IMS ${B.ims.tpp}, DMS ${B.dms.tpp}). These are calibration targets.`,"proposed"],
-    ["B6",`The base team can spend ${S.sparePct}% of its roster (${fmt(R.capacity,2)} FTE) on skill sets it already has: ${abs.length?abs.map(kn).join(", "):"none"}. Other skill sets are staffed in full on top.`,"proposed"],
+    ["B6",`Skill sets the base team already has (${abs.length?abs.map(kn).join(", "):"none"}) are covered on every shift by the base roster. Other skill sets get their own shift cover in Stage 3.`,"proposed"],
     ["B7","Tower FTE keeps its effort-based L2/L3 split and is spread across locations like the Stage 1 roster. Stage 3 sets which shifts each skill covers.","proposed"]
   ]);
 }
@@ -1602,7 +1601,7 @@ function updateS3(){
   h+=wstep("3","Already staffed from Stage 2",fmt(hv,2),"Each skill set's Stage 2 FTE after absorption and risk");
   h+=wstep("4","Top-up for coverage",`<span class="delta add">${sgn(R.topUp,2)}</span>`,"Sum over skill sets of max(0, floor − Stage 2 FTE)");
   h+=wstep("5","Risk modifiers",`<span class="delta risk">${sgn(R.risk3Add,2)}</span>`,`${fmt(R.topUp,2)} × ${fmt(R.rp3*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
-  h+=wstep("=","Stage 3 adds",`${sgn(R.s3,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team so far: ${fmt(R.sub2,2)} + ${fmt(R.s3,2)} = ${fmt(R.sub3,2)} FTE`,"total");
+  h+=wstep("=","Stage 3 adds",`${sgn(R.s3,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Run team from the work: ${fmt(R.s2,2)} + ${fmt(R.s3,2)} = ${fmt(R.sub3,2)} FTE`,"total");
   $("steps3").innerHTML=h;
   $("covCalc").innerHTML=R.covSkills.length?R.covSkills.map(k=>`<tr><td class="loc-name">${esc(k.name)}<small>${esc(k.tower)}</small></td><td class="r num">${k.live.length}</td><td class="r num">${k.onCall}</td><td class="r num">${fmt(k.floor,2)}</td><td class="r num">${fmt(k.have,2)}</td><td class="r num"><b>${fmt(k.top,2)}</b></td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td></td><td></td><td class="r num">${fmt(fl,2)}</td><td class="r num">${fmt(hv,2)}</td><td class="r num"><b>${fmt(R.topUp,2)}</b></td></tr>`
@@ -1633,20 +1632,20 @@ function updateS4(){
   $("ratioHint").textContent=`Scenario ${R.sc} default 1:${SC.ratio}${SC.ratio===8?"; flexes to 1:6 when the team is over 20 FTE":""}. Using 1:${R.ratio}.`;
   const nR=S.risks.s4.filter(r=>r.on&&+r.pct).length;
   let h="";
-  h+=wstep("1","Team so far",fmt(R.sub3,2),`Stages 1–3: ${fmt(R.s1,2)} + ${fmt(R.s2,2)} + ${fmt(R.s3,2)}`);
+  h+=wstep("1","Run team from the work",fmt(R.sub3,2),`Stages 2–3: ${fmt(R.s2,2)} + ${fmt(R.s3,2)}`);
   h+=wstep("2","Scenario",String(R.sc),`${esc(SC.name)}`);
   h+=wstep("3","Transformation POD",fmt(R.pod,2),`${fmt(R.sub3,2)} × ${R.transPct}%`);
   h+=wstep("4","AIOps engineers",fmt(R.aiops,2),`${fmt(R.sub3,2)} ÷ ${R.ratio} (1 AIOps engineer per ${R.ratio} delivery FTE)`);
   h+=wstep("5","Transformation added",`<span class="delta add">${sgn(R.stage4raw,2)}</span>`,`Larger of the two: AIOps ${fmt(R.aiops,2)} + other transformation (SRE, automation, CI/CD) ${fmt(R.otherTrans,2)}`);
   h+=wstep("6","Risk modifiers",`<span class="delta risk">${sgn(R.risk4Add,2)}</span>`,`${fmt(R.stage4raw,2)} × ${fmt(R.rp4*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
-  h+=wstep("=","Stage 4 adds",`${sgn(R.s4,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team so far: ${fmt(R.sub3,2)} + ${fmt(R.s4,2)} = ${fmt(R.sub4,2)} FTE`,"total");
+  h+=wstep("=","Stage 4 adds",`${sgn(R.s4,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team from the work: ${fmt(R.sub3,2)} + ${fmt(R.s4,2)} = ${fmt(R.workTeam,2)} FTE, compared with the ${fmt(R.s1,2)} FTE base team at Stage 5`,"total");
   $("steps4").innerHTML=h;
   $("scFacts").innerHTML=[["Estimation confidence",SC.conf],["Y1 contingency",SC.cont],["Team shape",SC.shape],["AIOps timeline",SC.aiops],["Commercial model",SC.comm],["Volume band clause",SC.band],["YoY savings target",SC.savings]].map(([k,v])=>`<div><span>${k}</span><b>${esc(v)}</b></div>`).join("");
   updateRiskDeltas("s4",R.stage4raw,R.risk4Add,R.rp4);
   renderAuto("s4",[
     ["D1",`Scenario ${R.sc} (${SC.name}). Volumetrics count as available when towers with ticket history carry at least half of the tower FTE.`,"[F] Part 2–3"],
-    ["D2",`Transformation POD is ${R.transPct}% of the team so far (scenario guidance ${SC.range}). It covers SRE, automation, CI/CD and AI adoption.`,"[F] 1.7"],
-    ["D3",`AIOps engineers are sized at 1:${R.ratio} of the delivery team and sit inside the Transformation POD, so the larger of the two is added.`,"[F] Sc.4 Step 3"],
+    ["D2",`Transformation POD is ${R.transPct}% of the run team from the work (Stages 2–3) (scenario guidance ${SC.range}). It covers SRE, automation, CI/CD and AI adoption.`,"[F] 1.7"],
+    ["D3",`AIOps engineers are sized at 1:${R.ratio} of the run team from the work and sit inside the Transformation POD, so the larger of the two is added.`,"[F] Sc.4 Step 3"],
     ["D4",`AIOps timeline for this scenario: ${SC.aiops}. This stage sizes steady-state capacity; the year-by-year ramp is set in Stage 7.`,"[F] Part 3"],
     ["D5","AI tools, licences, tokens and hyperscaler AI API costs are paid by the client.","[F] G5"],
     ["D6","Transformation FTE is engineering capacity (L3) and is spread across locations like the Stage 1 roster.","proposed"]
@@ -1662,31 +1661,28 @@ function updateS5(){
   const loc=S.locations.find(l=>l.id===R.sdmLoc);
   const nR=S.risks.s5.filter(r=>r.on&&+r.pct).length;
   let h="";
-  h+=wstep("1","Delivery team",fmt(R.sub4,2),`Stages 1–4: ${fmt(R.s1,2)} + ${fmt(R.s2,2)} + ${fmt(R.s3,2)} + ${fmt(R.s4,2)}`);
-  h+=wstep("2","SDM",`<span class="delta add">${sgn(R.sdmRaw,2)}</span>`,`${fmt(R.sub4,2)} ÷ ${R.sdmRatio}, based in ${esc(loc?loc.name:"")}`);
-  h+=wstep("3","Risk modifiers",`<span class="delta risk">${sgn(R.risk5Add,2)}</span>`,`${fmt(R.sdmRaw,2)} × ${fmt(R.rp5*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
+  h+=wstep("1","Team from the work",fmt(R.workTeam,2),`Stages 2–4: ${fmt(R.s2,2)} + ${fmt(R.s3,2)} + ${fmt(R.s4,2)}`);
+  h+=wstep("2","Base team from coverage",fmt(R.s1,2),"Stage 1, the floor");
+  h+=wstep("3","Delivery team",R.lift>0?`<span class="delta round">${sgn(R.lift,2)}</span> ${fmt(R.sub4,2)}`:fmt(R.sub4,2),R.lift>0?`Work team is smaller, so it is lifted to the base team (+${fmt(R.lift,2)}), following the base team's locations and tiers`:`Work team is larger than the base team, so it is kept`);
+  h+=wstep("4","SDM",`<span class="delta add">${sgn(R.sdmRaw,2)}</span>`,`${fmt(R.sub4,2)} ÷ ${R.sdmRatio}, based in ${esc(loc?loc.name:"")}`);
+  h+=wstep("5","Risk modifiers",`<span class="delta risk">${sgn(R.risk5Add,2)}</span>`,`${fmt(R.sdmRaw,2)} × ${fmt(R.rp5*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
   h+=wstep("=","Stage 5 adds",`${sgn(R.s5,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team so far: ${fmt(R.sub4,2)} + ${fmt(R.s5,2)} = ${fmt(R.sub5,2)} FTE${S.rounding==="cell"?`; SDMs round to the nearest whole person: ${fmt(R.Gp,0)}`:""}`,"total");
   $("steps5").innerHTML=h;
 
   /* reconciliation */
-  const cov=R.buffered, eff=R.demand, single=Math.max(cov,eff), wf=R.sub3;
+  const cov=R.s1, wk=R.workTeam, used=R.sub4;
   const rows=[
-    ["Coverage-led","Support window and shifts",`Stage 1 roster ${fmt(R.roster,2)} ÷ ${S.util1}% ÷ leave availability`,cov,"var(--accent)"],
-    ["Effort-led","Ticket volume and complexity",`Stage 2 towers (A + B) ÷ ${S.bench.hrsMonth}h, ${fmt(R.towers.reduce((x,t)=>x+t.tickets,0),0)} tickets a month`,eff,"#6B7C93"],
-    ["Single-method estimate","Larger of the two",`Coverage acts as a floor on effort ([F] 1.1 C)`,single,"var(--faint)"],
-    ["This workflow, delivery","Stages 1–3 with risk",`Base team + towers not absorbed + specialist cover`,wf,"var(--add)"]
+    ["Base team","Support window and shifts",`Stage 1: roster ${fmt(R.roster,2)} ÷ ${S.util1}% ÷ leave availability, with risk`,cov,"var(--accent)"],
+    ["Team from the work","Towers, specialist cover, transformation",`Stages 2–4: ${fmt(R.s2,2)} + ${fmt(R.s3,2)} + ${fmt(R.s4,2)}, with risk`,wk,"#6B7C93"],
+    ["Delivery team used","Larger of the two",R.lift>0?`Work team lifted to the base team (+${fmt(R.lift,2)})`:"Work team kept",used,"var(--add)"]
   ];
   const mx=Math.max(...rows.map(r=>r[3]),0.0001);
   $("recon").innerHTML=rows.map(r=>`<div class="rbar"><span class="t"><b>${r[0]}</b><span>${r[1]}</span></span><span class="track"><i style="width:${r[3]/mx*100}%;background:${r[4]}"></i></span><span class="v">${fmt(r[3],2)}</span></div>`).join("");
   $("reconTable").innerHTML=rows.map(r=>`<tr><td class="loc-name">${r[0]}</td><td>${r[1]}</td><td class="hint">${esc(r[2])}</td><td class="r num"><b>${fmt(r[3],2)}</b></td></tr>`).join("");
-  const binds=cov>=eff?"coverage":"effort";
-  const gap=Math.abs(cov-eff), pct=Math.min(cov,eff)>0?gap/Math.min(cov,eff)*100:0;
-  const idle=cov>0?Math.max(0,1-eff/cov)*100:0;
-  const over=wf-single;
-  let v=binds==="coverage"
-    ?`<b>The support window sets the team.</b> Covering ${covLabel()} needs ${fmt(cov,2)} FTE, ${fmt(gap,2)} (${fmt(pct,0)}%) more than the ${fmt(eff,2)} FTE the ticket work needs. If one team did all the work, about ${fmt(idle,0)}% of its time would be spare.`
-    :`<b>The work sets the team.</b> Ticket and non-ticketing effort needs ${fmt(eff,2)} FTE, ${fmt(gap,2)} (${fmt(pct,0)}%) more than the ${fmt(cov,2)} FTE needed to cover ${covLabel()}.`;
-  v+=` The workflow's delivery team of ${fmt(wf,2)} is ${fmt(over,2)} ${over>=0?"above":"below"} the single-method estimate because it keeps the shift roster, adds tower work the base team can't absorb (${fmt(R.added,2)}), adds specialist shift cover (${fmt(R.topUp,2)}), and applies risk modifiers.`;
+  const gap=Math.abs(cov-wk), pct=Math.min(cov,wk)>0?gap/Math.min(cov,wk)*100:0;
+  const v=R.lift>0
+    ?`<b>The support window sets the team.</b> The work needs ${fmt(wk,2)} FTE, but covering ${covLabel()} needs ${fmt(cov,2)}, ${fmt(gap,2)} (${fmt(pct,0)}%) more. The team is lifted to ${fmt(cov,2)}; about ${fmt(cov>0?gap/cov*100:0,0)}% of its time is spare for enhancements or transformation.`
+    :`<b>The work sets the team.</b> Towers, specialist cover and transformation need ${fmt(wk,2)} FTE, ${fmt(gap,2)} (${fmt(pct,0)}%) more than the ${fmt(cov,2)} FTE base team, so the work team is kept and the shifts are staffed from within it.`;
   $("verdict").innerHTML=v;
 
   updateRiskDeltas("s5",R.sdmRaw,R.risk5Add,R.rp5);
@@ -1694,7 +1690,7 @@ function updateS5(){
     ["E1",`One Service Delivery Manager per ${R.sdmRatio} delivery FTE, graded Lead. The SDM owns governance: ops reviews, QBRs, SLA reporting and CAB.`,"DAMO convention · [F] 1.7"],
     ["E2","The SDM is the only governance role. Delivery Principal, Solution Architect and similar roles are not included.","agreed"],
     ["E3",`The SDM is based in ${loc?loc.name:""} and is not rostered on shifts. With whole-person rounding, SDMs round to the nearest person (at least one), not up.`,"proposed"],
-    ["E4","The comparison uses coverage before risk (Stage 1 after utilisation and leave) and tower effort before absorption and risk (Stage 2).","proposed"]
+    ["E4","The delivery team is the larger of the base team (Stage 1, with risk) and the team from the work (Stages 2–4, with risk). A lift follows the base team's locations and tiers.","agreed"]
   ]);
 }
 
@@ -1712,7 +1708,7 @@ function updateS6(){
   $("contHint").textContent=`${CX.name} complexity default ${CX.cont}%. Low 5%, Medium 7.5%, High 10%. Leave blank to use the default.`;
   const nR=S.risks.s6.filter(r=>r.on&&+r.pct).length;
   let h="";
-  h+=wstep("1","Team so far",fmt(R.sub5,2),`Stages 1–5`);
+  h+=wstep("1","Delivery team + SDM",fmt(R.sub5,2),`${fmt(R.sub4,2)} + ${fmt(R.s5,2)}`);
   h+=wstep("2","Contingency",`<span class="delta add">${sgn(R.contRaw,2)}</span>`,`${fmt(R.sub5,2)} × ${R.contPct}% (${CX.name} complexity)`);
   h+=wstep("3","Risk modifiers",`<span class="delta risk">${sgn(R.risk6Add,2)}</span>`,`${fmt(R.contRaw,2)} × ${fmt(R.rp6*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
   h+=wstep("=","Stage 6 adds",`${sgn(R.s6,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team: ${fmt(R.sub5,2)} + ${fmt(R.s6,2)} = ${fmt(R.total,2)} FTE. Contingency is spread across L2 and L3 in each location.`,"total");
@@ -1740,7 +1736,7 @@ function updateS6(){
   renderAuto("s6",[
     ["F1",`Engagement complexity is ${CX.name}: ${CX.desc.toLowerCase()}. Set by the deal team.`,"input"],
     ["F2",`Grade pyramid Lead : Senior : Consultant = ${R.pyr.join(" : ")} across L2 and L3. SDMs are Lead. The pyramid does not change headcount.`,"DAMO pyramid 1:2:4 · proposed"],
-    ["F3",`Contingency is ${R.contPct}% of the team from Stages 1–5, added as FTE and spread across L2/L3 in each location.`,"[F] 1.6 · 5–10%"],
+    ["F3",`Contingency is ${R.contPct}% of the delivery team plus SDM, added as FTE and spread across L2/L3 in each location.`,"[F] 1.6 · 5–10%"],
     ["F4","Grades describe the team shape only. No rates or cost are applied.","agreed"]
   ]);
 }
@@ -1813,7 +1809,7 @@ function updateS8(){
     const d=R.total-exTot, p=d/exTot;
     if(Math.abs(p)<=tol)v=`<b>Consistent with today's team.</b> Our Year 1 is ${fmt(R.total,1)} FTE against ${fmt(exTot,1)} today (${sgn(p*100,0)}%), inside the ±${S.exTol}% tolerance.`;
     else if(p>0){const core=R.total-R.s4-R.s6;v=`<b>Our Year 1 is ${fmt(d,1)} FTE (${fmt(p*100,0)}%) above today's team.</b> ${fmt(R.s4,1)} FTE is transformation capacity and ${fmt(R.s6,1)} is contingency, which the existing team may not carry; without them we would be at ${fmt(core,1)} (${sgn((core-exTot)/exTot*100,0)}%). Check that today's team covers the same ${covLabel()} window, and whether it runs Year 1 transition risk.`;}
-    else v=`<b>Our Year 1 is ${fmt(-d,1)} FTE (${fmt(-p*100,0)}%) below today's team.</b> Check nothing is missing from scope: today's team has ${fmt(n("other"),1)} FTE in roles outside our model, and our base team absorbs ${fmt(R.absorbed,1)} FTE of tower work. If the scope matches, the gap is the productivity case to present.`;
+    else v=`<b>Our Year 1 is ${fmt(-d,1)} FTE (${fmt(-p*100,0)}%) below today's team.</b> Check nothing is missing from scope: today's team has ${fmt(n("other"),1)} FTE in roles outside our model. If the scope matches, the gap is the productivity case to present.`;
     const pe=(yEnd-exTot)/exTot;
     v+=` By Year ${T} our team is ${fmt(yEnd,1)} FTE, ${sgn(pe*100,0)}% against today${pe<0?", which is the saving the client sees over the term":""}.`;
     if(S.exSource==="verbal")v+=" Today's numbers are a verbal estimate, so treat this check as directional.";
@@ -1832,15 +1828,11 @@ function renderBar(){
   $("barFte").innerHTML=`${fmt(R.total,1)}<small>FTE</small>`;
   $("barHc").innerHTML=whole?`Rostered as <b>${fmt(R.people,0)}</b> people`:"No rounding applied";
   const chip=(cls,l,v,go)=>`<div class="chip ${cls}" ${go?`data-gochip="${go}" style="cursor:pointer"`:""}><span class="l">${l}</span><span class="v">${v}</span></div>`;
-  let h=chip("base","Roster",fmt(R.roster,1),1)+chip("add","+ Util",sgn(R.utilAdd),1)+chip("add","+ Leave",sgn(R.leaveAdd),1)+chip("risk","+ Risk",sgn(R.risk1Add),1)+chip("base","Stage 1",fmt(R.s1,1),1);
+  let h=chip("base","Roster",fmt(R.roster,1),1)+chip("add","+ Util",sgn(R.utilAdd),1)+chip("add","+ Leave",sgn(R.leaveAdd),1)+chip("risk","+ Risk",sgn(R.risk1Add),1)+chip("base","1 · Base team",fmt(R.s1,1),1);
+  h+=`<div class="chip sep">vs</div>`;
+  h+=chip("add","2 · Towers",fmt(R.added,1),2)+chip("risk","+ Risk",sgn(R.risk2Add),2)+chip("add","3 · Skill cover",sgn(R.topUp),3)+chip("risk","+ Risk",sgn(R.risk3Add),3)+chip("add","4 · Transform",sgn(R.stage4raw),4)+chip("risk","+ Risk",sgn(R.risk4Add),4)+chip("base","Work team",fmt(R.workTeam,1),4);
   h+=`<div class="chip sep">›</div>`;
-  h+=chip("add","2 · Towers",sgn(R.added),2)+chip("risk","+ Risk",sgn(R.risk2Add),2)+chip("base","Stage 2",fmt(R.sub2,1),2);
-  h+=`<div class="chip sep">›</div>`;
-  h+=chip("add","3 · Skill cover",sgn(R.topUp),3)+chip("risk","+ Risk",sgn(R.risk3Add),3)+chip("base","Stage 3",fmt(R.sub3,1),3);
-  h+=`<div class="chip sep">›</div>`;
-  h+=chip("add","4 · Transform",sgn(R.stage4raw),4)+chip("risk","+ Risk",sgn(R.risk4Add),4)+chip("base","Stage 4",fmt(R.sub4,1),4);
-  h+=`<div class="chip sep">›</div>`;
-  h+=chip("add","5 · SDM",sgn(R.sdmRaw),5)+chip("risk","+ Risk",sgn(R.risk5Add),5)+chip("base","Stage 5",fmt(R.sub5,1),5);
+  h+=chip(R.lift>0?"round":"base",R.lift>0?"Lifted to base":"Work team kept",R.lift>0?sgn(R.lift):fmt(R.sub4,1),5)+chip("add","5 · SDM",sgn(R.sdmRaw),5)+chip("risk","+ Risk",sgn(R.risk5Add),5)+chip("base","Stage 5",fmt(R.sub5,1),5);
   h+=`<div class="chip sep">›</div>`;
   h+=chip("add","6 · Contingency",sgn(R.contRaw),6)+chip("risk","+ Risk",sgn(R.risk6Add),6)+chip("base","Stage 6",fmt(R.total,1),6);
   h+=`<div class="chip sep">›</div>`;
@@ -1852,8 +1844,7 @@ function renderBar(){
   $("barChips").innerHTML=h;
   const tot=Math.max(R.people,R.total,0.0001);
   const seg=(v,c,t)=>`<span style="width:${Math.max(0,v)/tot*100}%;background:${c}" title="${t}"></span>`;
-  $("barStack").innerHTML=seg(R.roster,"var(--accent)","Roster")+seg(R.utilAdd,"var(--accent-soft)","Utilisation")+seg(R.leaveAdd,"var(--add)","Leave backfill")+seg(R.risk1Add,"var(--risk)","Stage 1 risk")
-    +seg(R.added,"#6B7C93","Towers")+seg(R.risk2Add,"var(--risk)","Stage 2 risk")+seg(R.topUp,"#3F8C9B","Skill cover")+seg(R.risk3Add,"var(--risk)","Stage 3 risk")+seg(R.stage4raw,"#8C5FA8","Transformation")+seg(R.risk4Add,"var(--risk)","Stage 4 risk")+seg(R.sdmRaw,"#9B7B3F","SDM")+seg(R.risk5Add,"var(--risk)","Stage 5 risk")+seg(R.s6,"#B0476F","Contingency")+(whole?seg(R.roundAdd,"var(--round)","Rounding"):"");
+  $("barStack").innerHTML=seg(R.added,"#6B7C93","Towers")+seg(R.risk2Add,"var(--risk)","Stage 2 risk")+seg(R.topUp,"#3F8C9B","Skill cover")+seg(R.risk3Add,"var(--risk)","Stage 3 risk")+seg(R.stage4raw,"#8C5FA8","Transformation")+seg(R.risk4Add,"var(--risk)","Stage 4 risk")+seg(R.lift,"var(--accent)","Lift to base team")+seg(R.sdmRaw,"#9B7B3F","SDM")+seg(R.risk5Add,"var(--risk)","Stage 5 risk")+seg(R.s6,"#B0476F","Contingency")+(whole?seg(R.roundAdd,"var(--round)","Rounding"):"");
   const cell=S.rounding==="cell";
   $("barSplit").innerHTML=`<div class="r"><span>L2</span><b>${cell?fmt(R.L2p,0):fmt(R.L2,1)}</b></div>
     <div class="r"><span>L3</span><b>${cell?fmt(R.L3p,0):fmt(R.L3,1)}</b></div>
@@ -1973,32 +1964,31 @@ function summary(){
   L.push("","## Stage 2 · Service towers");
   L.push("","| Tower | Demand from | Tickets/mo | L2 | L3 | A hrs | B hrs | FTE |","|---|---|---|---|---|---|---|---|");
   R.towers.forEach(t=>L.push(`| ${t.kind} · ${t.name} | ${t.src} | ${fmt(t.tickets,0)} | ${fmt(t.l2t,1)} | ${fmt(t.l3t,1)} | ${fmt(t.A,0)} | ${fmt(t.Bh,0)} | ${fmt(t.fte,2)} |`));
-  L.push("","| Skill set | Tower | Share | FTE | Base has skill | Absorbed | Added |","|---|---|---|---|---|---|---|");
-  R.skills.forEach(k=>L.push(`| ${k.name} | ${k.tower} | ${fmt(k.norm*100,0)}% | ${fmt(k.fte,2)} | ${k.absorb?"Yes":"No"} | ${fmt(k.absorbed,2)} | ${fmt(k.added,2)} |`));
+  L.push("","| Skill set | Tower | Share | FTE | Base has skill |","|---|---|---|---|---|");
+  R.skills.forEach(k=>L.push(`| ${k.name} | ${k.tower} | ${fmt(k.norm*100,0)}% | ${fmt(k.fte,2)} | ${k.absorb?"Yes, every shift":"No"} |`));
   L.push("",`- Tower FTE (A + B) ÷ ${S.bench.hrsMonth}: ${fmt(R.demand,2)}`);
-  L.push(`- Base spare capacity: ${fmt(R.roster,2)} × ${S.sparePct}% = ${fmt(R.capacity,2)}; absorbed ${fmt(R.absorbed,2)}`);
-  L.push(`- Added by towers: ${fmt(R.added,2)} (L2 ${fmt(R.add2,2)}, L3 ${fmt(R.add3,2)})`);
   L.push(`- Risk modifiers (${fmt(R.rp2*100,1)}%): ${sgn(R.risk2Add,2)}`);
-  L.push(`- **Stage 2 adds: ${fmt(R.s2,2)} FTE. Team so far ${fmt(R.sub2,2)} FTE**`);
+  L.push(`- **Tower team: ${fmt(R.s2,2)} FTE** (built from the work, compared with the base team at Stage 5)`);
   rows("s2");
   L.push("","## Stage 3 · Skill coverage by shift","","| Skill set | Tower | Live shifts | On-call shifts | Floor | Stage 2 FTE | Added |","|---|---|---|---|---|---|---|");
   R.covSkills.forEach(k=>L.push(`| ${k.name} | ${k.tower} | ${k.live.map(i=>i+1).join(", ")||"none"} | ${k.onCall} | ${fmt(k.floor,2)} | ${fmt(k.have,2)} | ${fmt(k.top,2)} |`));
   L.push("",`- On-call allowance: ${S.onCallPct}% of a staffed shift`);
   L.push(`- Top-up for coverage: ${fmt(R.topUp,2)}; risk modifiers (${fmt(R.rp3*100,1)}%): ${sgn(R.risk3Add,2)}`);
-  L.push(`- **Stage 3 adds: ${fmt(R.s3,2)} FTE. Team so far ${fmt(R.sub3,2)} FTE**`);
+  L.push(`- **Stage 3 adds: ${fmt(R.s3,2)} FTE. Run team from the work ${fmt(R.sub3,2)} FTE**`);
   rows("s3");
   L.push("","## Stage 4 · Transformation capacity");
   L.push(`- Scenario ${R.sc}: ${R.SC.name} (volumetrics ${R.volAvail?"available":"unavailable"}, ${fmt(R.volShare*100,0)}% of tower FTE from ticket history)`);
   L.push(`- Transformation POD: ${fmt(R.sub3,2)} × ${R.transPct}% = ${fmt(R.pod,2)}`);
   L.push(`- AIOps engineers: ${fmt(R.sub3,2)} ÷ ${R.ratio} = ${fmt(R.aiops,2)}`);
   L.push(`- Added (larger of the two): ${fmt(R.stage4raw,2)}; risk modifiers (${fmt(R.rp4*100,1)}%): ${sgn(R.risk4Add,2)}`);
-  L.push(`- **Stage 4 adds: ${fmt(R.s4,2)} FTE. Team so far ${fmt(R.sub4,2)} FTE**`);
+  L.push(`- **Stage 4 adds: ${fmt(R.s4,2)} FTE. Team from the work ${fmt(R.workTeam,2)} FTE**`);
   L.push(`- Scenario guidance: confidence ${R.SC.conf}, Y1 contingency ${R.SC.cont}, ${R.SC.shape}, ${R.SC.comm}`);
   rows("s4");
-  L.push("","## Stage 5 · Governance and reconciliation");
+  L.push("","## Stage 5 · Reconciliation and governance");
+  L.push(`- Team from the work ${fmt(R.workTeam,2)} vs base team ${fmt(R.s1,2)} → delivery team ${fmt(R.sub4,2)}${R.lift>0?` (lifted +${fmt(R.lift,2)})`:" (work team kept)"}`);
   L.push(`- SDM: ${fmt(R.sub4,2)} ÷ ${R.sdmRatio} = ${fmt(R.sdmRaw,2)}; risk modifiers (${fmt(R.rp5*100,1)}%): ${sgn(R.risk5Add,2)}`);
   L.push(`- **Stage 5 adds: ${fmt(R.s5,2)} FTE. Team so far ${fmt(R.sub5,2)} FTE**`);
-  L.push("","| View | FTE |","|---|---|",`| Coverage-led (Stage 1 before risk) | ${fmt(R.buffered,2)} |`,`| Effort-led (Stage 2 tower FTE) | ${fmt(R.demand,2)} |`,`| Single-method (larger of the two) | ${fmt(Math.max(R.buffered,R.demand),2)} |`,`| This workflow, delivery (Stages 1–3) | ${fmt(R.sub3,2)} |`);
+  L.push("","| View | FTE |","|---|---|",`| Base team (Stage 1) | ${fmt(R.s1,2)} |`,`| Team from the work (Stages 2–4) | ${fmt(R.workTeam,2)} |`,`| Delivery team used | ${fmt(R.sub4,2)} |`);
   L.push("",$("verdict").textContent);
   rows("s5");
   L.push("","## Stage 6 · Seniority and contingency");
