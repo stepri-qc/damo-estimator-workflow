@@ -336,6 +336,14 @@ tr.sel td{background:var(--accent-soft)}
 .band.ok{background:var(--add-soft);color:var(--add)}
 .band.hi{background:var(--risk-soft);color:var(--risk)}
 .band.lo{background:var(--round-soft);color:var(--round)}
+/* stage 2 question flow */
+.qflow{display:grid;gap:10px}
+.q{display:grid;gap:8px;border-left:2px solid var(--line);padding-left:12px}
+.q.on{border-left-color:var(--accent)}
+.q .qh{display:flex;gap:8px;align-items:baseline;font-weight:600;font-size:13.5px}
+.q .qh i{font:600 11px var(--mono);font-style:normal;color:var(--accent)}
+.qpath{display:flex;flex-wrap:wrap;gap:4px;font:500 11px var(--mono);color:var(--faint)}
+.qpath span.on{color:var(--accent);font-weight:700}
 </style>
 </head>
 <body>
@@ -488,7 +496,7 @@ tr.sel td{background:var(--accent-soft)}
     <div class="stage-head">
       <span class="eyebrow">Stage 2 of 8</span>
       <h2 id="s2h">Service towers and complexity</h2>
-      <p>Add the AMS, IMS and DMS towers in scope. Use ticket volumes where the client has them; otherwise size demand from complexity. Tickets become effort through the framework's L2/L3 cascade, and each tower's FTE is then split across the skill sets it needs.</p>
+      <p>Add the AMS, IMS and DMS towers in scope. For each tower, answer up to three questions: ticket volumes if the client has them, otherwise the estate's structural complexity (T-shirt sizing), and if that isn't known either, monthly active users. Tickets become effort through the framework's L2/L3 cascade, and each tower's FTE is then split across the skill sets it needs.</p>
     </div>
 
     <div class="cols">
@@ -1109,7 +1117,7 @@ function mkSkill(id,share,name){const c=SKILL_CATALOG.find(k=>k.id===id);return 
 function mkTower(kind){
   const n=S&&S.towers?S.towers.filter(t=>t.kind===kind).length+1:1;
   return {id:uid(),kind,name:`${kind} ${n>1?n:""}`.trim(),vol:false,inc:60,sr:20,estate:"modern",
-    amsBasis:"apps",apps:{S:2,M:3,L:1,XL:0,XXL:0},mau:5000,mauRate:1,
+    amsBasis:"apps",apps:{S:2,M:3,L:1,XL:0,XXL:0},mau:5000,mauRate:1,cpx:true,
     env:4,host:2,db:4,sec:true,
     dp:4,pipe:10,integ:3,up:3,down:2,
     skills:KIND_SKILLS[kind].map(([id,sh])=>mkSkill(id,sh))};
@@ -1169,6 +1177,7 @@ function sdmLocOf(){
   return pick.id;
 }
 function pyrOf(){const p=S.pyr&&S.pyr[S.cplx];return Array.isArray(p)&&p.length===3?p:(CPLX[S.cplx]||CPLX.medium).pyr}
+function cpxKnown(t){return t.cpx!=null?t.cpx!==false:t.amsBasis!=="mau"}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 
 /* ---------- engine ---------- */
@@ -1202,8 +1211,8 @@ function compute(){
   const towers=S.towers.map(t=>{
     let tickets, src, score=null;
     if(t.vol){tickets=n0(t.inc)+n0(t.sr);src="Ticket history"}
-    else if(t.kind==="AMS"&&t.amsBasis==="mau"){tickets=n0(t.mau)*n0(t.mauRate)/100;src="MAU proxy"}
-    else if(t.kind==="AMS"){tickets=SIZES.reduce((s2,z)=>s2+n0(t.apps[z])*B.tpa[z],0);src="App complexity"}
+    else if(!cpxKnown(t)){tickets=n0(t.mau)*n0(t.mauRate)/100;src="MAU proxy"}
+    else if(t.kind==="AMS"){tickets=SIZES.reduce((s2,z)=>s2+n0(t.apps[z])*B.tpa[z],0);src="T-shirt sizing"}
     else if(t.kind==="IMS"){score=B.ims.wEnv*n0(t.env)+B.ims.wHost*n0(t.host)+B.ims.wDb*n0(t.db)+(t.sec?B.ims.sec:0);tickets=score*B.ims.tpp;src="Infra complexity"}
     else {score=B.dms.wDp*n0(t.dp)+B.dms.wPipe*n0(t.pipe)+B.dms.wInt*n0(t.integ)+B.dms.wUp*n0(t.up)+B.dms.wDown*n0(t.down);tickets=score*B.dms.tpp;src="Data complexity"}
     const l2t=tickets*B.p12/100, l3t=l2t*B.p23/100;
@@ -1399,26 +1408,26 @@ function renderSpd(){$("spdSeg").innerHTML=[1,2,3,4].map(n=>`<button type="butto
 function numIn(t,f,label,max=100000,step=1,val){return `<label for="t-${t.id}-${f}">${label}<input type="number" id="t-${t.id}-${f}" data-tn="${f}" min="0" max="${max}" step="${step}" value="${val!=null?val:t[f]}"></label>`}
 function renderS2(){
   $("towerList").innerHTML=S.towers.length?S.towers.map(t=>{
-    let demand="";
-    if(t.vol){
-      demand=`<div class="tgrid">${numIn(t,"inc","Incidents / month")}${numIn(t,"sr","Service requests / month")}</div>`;
-    }else if(t.kind==="AMS"){
-      demand=`<div class="seg" role="group" aria-label="AMS proxy">${[["apps","Apps by complexity"],["mau","Monthly active users"]].map(([k,l])=>`<button type="button" data-tbasis="${k}" aria-pressed="${t.amsBasis===k}">${l}</button>`).join("")}</div>`
-        +(t.amsBasis==="mau"
-          ?`<div class="tgrid">${numIn(t,"mau","Monthly active users",1e7,100)}${numIn(t,"mauRate","Users raising a ticket %",10,0.1)}</div><div class="hint">Framework benchmark: 0.5–2% of MAU raise a ticket a month ([F] Sc.1 Step 2).</div>`
-          :`<div class="tgrid">${SIZES.map(z=>`<label for="t-${t.id}-a${z}" title="${SIZE_DESC[z]}">${z} apps <span style="font-size:11px">${SIZE_RANGE[z]} tkts/app</span><input type="number" id="t-${t.id}-a${z}" data-tapp="${z}" min="0" max="1000" step="1" value="${t.apps[z]}"></label>`).join("")}</div><div class="hint">S static/UI-only · M CRUD, 1–2 APIs · L financial, 3+ APIs · XL payments, regulatory, ESB · XXL ML pipelines, analytics ([F] Sc.1 Step 1).</div>`);
-    }else if(t.kind==="IMS"){
-      demand=`<div class="tgrid">${numIn(t,"env","Environments",500)}${numIn(t,"host","Hosting platforms",100)}${numIn(t,"db","Databases",500)}</div>
+    const known=cpxKnown(t);
+    const yn=(attr,val,yes,no)=>`<div class="seg" role="group">${[[true,yes],[false,no]].map(([v,l])=>`<button type="button" ${attr}="${v?1:0}" aria-pressed="${val===v}">${l}</button>`).join("")}</div>`;
+    let cpxInputs;
+    if(t.kind==="AMS")cpxInputs=`<div class="tgrid">${SIZES.map(z=>`<label for="t-${t.id}-a${z}" title="${SIZE_DESC[z]}">${z} apps <span style="font-size:11px">${SIZE_RANGE[z]} tkts/app</span><input type="number" id="t-${t.id}-a${z}" data-tapp="${z}" min="0" max="1000" step="1" value="${t.apps[z]}"></label>`).join("")}</div><div class="hint">S static/UI-only · M CRUD, 1–2 APIs · L financial, 3+ APIs · XL payments, regulatory, ESB · XXL ML pipelines, analytics ([F] Sc.1 Step 1).</div>`;
+    else if(t.kind==="IMS")cpxInputs=`<div class="tgrid">${numIn(t,"env","Environments",500)}${numIn(t,"host","Hosting platforms",100)}${numIn(t,"db","Databases",500)}</div>
         <label class="switch" for="t-${t.id}-sec"><input type="checkbox" id="t-${t.id}-sec" data-tc="sec" ${t.sec?"checked":""}><div><b style="font-size:13px">Security operations in scope</b><span>Patching, vulnerability and access management add a fixed load.</span></div></label>`;
-    }else{
-      demand=`<div class="tgrid">${numIn(t,"dp","Data products",500)}${numIn(t,"pipe","Pipelines",2000)}${numIn(t,"integ","Integrations",500)}${numIn(t,"up","Upstream systems",500)}${numIn(t,"down","Downstream systems",500)}</div>`;
-    }
+    else cpxInputs=`<div class="tgrid">${numIn(t,"dp","Data products",500)}${numIn(t,"pipe","Pipelines",2000)}${numIn(t,"integ","Integrations",500)}${numIn(t,"up","Upstream systems",500)}${numIn(t,"down","Downstream systems",500)}</div>`;
+    const mauLabel={AMS:"Monthly active users",IMS:"Monthly active users of hosted services",DMS:"Monthly active data consumers"}[t.kind];
+    const mauInputs=`<div class="tgrid">${numIn(t,"mau",mauLabel,1e7,100)}${numIn(t,"mauRate","Users raising a ticket %",10,0.1)}</div><div class="hint">Framework benchmark: 0.5–2% of monthly active users raise a ticket ([F] Sc.1 Step 2). The implied complexity is shown below.</div>`;
+    const step=t.vol?1:(known?2:3);
+    let demand=`<div class="qpath"><span class="${step===1?"on":""}">① Volumetrics</span>›<span class="${step===2?"on":""}">② Structural complexity</span>›<span class="${step===3?"on":""}">③ Monthly active users</span></div><div class="qflow">
+      <div class="q ${step===1?"on":""}"><span class="qh"><i>1</i>Do you have volumetric data for this tower?</span>${yn("data-tvol",t.vol,"Yes, ticket history","No")}${t.vol?`<div class="tgrid">${numIn(t,"inc","Incidents / month")}${numIn(t,"sr","Service requests / month")}</div>`:""}</div>`;
+    if(!t.vol)demand+=`<div class="q ${step===2?"on":""}"><span class="qh"><i>2</i>Do you know the structural complexity of the ${t.kind==="AMS"?"application estate":t.kind==="IMS"?"infrastructure estate":"data estate"}?</span>${yn("data-tcpx",known,t.kind==="AMS"?"Yes, T-shirt size it":"Yes, enter it","No")}${known?cpxInputs:""}</div>`;
+    if(!t.vol&&!known)demand+=`<div class="q on"><span class="qh"><i>3</i>Use monthly active users to work out demand and complexity</span>${mauInputs}</div>`;
+    demand+=`</div>`;
     const used=new Set(t.skills.map(k=>k.skill));
     const opts=SKILL_CATALOG.filter(k=>k.id==="spec"||!used.has(k.id)).map(k=>`<option value="${k.id}">${esc(k.name)}</option>`).join("");
     return `<div class="tower" data-tower="${t.id}">
       <div class="th"><span class="kbadge">${t.kind}</span><input class="tname" type="text" id="tn-${t.id}" data-tf="name" value="${esc(t.name)}" aria-label="Tower name"><button type="button" class="btn ghost sm" data-rmtower="${t.id}">Remove</button></div>
-      <div class="tsec"><span class="h">Volumetrics available?</span>
-        <div class="seg" role="group" aria-label="Volumetrics available">${[[true,"Yes, ticket history"],[false,"No, use complexity"]].map(([v,l])=>`<button type="button" data-tvol="${v?1:0}" aria-pressed="${t.vol===v}">${l}</button>`).join("")}</div>
+      <div class="tsec"><span class="h">Demand</span>
         ${demand}
       </div>
       <div class="tsec"><span class="h">Estate</span>
@@ -1520,10 +1529,11 @@ function updateS2(){
     if(d){
       let how;
       if(t.vol)how=`${fmt(n0v(t.inc),0)} incidents + ${fmt(n0v(t.sr),0)} SRs`;
-      else if(t.kind==="AMS"&&t.amsBasis==="mau")how=`${fmt(n0v(t.mau),0)} MAU × ${t.mauRate}%`;
+      else if(!cpxKnown(t)){const eq=t.tickets/B.tpa.M;how=`${fmt(n0v(t.mau),0)} MAU × ${t.mauRate}%`;d.dataset.impl=`Implied complexity: about ${fmt(eq,1)} medium (M) applications' worth of demand, ${implTier(t.tickets)}.`}
       else if(t.kind==="AMS")how=SIZES.filter(z=>+t.apps[z]).map(z=>`${t.apps[z]}${z}×${B.tpa[z]}`).join(" + ")||"no apps";
       else how=`score ${fmt(t.score,1)} × ${t.kind==="IMS"?B.ims.tpp:B.dms.tpp} tickets per point`;
-      d.innerHTML=`${esc(how)} ≈ <b>${fmt(t.tickets,0)}</b> tickets/mo → L2 ${fmt(t.l2t,1)}, L3 ${fmt(t.l3t,1)} → <b>${fmt(t.fte,2)} FTE</b> (L2 ${fmt(t.fte2,2)} · L3 ${fmt(t.fte3,2)})`;
+      if(t.vol||cpxKnown(t))delete d.dataset.impl;
+      d.innerHTML=`${esc(how)} ≈ <b>${fmt(t.tickets,0)}</b> tickets/mo → L2 ${fmt(t.l2t,1)}, L3 ${fmt(t.l3t,1)} → <b>${fmt(t.fte,2)} FTE</b> (L2 ${fmt(t.fte2,2)} · L3 ${fmt(t.fte3,2)})`+(d.dataset.impl?`<br>${esc(d.dataset.impl)}`:"");
     }
     const a=$("tadd-"+t.id); if(a)a.textContent=`adds ${sgn(t.added,2)} after absorption`;
   });
@@ -1533,7 +1543,7 @@ function updateS2(){
   const abs=R.skills.filter(k=>k.absorb), non=R.skills.filter(k=>!k.absorb);
   const kn=k=>`${k.tower} · ${k.name}`;
   let h=R.warnings2.map(w=>`<div class="alert" style="margin-bottom:10px">${esc(w)}</div>`).join("");
-  h+=wstep("1","Tickets per month",fmt(tk,0),R.towers.length?R.towers.map(t=>`${esc(t.name)} ${fmt(t.tickets,0)} (${t.src.toLowerCase()})`).join(" + "):"No towers added");
+  h+=wstep("1","Tickets per month",fmt(tk,0),R.towers.length?R.towers.map(t=>`${esc(t.name)} ${fmt(t.tickets,0)} (${t.src})`).join(" + "):"No towers added");
   h+=wstep("2","L2 / L3 cascade",`${fmt(l2,1)} / ${fmt(l3,1)}`,`L2 = tickets × ${B.p12}% · L3 = L2 × ${B.p23}%. L1 is the client's service desk.`);
   h+=wstep("3","A · Ticketing effort",`${fmt(A,0)} h`,`(L2 × ${B.are2}h + L3 × ${B.are3}h) ÷ ${B.util}% utilisation`);
   h+=wstep("4","B · Non-ticketing effort",`${fmt(Bh,0)} h`,`A × ${B.bModern}% modern or ${B.bLegacy}% legacy estate, per tower`);
@@ -1555,13 +1565,20 @@ function updateS2(){
     ["B1",`The client runs the L1 service desk. Tickets are L1 inflow: ${B.p12}% pass to L2 and ${B.p23}% of those to L3 (Year 1 benchmark).`,"[F] 1.4"],
     ["B2",`Average resolution effort is ${B.are2}h at L2 and ${B.are3}h at L3, at ${B.util}% utilisation and ${B.hrsMonth} hours per FTE a month.`,"[F] 1.5 · p.3"],
     ["B3",`Non-ticketing effort (automation, CFR, patching, governance) is ${B.bModern}% of A for a modern estate and ${B.bLegacy}% for complex legacy.`,"[F] 1.1 B"],
-    ["B4",vol.length?`Ticket history is used for ${listNames(vol)}.`+(proxy.length?` Demand for ${listNames(proxy)} is a proxy until ticket history is shared.`:""):`No tower has ticket history. All demand is a proxy (${listNames(proxy)}), so treat it as low-confidence.`,"[F] Sc.1–4"],
+    ["B4",(()=>{const cx=proxy.filter(t=>cpxKnown(t)), mu=proxy.filter(t=>!cpxKnown(t));const parts=[];
+      if(vol.length)parts.push(`Ticket history is used for ${listNames(vol)}.`);
+      if(cx.length)parts.push(`No volumetrics for ${listNames(cx)}: demand comes from structural complexity (T-shirt sizing for applications).`);
+      if(mu.length)parts.push(`No volumetrics or complexity data for ${listNames(mu)}: demand and implied complexity come from monthly active users, the least certain route.`);
+      if(!vol.length)parts.push("Treat Stage 2 as low-confidence until ticket history is shared.");
+      return parts.join(" ")||"No towers.";})(),"[F] Sc.1 Steps 1–2"],
     ["B5",`IMS and DMS proxies use complexity points × tickets per point (IMS ${B.ims.tpp}, DMS ${B.dms.tpp}). These are calibration targets.`,"proposed"],
     ["B6",`The base team can spend ${S.sparePct}% of its roster (${fmt(R.capacity,2)} FTE) on skill sets it already has: ${abs.length?abs.map(kn).join(", "):"none"}. Other skill sets are staffed in full on top.`,"proposed"],
     ["B7","Tower FTE keeps its effort-based L2/L3 split and is spread across locations like the Stage 1 roster. Stage 3 sets which shifts each skill covers.","proposed"]
   ]);
 }
 const n0v=v=>Math.max(0,+v||0);
+/* estate complexity implied by monthly tickets (proposed bands on framework tickets/app) */
+function implTier(tk){return tk<25?"a small, low-complexity estate":tk<75?"a medium-complexity estate":tk<200?"a large estate":"a very large or complex estate"}
 function shiftLabel(i){const from=i*S.hours/S.spd,to=(i+1)*S.hours/S.spd;const l=S.locations.find(x=>x.id===S.assign[i]);return {h:`Shift ${i+1}`,s:`h${hrs(from)}–${hrs(to)} · ${l?l.name:""}`}}
 function renderS3(){
   $("onCallPct").value=S.onCallPct;
@@ -1865,7 +1882,7 @@ document.addEventListener("click",e=>{
   else if(t.id==="locAddBtn"){const id=$("locAdd").value;if(id){S.locations.push(pickLoc(id));renderS1();update();}}
   else if(d.addkind){S.towers.push(mkTower(d.addkind));renderS2();update();}
   else if(d.tvol){twr(t).vol=d.tvol==="1";renderS2();update();}
-  else if(d.tbasis){twr(t).amsBasis=d.tbasis;renderS2();update();}
+  else if(d.tcpx){twr(t).cpx=d.tcpx==="1";renderS2();update();}
   else if(d.testate){twr(t).estate=d.testate;renderS2();update();}
   else if(d.addskill){const tw=S.towers.find(x=>x.id===d.addskill);const id=$("sk-add-"+tw.id).value;if(id){tw.skills.push(mkSkill(id,0,id==="spec"?"Special skill":null));renderS2();update();}}
   else if(d.term){S.term=+d.term;update();}

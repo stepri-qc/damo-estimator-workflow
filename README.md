@@ -65,12 +65,16 @@ Rounding to whole people is applied once, to the final team, after all stages.
 
 ## Stage 2: service towers and complexity
 
-Towers are **AMS**, **IMS** or **DMS** ([F] 1.3 service functions). Each tower chooses how its demand is sized:
+Towers are **AMS**, **IMS** or **DMS** ([F] 1.3 service functions). Each tower's demand comes from up to three questions, asked in order:
 
-| Volumetrics available? | AMS | IMS | DMS |
-|---|---|---|---|
-| **Yes** | Incidents + service requests a month | same | same |
-| **No** | Apps by complexity S–XXL at 4 / 10 / 17.5 / 30 / 50 tickets per app a month ([F] Sc.1 midpoints), **or** MAU × incident rate (0.5–2%, [F] Sc.1 Step 2) | Complexity points: environments × 1 + hosting platforms × 1.5 + databases × 1 + security in scope 3, × 4.5 tickets per point | Complexity points: data products × 1 + pipelines × 0.5 + integrations × 1 + upstream × 0.75 + downstream × 0.75, × 3.4 tickets per point |
+1. **Do you have volumetric data?** If yes, enter incidents + service requests a month.
+2. **If not, do you know the estate's structural complexity?** If yes:
+   - AMS: T-shirt size the apps S–XXL at 4 / 10 / 17.5 / 30 / 50 tickets per app a month ([F] Sc.1 Step 1 midpoints).
+   - IMS: complexity points = environments × 1 + hosting platforms × 1.5 + databases × 1 + security in scope 3, × 4.5 tickets per point.
+   - DMS: complexity points = data products × 1 + pipelines × 0.5 + integrations × 1 + upstream × 0.75 + downstream × 0.75, × 3.4 tickets per point.
+3. **If neither is known:** tickets = monthly active users × incident rate (0.5–2%, default 1%, [F] Sc.1 Step 2). The card also shows the **implied complexity**: equivalent medium (M) apps, and an estate band (small < 25 tickets a month, medium < 75, large < 200, very large above; `proposed`).
+
+A path marker on each card shows which route is in use. Assumption B4 lists each tower's route, and the MAU route is called out as the least certain.
 
 IMS/DMS weights and tickets per point come from the `damo-estimator` structural-complexity model (pipelines weight is new). All are `proposed` and editable in the stage's Benchmarks panel.
 
