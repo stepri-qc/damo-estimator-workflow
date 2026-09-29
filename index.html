@@ -264,8 +264,10 @@ tr:last-child td{border-bottom:0}
 .skrow .pin input{width:62px;text-align:right}
 .skrow .ab{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);white-space:nowrap}
 .skrow .ab input{accent-color:var(--accent)}
-.skfoot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
-.skfoot .addrow{flex:1;min-width:220px;align-items:center}
+.skfoot{display:grid;gap:8px;justify-items:start}
+.skfoot .addrow{width:100%;min-width:0;align-items:center}
+.skfoot .addrow select{flex:1;min-width:0}
+.skfoot .addrow .btn{white-space:nowrap;flex:none}
 .skfoot select{padding:5px 8px}
 @media (max-width:520px){.skrow{grid-template-columns:minmax(0,1fr) auto}}
 details.bench{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surface-2)}
