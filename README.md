@@ -146,15 +146,18 @@ tower FTE  = (A + B) ÷ 160 hours a month, keeping the L2/L3 split from the effo
 The tower team is built from the work alone. It does **not** sit on top of the base team:
 
 ```
-stage 2 tower team = tower FTE × (1 + Σ active stage 2 risk %)
+backfill factor    = Σ over locations (roster share ÷ availability)   when leave backfill is on, else 1
+support FTE        = tower FTE × backfill factor × (1 + Σ active stage 2 risk %)
 ```
+
+Leave and holiday backfill is applied to the tower team the same way as to the base team, weighted by where the tower FTE sits, so the two teams are compared like for like at Stage 5. Stage 3 compares each specialist's floor with its backfilled FTE for the same reason.
 
 "Base has skill" (on by default for Full stack developer, Backend API dev, Front end dev and Infra support engineer) means the skill set is covered on every shift by the base roster. Other skill sets get their own shift cover in Stage 3. Tower FTE is spread across locations in the same proportion as the Stage 1 roster.
 
 **AIOps per tower** ([F] Part 3, Sc.4 Step 3). Each tower asks *Is AIOps in scope for this tower?* If yes, AI engineers are embedded at the framework ratio: one per N support FTE of that tower, to build intelligent alerting, RCA automation, ticket auto-classification and self-healing.
 
 ```
-support FTE(tower) = tower FTE × (1 + Σ active stage 2 risk %)
+support FTE(tower) = tower FTE × backfill factor × (1 + Σ active stage 2 risk %)
 N                  = 4 for Low client AI adoption, 8 for Moderate (Scenarios 1/3 vs 2/4)
                      8 flexes to 6 when the AIOps towers carry over 20 support FTE; overridable
 AI engineers       = Σ support FTE(towers with AIOps in scope) ÷ N
@@ -311,6 +314,33 @@ The bar at the bottom builds up **one stage at a time**. It shows the team as it
 Rounding to whole people is applied to whatever the bar shows. If the work team is smaller than the base team, the base team itself (its locations and tiers) is the delivery team.
 
 Each stage ends with a **"Team after Stage N"** strip: FTE, people, the change from the previous stage, and one line on why.
+
+## Overall estimate: deal desk views
+
+The Overall estimate panel at Stage 8 adds three views for approval:
+
+- **Year 1 team by role.** Every FTE traced to the skill set and tower that asked for it, plus AI engineers, transformation, shift cover (when the base team is larger) and SDM. Contingency is spread over the delivery roles. The rows add up to the Year 1 team.
+- **Allowances in the Year 1 team.** Productive need, then the productive-time allowance (utilisation), leave backfill, contingency and risk, each measured by switching it off in turn and re-running the engine, so they add up even though reconciliation keeps the larger of two teams. The headline is the buffer above productive capacity (leave + contingency + risk) in FTE and %, plus rounding.
+- **Deviations from the framework.** Every benchmark, ratio or allowance changed from its framework or agreed value, with both values and the source. Empty when nothing was changed.
+
+### Version and approval
+
+The panel also holds version, prepared by, status (Draft / Submitted for approval / Approved), approver and approval date. Approving stores a fingerprint of every input. If any input changes afterwards, the header badge, the panel and both summaries say **Changed since approval** until it is approved again or set back to Draft.
+
+**Save file** writes every input and the approval block to `<deal>-v<version>.damo.json`. **Open file** loads one back (it replaces the estimate on screen), so an estimate can be shared, archived with the deal and reopened exactly as approved. Browser storage is still used between visits.
+
+## Customer summary
+
+**Customer summary** (in the Overall estimate panel) downloads a client-facing page:
+
+- Year 1 team, support window and the year-by-year team over the term
+- How they are covered, shift by shift, in plain words (working vs on call for P1)
+- What is in scope, how each service was sized, and whether AIOps is included
+- The Year 1 team by role (merged across towers) and by location
+- What we need from the client (L1 service desk, access, knowledge transfer, contacts; AI costs when relevant)
+- The deal team's own assumptions, and what would change the team size
+
+It leaves out contingency, risk modifiers, rounding lines, framework references and the stage working.
 
 ## Summary document
 

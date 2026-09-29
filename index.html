@@ -48,13 +48,21 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 /* header */
 .top{border-bottom:1px solid var(--line);background:var(--surface)}
-.top .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding-block:14px}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:10px 8px;padding-block:14px}
+.deal{margin-right:8px}
 .brand{display:flex;flex-direction:column;gap:2px;margin-right:auto}
 .brand .eyebrow{font:600 11px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
 .brand h1{font-size:20px;font-weight:800}
 .deal{display:flex;align-items:center;gap:8px}
 .deal label{font-size:12px;color:var(--muted)}
 .deal input{width:220px;max-width:50vw;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2)}
+.mbadge{font:600 11px/1 var(--mono);padding:5px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.mbadge.approved{color:var(--add);border-color:var(--add)}
+.mbadge.stale{color:var(--risk);border-color:var(--risk)}
+.approval{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:0 0 16px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}
+.approval label{display:grid;gap:4px;font-size:12px;color:var(--muted)}
+.approval input,.approval select{padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px;min-width:0}
+@media (max-width:720px){.approval{grid-template-columns:1fr 1fr}}
 .btn{border:1px solid var(--line);background:var(--surface);padding:7px 12px;border-radius:6px;cursor:pointer;font-weight:500;font-size:14px}
 .btn:hover{border-color:var(--accent)}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
@@ -357,6 +365,7 @@ tr.sel td{background:var(--accent-soft)}
 .stage-result .rv small{font-size:13px;color:var(--muted);font-weight:500;margin-left:4px}
 .stage-result .rd{font-size:13.5px;color:var(--ink);max-width:640px}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.subh{font:600 12px/1.2 var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:24px 0 8px}
 .kpi{border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:var(--surface-2);display:grid;gap:2px}
 .kpi span{font:600 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .kpi b{font:700 24px var(--mono);color:var(--ink);font-variant-numeric:tabular-nums}
@@ -408,6 +417,10 @@ tr.sel td{background:var(--accent-soft)}
       <label for="dealName">Deal</label>
       <input id="dealName" type="text" placeholder="Client / opportunity name">
     </div>
+    <span class="mbadge" id="mBadge"></span>
+    <button class="btn ghost" id="openBtn" type="button" title="Open a saved estimate file. Replaces the estimate on screen.">Open file</button>
+    <button class="btn ghost" id="saveBtn" type="button" title="Save every input to a file you can reopen or share">Save file</button>
+    <input type="file" id="openFile" accept=".json,application/json" hidden>
     <button class="btn" id="copyBtn" type="button">Copy summary</button>
     <button class="btn primary" id="dlBtn" type="button">Download summary</button>
     <button class="btn ghost" id="resetBtn" type="button">Reset</button>
@@ -1084,6 +1097,14 @@ tr.sel td{background:var(--accent-soft)}
 
     <div class="panel" style="margin-top:20px" id="finalPanel">
       <header><h3>Overall estimate</h3><span class="sub">How each stage built the team</span></header>
+      <div class="approval" aria-label="Version and approval">
+        <label for="mVersion">Version<input id="mVersion" type="number" min="1" step="1"></label>
+        <label for="mPrep">Prepared by<input id="mPrep" type="text" placeholder="Name"></label>
+        <label for="mStatus">Status<select id="mStatus"><option value="draft">Draft</option><option value="submitted">Submitted for approval</option><option value="approved">Approved</option></select></label>
+        <label for="mAppr">Approved by<input id="mAppr" type="text" placeholder="Deal desk approver"></label>
+        <label for="mDate">Approval date<input id="mDate" type="date"></label>
+      </div>
+      <div id="mAlert"></div>
       <div class="kpis" id="finalKpis"></div>
       <div class="loc-table">
         <table>
@@ -1091,9 +1112,26 @@ tr.sel td{background:var(--accent-soft)}
           <tbody id="finalBuild"></tbody>
         </table>
       </div>
+      <h4 class="subh">Year 1 team by role</h4>
+      <div class="loc-table">
+        <table>
+          <thead><tr><th>Role</th><th>Tower</th><th class="r">FTE</th><th class="r">Share</th></tr></thead>
+          <tbody id="finalRoles"></tbody>
+        </table>
+      </div>
+      <div class="hint">Each role includes its share of contingency. Rostered people by location are in the location table of the summary.</div>
+      <h4 class="subh">Allowances in the Year 1 team</h4>
+      <div class="working" id="finalAllow"></div>
+      <h4 class="subh">Deviations from the framework</h4>
+      <div class="loc-table">
+        <table>
+          <thead><tr><th>Setting</th><th class="r">Framework</th><th class="r">Used</th><th>Source</th></tr></thead>
+          <tbody id="finalDev"></tbody>
+        </table>
+      </div>
       <div class="row" style="justify-content:space-between">
-        <span class="hint">The summary document lists every stage's working, tables, assumptions and risks, then the final team. Open it in a browser and print to PDF if needed.</span>
-        <button class="btn primary" type="button" id="dlBtn2">Download summary</button>
+        <span class="hint">The summary is the internal deal-review pack: every stage's working, allowances, deviations, assumptions and risks. The customer summary shows the team, coverage, scope and what we need from the client, without contingency, risk modifiers, rounding or framework working.</span>
+        <span class="row" style="gap:8px"><button class="btn" type="button" id="custBtn" title="For the client: team, coverage, scope and what we need from them. Leaves out contingency, risk modifiers, rounding and framework working.">Customer summary</button><button class="btn primary" type="button" id="dlBtn2">Download summary</button></span>
       </div>
     </div>
     <div class="stage-result" id="res-8" aria-live="polite"></div>
@@ -1281,6 +1319,7 @@ function defaults(){
     term:null,savePct:null,cont2:null,protectFloor:true,
     ex:{},exSource:"",exTol:10,
     cov:{},
+    meta:{version:1,status:"draft",preparedBy:"",approvedBy:"",approvedAt:"",approvedHash:""},
     assumptions:{s1:["Service desk (L1) is provided by the client and is out of scope for this team."],s2:[],s3:[],s4:[],s5:[],s6:[],s7:[],s8:[]},
     risks:Object.assign({s1:RISKS_S1()},...[["s2",RISKS_S2],["s3",RISKS_S3],["s4",RISKS_S4],["s5",RISKS_S5],["s6",RISKS_S6],["s7",RISKS_S7],["s8",RISKS_S8]].map(([k,f])=>({[k]:f().map(r=>Object.assign(r,{on:false}))})))
   };
@@ -1292,10 +1331,14 @@ const KEY="damo-workflow-v2";
 let S=null;
 S=load();
 function load(){
-  try{
-    const raw=localStorage.getItem(KEY);
-    if(raw){
-      const p=JSON.parse(raw), d=defaults();
+  try{const raw=localStorage.getItem(KEY);if(raw)return migrate(JSON.parse(raw))}catch(e){}
+  return defaults();
+}
+/* brings a saved state (browser storage or an estimate file) up to the current shape */
+function migrate(p){
+  {
+    {
+      const d=defaults();
       if(Array.isArray(p.assumptions))p.assumptions={s1:p.assumptions};
       if(Array.isArray(p.risks))p.risks={s1:p.risks};
       const st=Object.assign(d,p);
@@ -1305,11 +1348,20 @@ function load(){
       if(!Array.isArray(p.towers)||p.towers.some(t=>!t.kind))st.towers=defaults().towers;
       const db=defaultBench(), pb=p.bench||{};
       st.bench=Object.assign(db,pb,{tpa:Object.assign(db.tpa,pb.tpa||{}),ims:Object.assign(db.ims,pb.ims||{}),dms:Object.assign(db.dms,pb.dms||{}),ai:Object.assign(db.ai,pb.ai||{})});
+      st.meta=Object.assign(defaults().meta,p.meta||{});
       return st;
     }
-  }catch(e){}
-  return defaults();
+  }
 }
+/* fingerprint of every input, so an approval can tell when the numbers under it change */
+function inputsHash(){
+  const o=Object.assign({},S);delete o.meta;delete o.active;
+  o.cov=Object.fromEntries(Object.entries(S.cov||{}).filter(([,v])=>v.shifts.length||v.people!==1));
+  const str=JSON.stringify(o);let h=5381;for(let i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))|0;
+  return (h>>>0).toString(36)+str.length.toString(36);
+}
+const STATUS={draft:"Draft",submitted:"Submitted for approval",approved:"Approved"};
+function approvalStale(){return S.meta.status==="approved"&&S.meta.approvedHash&&S.meta.approvedHash!==inputsHash()}
 function covOf(id){if(!S.cov[id])S.cov[id]={shifts:[],people:1};return S.cov[id]}
 function sdmLocOf(){
   if(S.sdmLoc&&S.locations.some(l=>l.id===S.sdmLoc))return S.sdmLoc;
@@ -1395,10 +1447,15 @@ function compute(){
   const added=demand-absorbed;
   const add2=skills.reduce((s2,k)=>s2+k.a2,0), add3=skills.reduce((s2,k)=>s2+k.a3,0);
   const rp2=riskPctOf("s2");
-  const s2run=added*(1+rp2);
+  /* leave & holiday backfill on the work team too, weighted by where it sits (the Stage 1 roster spread),
+     so the work team and the base team are measured the same way at reconciliation */
+  const shOf=l=>roster>0?l.roster/roster:1/locs.length;
+  const bf2=S.backfill?locs.reduce((x,l)=>x+shOf(l)/l.avail,0):1;
+  const leave2=added*(bf2-1);
+  const s2run=added*bf2*(1+rp2);
   /* AIOps per tower ([F] Part 3, Sc.4 Step 3): where AIOps is in scope, 1 AI engineer per N of the tower's
      support FTE. N follows client AI adoption: 1:4 low, 1:8 moderate (flexes to 1:6 over 20 FTE). */
-  towers.forEach(t=>{t.run=(t.fte-t.skills.reduce((x,k)=>x+k.absorbed,0))*(1+rp2)});
+  towers.forEach(t=>{t.run=(t.fte-t.skills.reduce((x,k)=>x+k.absorbed,0))*bf2*(1+rp2)});
   const aiTowers=towers.filter(t=>t.aiops===true);
   const aiBase=aiTowers.reduce((x,t)=>x+t.run,0);
   const scRatio=S.aiMaturity==="moderate"?8:4;
@@ -1411,7 +1468,8 @@ function compute(){
   locs.forEach(l=>{
     const sh=roster>0?l.roster/shareBase:1/locs.length;
     l.ai=ai2*sh;
-    l.t2=add2*(1+rp2)*sh; l.t3=add3*(1+rp2)*sh+l.ai;
+    const lf=S.backfill?1/l.avail:1;
+    l.t2=add2*(1+rp2)*sh*lf; l.t3=add3*(1+rp2)*sh*lf+l.ai;
     l.u2=0; l.u3=0;
   });
 
@@ -1427,7 +1485,7 @@ function compute(){
       return {id:l.id,floor:(ls*days*cv.people+os*days*oc)/b/u1*f};
     });
     const floor=byLoc.reduce((s3,x)=>s3+x.floor,0);
-    const have=k.added*(1+rp2);
+    const have=k.added*bf2*(1+rp2);
     const top=Math.max(0,floor-have);
     const l3s=(k.f2+k.f3)>0?k.f3/(k.f2+k.f3):0.5;
     return {...k,live,onCall:spd-live.length,people:cv.people,floor,have,top,l3s,byLoc};
@@ -1520,6 +1578,19 @@ function compute(){
   /* rounding on the combined team */
   const up=x=>Math.ceil(x-1e-6);
   const total=sub5+s6;
+  /* Year 1 team by role: every FTE traced back to the skill set, tower or stage that asked for it.
+     Contingency is spread over the delivery roles (as over the location cells); the SDM carries none. */
+  const roles=[];
+  towers.forEach(t=>{
+    if(!t.skills.length){if(t.fte>0)roles.push({role:"Not yet assigned to a skill set",tower:t.name,fte:t.fte*bf2*(1+rp2)});return}
+    t.skills.forEach(k=>{const cs=covSkills.find(c=>c.id===k.id);roles.push({role:k.name,tower:t.name,fte:k.added*bf2*(1+rp2)+(cs&&cs.top>0?cs.top*(1+rp3):0)})});
+    if(t.ai>0)roles.push({role:"AI Engineer (AIOps)",tower:t.name,fte:t.ai});
+  });
+  if(s4>0)roles.push({role:"Transformation: SRE, automation, CI/CD",tower:"All towers",fte:s4});
+  if(lift>0)roles.push({role:"Shift cover: L2/L3 engineers to staff every shift",tower:"All towers",fte:lift});
+  const delivRoles=roles.reduce((x,r)=>x+r.fte,0);
+  roles.forEach(r=>{r.fte*=delivRoles>0?1+s6/delivRoles:1});
+  if(s5>0)roles.push({role:"Service Delivery Manager",tower:"Governance",fte:s5});
   locs.forEach(l=>{
     if(S.rounding==="cell"){l.p2=up(l.c2);l.p3=up(l.c3);l.pg=l.g>0?Math.max(1,Math.round(l.g)):0;l.people=l.p2+l.p3+l.pg}
     else if(S.rounding==="loc"){l.p2=l.c2;l.p3=l.c3;l.pg=l.g;l.people=up(l.fte)}
@@ -1553,15 +1624,52 @@ function compute(){
   }
   return {days,spd,shiftLen,a,b,c,framework,actDays,oncDays,oc1,aEff,rp1,locs,roster,buffered,s1,warnings,
     u1,utilised,utilAdd:utilised-roster,leaveAdd:buffered-utilised,risk1Add:s1-buffered,
-    towers,skills,demand,demAbs,capacity,absorbed,added,add2,add3,rp2,s2,s2run,risk2Add:s2run-added,warnings2,
+    towers,skills,demand,demAbs,capacity,absorbed,added,add2,add3,rp2,s2,s2run,bf2,leave2,risk2Add:s2run-added*bf2,warnings2,
     aiTowers,aiBase,scRatio,ai2,
     covSkills,topUp,rp3,s3,risk3Add:s3-topUp,sub2:s2,sub3,runTeam,workTeam,runWork,lift,
     volShare,volAvail,sc,SC,transPct,pod,autoRatio,ratio:aiRatioN,aiops,stage4raw,otherTrans,rp4,s4,risk4Add:s4-stage4raw,
     sub4,sdmRatio,sdmRaw,rp5,s5,risk5Add:s5-sdmRaw,sdmLoc,
     sub5,CX,contPct,contRaw,rp6,s6,risk6Add:s6-contRaw,pyr,shares,
     savePct,cont2,floor,rp7,years,termRows,term,
-    total,people,roundAdd:people-total,
+    total,people,roundAdd:people-total,roles,
     snaps,L2:sum(locs,"c2"),L3:sum(locs,"c3"),G:sum(locs,"g"),L2p:sum(locs,"p2"),L3p:sum(locs,"p3"),Gp:sum(locs,"pg")};
+}
+
+/* ---------- allowances and deviations (deal desk view) ---------- */
+/* Each allowance is measured by switching it off in turn and re-running the engine, so the figures add up
+   to the Year 1 team even though reconciliation keeps the larger of two teams. */
+function altTotal(patch){const keep=S;S=Object.assign({},keep,patch);try{return compute().total}finally{S=keep}}
+function allowances(){
+  const riskOff=Object.fromEntries(Object.keys(S.risks).map(k=>[k,S.risks[k].map(r=>({...r,on:false}))]));
+  const t0=R.total, t1=altTotal({risks:riskOff}), t2=altTotal({risks:riskOff,contPct:0}),
+    t3=altTotal({risks:riskOff,contPct:0,backfill:false}),
+    t4=altTotal({risks:riskOff,contPct:0,backfill:false,util1:100,bench:Object.assign({},S.bench,{util:100})});
+  return {core:t4,util:t3-t4,productive:t3,leave:t2-t3,cont:t1-t2,risk:t0-t1,total:t0,
+    buffer:t0-t3,bufferPct:t3>0?(t0-t3)/t3*100:0,round:R.people-t0,people:R.people};
+}
+const BENCH_LBL={p12:"L1 → L2 pass-through %",p23:"L2 → L3 pass-through %",are2:"L2 hours per ticket",are3:"L3 hours per ticket",util:"Effort utilisation %",hrsMonth:"Hours per FTE a month",bModern:"Non-ticketing effort, modern %",bLegacy:"Non-ticketing effort, legacy %",
+  "tpa.S":"AMS tickets per S app","tpa.M":"AMS tickets per M app","tpa.L":"AMS tickets per L app","tpa.XL":"AMS tickets per XL app","tpa.XXL":"AMS tickets per XXL app",
+  "ims.wEnv":"IMS points per environment","ims.wHost":"IMS points per hosting platform","ims.wDb":"IMS points per database","ims.sec":"IMS points for security","ims.tpp":"IMS tickets per point",
+  "dms.wDp":"DMS points per data product","dms.wPipe":"DMS points per pipeline","dms.wInt":"DMS points per integration","dms.wUp":"DMS points per upstream","dms.wDown":"DMS points per downstream","dms.tpp":"DMS tickets per point",
+  "ai.wAgent":"AI points per agent","ai.wModel":"AI points per model","ai.wTool":"AI points per tool integration","ai.wKs":"AI points per knowledge source","ai.risk":"AI points for high-risk use","ai.tpp":"AI tickets per point"};
+function deviations(){
+  const out=[], add=(l,d,u,src)=>{if(String(d)!==String(u))out.push([l,d,u,src])};
+  add("Utilisation per resource (Stage 1) %",85,S.util1,"[F] G6");
+  add("Contracted hours a week",40,S.fteHours,"[F] p.3");
+  add("On-call allowance, base team %",15,S.oncall1,"agreed");
+  add("On-call allowance, specialists %",15,S.onCallPct,"proposed");
+  add("Leave & holiday backfill","on",S.backfill?"on":"off","[F] G3");
+  const db=defaultBench();
+  Object.keys(BENCH_LBL).forEach(k=>{const [a,b]=k.split(".");const d=b?db[a][b]:db[a], u=b?S.bench[a][b]:S.bench[a];add(BENCH_LBL[k],d,u,k.includes(".")&&!k.startsWith("tpa")?"proposed":"[F] 1.1–1.5")});
+  if(S.aiRatio!=="auto"&&R.aiTowers.length)add("AIOps engineer ratio",`1:${R.autoRatio}`,`1:${S.aiRatio}`,"[F] Part 3");
+  if(S.transPct!=null)add("Transformation POD %",R.SC.pct,S.transPct,"[F] Part 3");
+  add("SDM ratio","1:8",`1:${S.sdmRatio}`,"DAMO convention");
+  if(S.contPct!=null&&S.cplx)add("Y1 contingency %",R.CX.cont,S.contPct,"proposed");
+  if(S.pyr&&S.pyr[S.cplx]&&S.cplx)add("Pyramid Lead : Senior : Consultant",CPLX[S.cplx].pyr.join(" : "),pyrOf().join(" : "),"[P]");
+  if(S.savePct!=null)add("YoY savings %",SAVE_BY_SC[R.sc],S.savePct,"[F] Part 3");
+  if(S.cont2!=null)add("Contingency from Y2 %",Math.min(R.contPct,6),S.cont2,"proposed");
+  add("Protect the coverage floor in savings","on",S.protectFloor!==false?"on":"off","proposed");
+  return out;
 }
 
 /* ---------- helpers ---------- */
@@ -1712,7 +1820,7 @@ function updateRiskDeltas(k,base,add,pct){
 let R;
 function update(){
   R=compute();
-  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); updateS6(); updateS7(); updateS8(); updateResults(); renderBar(); save();
+  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); updateS6(); updateS7(); updateS8(); updateResults(); renderBar(); updateMeta(); save();
 }
 function updateS1(){
   document.querySelectorAll("[data-cov]").forEach(b=>{const p=COV_PRESETS.find(x=>x[0]===b.dataset.cov);b.setAttribute("aria-pressed",String(S.days===p[1]&&S.hours===p[2]))});
@@ -1785,8 +1893,9 @@ function updateS2(){
   h+=wstep("3","A · Ticketing effort",`${fmt(A,0)} h`,`(L2 × ${B.are2}h + L3 × ${B.are3}h) ÷ ${B.util}% utilisation`);
   h+=wstep("4","B · Non-ticketing effort",`${fmt(Bh,0)} h`,`A × ${B.bModern}% modern or ${B.bLegacy}% legacy estate, per tower`);
   h+=wstep("5","Tower FTE",fmt(R.demand,2),`(A + B) ÷ ${B.hrsMonth} hours a month`);
-  h+=wstep("6","Risk modifiers",`<span class="delta risk">${sgn(R.risk2Add,2)}</span>`,`${fmt(R.added,2)} × ${fmt(R.rp2*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
-  h+=wstep("7","AI engineers (AIOps)",`<span class="delta add">${sgn(R.ai2,2)}</span>`,R.aiTowers.length?`${listNames(R.aiTowers)}: ${fmt(R.aiBase,2)} support FTE ÷ ${R.ratio} (1 AI engineer per ${R.ratio} support FTE)`:`No tower has AIOps in scope`);
+  h+=wstep("6","Leave &amp; holiday backfill",`<span class="delta add">${sgn(R.leave2,2)}</span>`,S.backfill?`Tower FTE ÷ availability of the locations it sits in (spread like the Stage 1 roster): ×${fmt(R.bf2,3)}`:"Off, as in Stage 1");
+  h+=wstep("7","Risk modifiers",`<span class="delta risk">${sgn(R.risk2Add,2)}</span>`,`${fmt(R.added*R.bf2,2)} × ${fmt(R.rp2*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
+  h+=wstep("8","AI engineers (AIOps)",`<span class="delta add">${sgn(R.ai2,2)}</span>`,R.aiTowers.length?`${listNames(R.aiTowers)}: ${fmt(R.aiBase,2)} support FTE ÷ ${R.ratio} (1 AI engineer per ${R.ratio} support FTE)`:`No tower has AIOps in scope`);
   h+=wstep("=","Tower team",`${fmt(R.s2,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Built from the work, separately from the ${fmt(R.s1,2)} FTE base team · L2 ${fmt(R.add2,2)} · L3 ${fmt(R.add3,2)} before risk${R.ai2>0?` · AI engineers ${fmt(R.ai2,2)}`:""}. The two are compared at Stage 5.`,"total");
   $("steps2").innerHTML=h;
   $("towerCalc").innerHTML=R.towers.length?R.towers.map(t=>`<tr><td class="loc-name">${esc(t.name)}<small>${t.kind}${t.estate==="legacy"?(t.kind==="AI"?" · self-hosted":" · legacy"):""}</small></td><td>${esc(t.src)}</td><td class="r num">${fmt(t.tickets,0)}</td><td class="r num">${fmt(t.l2t,1)}</td><td class="r num">${fmt(t.l3t,1)}</td><td class="r num">${fmt(t.A,0)}</td><td class="r num">${fmt(t.Bh,0)}</td><td class="r num"><b>${fmt(t.fte,2)}</b></td></tr>`).join("")
@@ -1796,7 +1905,7 @@ function updateS2(){
     +R.aiTowers.map(t=>`<tr><td class="loc-name">AI Engineer (AIOps)<small>${esc(t.name)}</small></td><td class="r num">1:${R.ratio}</td><td class="r num">${fmt(t.ai,2)}</td><td><span class="no">No, builds automation</span></td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td></td><td class="r num"><b>${fmt(R.demand+R.ai2,2)}</b></td><td></td></tr>`
     :`<tr><td colspan="4" class="hint">No skill sets yet.</td></tr>`;
-  updateRiskDeltas("s2",R.added,R.risk2Add,R.rp2);
+  updateRiskDeltas("s2",R.added*R.bf2,R.risk2Add,R.rp2);
   const proxy=R.towers.filter(t=>!t.vol), vol=R.towers.filter(t=>t.vol);
   renderAuto("s2",[
     ["B1",`The client runs the L1 service desk. Tickets are L1 inflow: ${B.p12}% pass to L2 and ${B.p23}% of those to L3 (Year 1 benchmark).`,"[F] 1.4"],
@@ -1811,6 +1920,7 @@ function updateS2(){
     ["B5",`IMS, DMS and AI platform proxies use complexity points × tickets per point (IMS ${B.ims.tpp}, DMS ${B.dms.tpp}, AI ${B.ai.tpp}). These are calibration targets.`,"proposed"],
     ["B6",`Skill sets the base team already has (${abs.length?abs.map(kn).join(", "):"none"}) are covered on every shift by the base roster. Other skill sets get their own shift cover in Stage 3.`,"proposed"],
     ["B7","Tower FTE keeps its effort-based L2/L3 split and is spread across locations like the Stage 1 roster. Stage 3 sets which shifts each skill covers.","proposed"],
+    ["B9",S.backfill?`Tower FTE gets the same leave and holiday backfill as the base team (×${fmt(R.bf2,3)}, weighted by location), so the two teams are compared like for like at Stage 5.`:"Leave backfill is off, for the tower team as for the base team.","[F] G3"],
     ["B8",R.aiTowers.length?`AIOps is in scope for ${listNames(R.aiTowers)}: one AI engineer per ${R.ratio} support FTE of those towers (after Stage 2 risk), counted as L3 engineering. They build intelligent alerting, RCA automation and self-healing, own prompt engineering and model evaluation, and do not staff shifts.`:"AIOps is not in scope for any tower, so no AI engineers are added.","[F] Sc.4 Step 3"]
   ]);
 }
@@ -2021,6 +2131,19 @@ function updateS7(){
   ]);
 }
 
+function renderMeta(){
+  const m=S.meta;
+  $("mVersion").value=m.version;$("mPrep").value=m.preparedBy;$("mAppr").value=m.approvedBy;$("mStatus").value=m.status;$("mDate").value=m.approvedAt;
+  updateMeta();
+}
+function updateMeta(){
+  const m=S.meta, stale=approvalStale();
+  const b=$("mBadge");b.textContent=`v${m.version} · ${stale?"Changed since approval":STATUS[m.status]}`;b.className="mbadge "+(stale?"stale":m.status);
+  let a="";
+  if(stale)a=`<div class="alert" style="margin-bottom:12px">Inputs changed after this estimate was approved${m.approvedAt?` on ${esc(m.approvedAt)}`:""}. The approval no longer matches these numbers: approve again, or set the status back to Draft.</div>`;
+  else if(m.status==="approved"&&!m.approvedBy.trim())a=`<div class="alert" style="margin-bottom:12px">Name the approver.</div>`;
+  $("mAlert").innerHTML=a;
+}
 function renderS8(){
   $("exInputs").innerHTML=EX_TIERS.map(([k,l])=>`<label for="ex-${k}">${l}<input type="number" id="ex-${k}" data-ex="${k}" min="0" max="1000" step="0.5" value="${(S.ex||{})[k]??0}"></label>`).join("");
   $("exSource").value=S.exSource||"";
@@ -2076,7 +2199,7 @@ function renderBar(){
   const sep=t=>`<div class="chip sep">${t||"›"}</div>`;
   let h=chip("base","Roster",fmt(R.roster,1),1)+chip("add","+ Util",sgn(R.utilAdd),1)+chip("add","+ Leave",sgn(R.leaveAdd),1)+chip("risk","+ Risk",sgn(R.risk1Add),1)+chip("base","1 · Base team",fmt(R.s1,1),1);
   if(n>=2){
-    h+=sep("vs")+chip("add","2 · Towers",fmt(R.added,1),2)+chip("risk","+ Risk",sgn(R.risk2Add),2);
+    h+=sep("vs")+chip("add","2 · Towers",fmt(R.added,1),2)+(R.leave2>0?chip("add","+ Leave",sgn(R.leave2),2):"")+chip("risk","+ Risk",sgn(R.risk2Add),2);
     if(R.ai2>0)h+=chip("add","+ AIOps",sgn(R.ai2),2);
     if(n>=3)h+=chip("add","3 · Skill cover",sgn(R.topUp),3)+chip("risk","+ Risk",sgn(R.risk3Add),3);
     if(n>=4)h+=chip("add","4 · Transform",sgn(R.stage4raw),4)+chip("risk","+ Risk",sgn(R.risk4Add),4);
@@ -2097,7 +2220,7 @@ function renderBar(){
   if(k===1)st=seg(R.roster,"var(--accent)","Roster")+seg(R.utilAdd,"var(--accent-soft)","Utilisation")+seg(R.leaveAdd,"var(--add)","Leave backfill")+seg(R.risk1Add,"var(--risk)","Stage 1 risk");
   else{
     const s4=R.snaps[Math.min(k,4)];
-    st=seg(R.added,"#6B7C93","Towers")+seg(R.risk2Add,"var(--risk)","Stage 2 risk")+seg(R.ai2,"#5B6BC0","AI engineers (AIOps)");
+    st=seg(R.added,"#6B7C93","Towers")+seg(R.leave2,"var(--add)","Stage 2 leave backfill")+seg(R.risk2Add,"var(--risk)","Stage 2 risk")+seg(R.ai2,"#5B6BC0","AI engineers (AIOps)");
     if(k>=3)st+=seg(R.topUp,"#3F8C9B","Skill cover")+seg(R.risk3Add,"var(--risk)","Stage 3 risk");
     if(k>=4)st+=seg(R.stage4raw,"#8C5FA8","Transformation")+seg(R.risk4Add,"var(--risk)","Stage 4 risk");
     st+=seg(s4.lift,"var(--accent)","Lift to base team");
@@ -2118,7 +2241,7 @@ function buildRows(){
   const ppl=x=>whole?` · ${fmt(x.people,0)} people`:"";
   return [
     ["1 · Base team",`Coverage ${covLabel()}, ${S.spd} shifts, ${S.perShift.L2} L2 + ${S.perShift.L3} L3 per shift. Roster ${fmt(R.roster,2)} ÷ ${S.util1}% utilisation, leave backfill, ${fmt(R.rp1*100,1)}% risk`,R.s1,sn[1]],
-    ["2 · Service towers",`${R.towers.length} tower${R.towers.length===1?"":"s"}, ${fmt(R.towers.reduce((x,t)=>x+t.tickets,0),0)} tickets a month → ${fmt(R.demand,2)} FTE of effort, ${fmt(R.rp2*100,1)}% risk${R.ai2>0?`, AI engineers (AIOps) ${fmt(R.ai2,2)} at 1:${R.ratio}`:""}. Team is the larger of base ${fmt(R.s1,2)} and work ${fmt(sn[2].work,2)}`,R.s2,sn[2]],
+    ["2 · Service towers",`${R.towers.length} tower${R.towers.length===1?"":"s"}, ${fmt(R.towers.reduce((x,t)=>x+t.tickets,0),0)} tickets a month → ${fmt(R.demand,2)} FTE of effort${R.leave2>0?`, +${fmt(R.leave2,2)} leave backfill`:""}, ${fmt(R.rp2*100,1)}% risk${R.ai2>0?`, AI engineers (AIOps) ${fmt(R.ai2,2)} at 1:${R.ratio}`:""}. Team is the larger of base ${fmt(R.s1,2)} and work ${fmt(sn[2].work,2)}`,R.s2,sn[2]],
     ["3 · Skill coverage",`Specialist shift cover for ${R.covSkills.length} skill set${R.covSkills.length===1?"":"s"} (on call ${S.onCallPct}%), ${fmt(R.rp3*100,1)}% risk. Work team ${fmt(sn[3].work,2)}`,R.s3,sn[3]],
     ["4 · Transformation",`Scenario ${R.sc}: POD ${R.transPct}% of ${fmt(R.runTeam,2)}${R.ai2>0?` less ${fmt(R.ai2,2)} AI engineers already added`:""}, ${fmt(R.rp4*100,1)}% risk. Work team ${fmt(R.workTeam,2)}`,R.s4,sn[4]],
     ["5 · Reconcile & SDM",`${R.lift>0?`Work team ${fmt(R.runWork,2)} lifted to base ${fmt(R.s1,2)} (+${fmt(R.lift,2)})`:`Work team ${fmt(R.runWork,2)} kept over base ${fmt(R.s1,2)}`}${R.ai2>0?` + ${fmt(R.ai2,2)} AI engineers`:""}; SDM ${fmt(R.sub4,2)} ÷ ${R.sdmRatio}`,R.s5,sn[5]],
@@ -2163,6 +2286,105 @@ function updateResults(){
     +(whole?`<tr><td class="loc-name">Rounding</td><td class="hint">${({cell:"Up per location and tier; SDM to nearest",loc:"Up per location",total:"Total rounded up"})[S.rounding]}</td><td class="r num">${sgn(R.roundAdd,2)}</td><td class="r num"><b>${fmt(R.people,0)} people</b></td></tr>`:"")
     +`<tr><td class="loc-name">7 · Term</td><td class="hint">${R.savePct}% YoY savings from Y2, contingency ${R.contPct}% → ${R.cont2}%</td><td class="r num">–</td><td class="r num"><b>${fmt(tr.avg,2)}</b> avg</td></tr>`
     +`<tr><td class="loc-name">8 · Fact check</td><td class="hint">${exTot>0?`Existing team ${fmt(exTot,1)} FTE`:"No existing team entered"}</td><td class="r num">–</td><td class="r num">${exTot>0?sgn((R.total-exTot)/exTot*100,0)+"%":"–"}</td></tr>`;
+  if(S.active===8)renderDeskViews();
+}
+function renderDeskViews(){
+  const rt=R.total||1;
+  $("finalRoles").innerHTML=R.roles.length?R.roles.map(r=>`<tr><td class="loc-name">${esc(r.role)}</td><td>${esc(r.tower)}</td><td class="r num">${fmt(r.fte,2)}</td><td class="r num">${fmt(r.fte/rt*100,0)}%</td></tr>`).join("")
+    +`<tr><td><b>Total</b></td><td></td><td class="r num"><b>${fmt(R.roles.reduce((x,r)=>x+r.fte,0),2)}</b></td><td class="r num">100%</td></tr>`
+    :`<tr><td colspan="4" class="hint">No towers yet: the team is the Stage 1 base team (${fmt(R.total,2)} FTE of L2/L3 shift cover).</td></tr>`;
+  const A=allowances();
+  let h=wstep("1","Productive need",fmt(A.core,2),"The team with every allowance switched off: coverage and work at 100% productive time");
+  h+=wstep("2","Productive-time allowance",`<span class="delta add">${sgn(A.util,2)}</span>`,`Utilisation ${S.util1}% per resource and ${S.bench.util}% on ticket effort ([F] G6). Not a buffer: people are not productive every hour`);
+  h+=wstep("3","Leave &amp; holiday backfill",`<span class="delta add">${sgn(A.leave,2)}</span>`,S.backfill?"Cover while people are on leave or public holidays":"Off");
+  h+=wstep("4","Contingency",`<span class="delta add">${sgn(A.cont,2)}</span>`,S.cplx?`${R.contPct}% for ${R.CX.name.toLowerCase()} complexity`:"Complexity not set in Stage 6, so none");
+  h+=wstep("5","Risk modifiers",`<span class="delta risk">${sgn(A.risk,2)}</span>`,`${Object.values(S.risks).flat().filter(r=>r.on&&+r.pct).length} active risks with a modifier. Risks on a team that the larger team replaces at Stage 5 add nothing`);
+  h+=wstep("=","Year 1 team",`${fmt(A.total,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Buffer above productive capacity (leave + contingency + risk): ${fmt(A.buffer,2)} FTE, <b>${fmt(A.bufferPct,1)}%</b>${S.rounding!=="none"?`. Rounding to ${fmt(A.people,0)} people adds ${sgn(A.round,2)}`:""}. Each allowance is measured by switching it off in turn`,"total");
+  $("finalAllow").innerHTML=h;
+  R.allow=A;
+  const dv=deviations();R.devs=dv;
+  $("finalDev").innerHTML=dv.length?dv.map(d=>`<tr><td class="loc-name">${esc(d[0])}</td><td class="r num">${esc(String(d[1]))}</td><td class="r num"><b>${esc(String(d[2]))}</b></td><td><span class="src">${esc(d[3])}</span></td></tr>`).join("")
+    :`<tr><td colspan="4" class="hint">None: every benchmark and ratio is at its framework or agreed value.</td></tr>`;
+}
+
+/* ---------- customer-facing summary ---------- */
+const KIND_PLAIN={AMS:"Application management",IMS:"Infrastructure management",DMS:"Data platform management",AI:"AI platforms and agentic solutions"};
+const ROLE_PLAIN={"Not yet assigned to a skill set":"Support engineers","Shift cover: L2/L3 engineers to staff every shift":"Shift engineers (staff every shift in the support window)","Transformation: SRE, automation, CI/CD":"Transformation engineers (SRE, automation, CI/CD)"};
+function buildCustomerReport(){
+  const whole=S.rounding!=="none", last=R.snaps[6], T=R.term;
+  const date=new Date().toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"});
+  const n1=x=>fmt(x,1);
+  /* coverage in plain words */
+  const shiftTxt=[...Array(S.spd)].map((_,i)=>{const loc=S.locations.find(l=>l.id===S.assign[i]);const on=(S.shiftMode&&S.shiftMode[i])==="oncall";
+    return `<li><b>Shift ${i+1} of ${S.spd}</b> (${hrs(R.shiftLen)} hours): ${on?`<b>on call</b> for critical (P1) incidents: an engineer is reachable and responds, but no one is working the shift`:`engineers <b>working</b> the shift`}${loc?`, from ${esc(loc.name)}`:""}.</li>`}).join("");
+  const wk=S.days>5?(S.weekendMode==="oncall"?"Weekends are covered on call for critical (P1) incidents.":"Weekends are covered the same way as weekdays."):"No weekend cover.";
+  /* scope */
+  const scope=R.towers.filter(t=>t.src!=="Not answered yet").map(t=>{
+    const basis=t.src==="Ticket history"?`sized on ${fmt(t.tickets,0)} tickets a month from your ticket history`:t.src==="MAU proxy"?`sized from user numbers (about ${fmt(t.tickets,0)} tickets a month); to be confirmed with ticket history`:`sized from the estate's size and complexity (about ${fmt(t.tickets,0)} tickets a month); to be confirmed with ticket history`;
+    return `<tr><td><b>${esc(t.name)}</b><br><span class="muted">${KIND_PLAIN[t.kind]}</span></td><td>${esc(basis)}</td><td>${t.aiops===true?"Included":"Not included"}</td></tr>`}).join("");
+  /* roles, merged across towers */
+  const byRole={};R.roles.forEach(r=>{const k=ROLE_PLAIN[r.role]||r.role;(byRole[k]=byRole[k]||{fte:0,towers:new Set()}).fte+=r.fte;byRole[k].towers.add(r.tower)});
+  const roleRows=Object.entries(byRole).map(([k,v])=>`<tr><td>${esc(k)}</td><td class="muted">${esc([...v.towers].join(", "))}</td><td class="r">${n1(v.fte)}</td></tr>`).join("");
+  const locRows=last.cells.filter(c=>c.a2+c.a3+c.g>0).map(c=>`<tr><td>${esc(c.name)}</td><td class="r">${whole?c.p2:n1(c.a2)}</td><td class="r">${whole?c.p3:n1(c.a3)}</td><td class="r">${whole?c.pg:n1(c.g)}</td><td class="r"><b>${whole&&S.rounding!=="total"?fmt(c.people,0):n1(c.a2+c.a3+c.g)}</b></td></tr>`).join("");
+  const yrs=R.years.slice(0,T);
+  const traj=yrs.map(y=>`<td class="r"><b>${n1(y.fte)}</b></td>`).join("");
+  const drop=T>1?(1-yrs[T-1].fte/yrs[0].fte)*100:0;
+  /* what we need from the client */
+  const hasAI=R.towers.some(t=>t.kind==="AI")||R.aiTowers.length>0;
+  const needs=["Your service desk keeps first-line (L1) contact and passes tickets to our team.",
+    "Access to the environments, monitoring and ITSM tools in scope, from the start of transition.",
+    "Ticket history, runbooks, architecture documents and time with your current team for knowledge transfer.",
+    "Named contacts for escalation, change approval and service reviews."];
+  if(hasAI)needs.push("AI platform, model and token (inference) costs are paid by you.");
+  const assume=Object.keys(S.assumptions).flatMap(k=>S.assumptions[k]).map(a=>a.trim()).filter(a=>a&&!/^Service desk \(L1\)/.test(a)).map(a=>a.replace(/^To confirm with the client:/,"To confirm with you:"));
+  const changes=[];
+  const volT=R.towers.filter(t=>t.src==="Ticket history");
+  if(volT.length)changes.push(`Ticket volumes that differ materially from the ${fmt(volT.reduce((x,t)=>x+t.tickets,0),0)} a month assumed.`);
+  if(R.towers.some(t=>t.src!=="Ticket history"&&t.src!=="Not answered yet"))changes.push("Ticket history for the areas sized from estate size or user numbers.");
+  changes.push("A longer or shorter support window, or a different mix of working and on-call shifts.");
+  changes.push("Applications, platforms or services added to or removed from scope.");
+  if(T>1)changes.push("How quickly automation can be adopted, which drives the reduction from Year 2.");
+  const css=`body{font:15px/1.6 "IBM Plex Sans","Segoe UI",system-ui,sans-serif;color:#18202B;background:#fff;margin:0}
+    main{max-width:860px;margin:0 auto;padding:36px 24px 56px}
+    h1{font:800 30px/1.2 Archivo,"Helvetica Neue",Arial,sans-serif;margin:4px 0 8px}
+    h2{font:700 19px/1.3 Archivo,"Helvetica Neue",Arial,sans-serif;margin:34px 0 8px}
+    .eyebrow{font:600 11px/1 inherit;letter-spacing:.12em;text-transform:uppercase;color:#9B2F66}
+    .muted{color:#5A6472}
+    table{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
+    th{font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#5A6472;text-align:left;padding:6px 8px;border-bottom:1px solid #DCE0E7}
+    td{padding:8px;border-bottom:1px solid #EEF0F4;vertical-align:top}
+    .r{text-align:right;white-space:nowrap}
+    .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0}
+    .kpi{border:1px solid #DCE0E7;border-radius:8px;padding:12px 14px}
+    .kpi span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#5A6472}
+    .kpi b{display:block;font:700 26px "IBM Plex Mono",ui-monospace,monospace;color:#9B2F66}
+    .kpi em{font-style:normal;font-size:13px;color:#5A6472}
+    ul{padding-left:20px}li{margin:4px 0}
+    footer{margin-top:40px;font-size:12px;color:#5A6472;border-top:1px solid #DCE0E7;padding-top:12px}
+    @media (max-width:600px){.kpis{grid-template-columns:1fr}}`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(S.deal||"Managed service")} · Proposed team</title><style>${css}</style></head><body><main>
+  <div class="eyebrow">Managed service proposal</div>
+  <h1>${esc(S.deal||"Managed service")}: proposed support team</h1>
+  <p class="muted">${esc(date)} · version ${S.meta.version}. Indicative team for discussion, subject to due diligence. Pricing is provided separately.</p>
+  <div class="kpis">
+    <div class="kpi"><span>Year 1 team</span><b>${whole?fmt(R.people,0):n1(R.total)}</b><em>${whole?"people":"FTE"}</em></div>
+    <div class="kpi"><span>Support window</span><b>${esc(covLabel())}</b><em>${S.hours} hours a day, ${S.days} days a week</em></div>
+    <div class="kpi"><span>${T>1?`Year ${T} team`:"Contract"}</span><b>${T>1?n1(yrs[T-1].fte):"1 yr"}</b><em>${T>1?`FTE, ${fmt(drop,0)}% below Year 1 through automation`:"term"}</em></div>
+  </div>
+  <h2>How you are covered</h2>
+  <p>Support runs ${S.hours} hours a day, ${S.days} days a week, in ${S.spd} shift${S.spd>1?"s":""}:</p><ul>${shiftTxt}</ul><p>${wk}</p>
+  ${scope?`<h2>What is in scope</h2><table><thead><tr><th>Service</th><th>How it was sized</th><th>AIOps</th></tr></thead><tbody>${scope}</tbody></table>
+  ${R.aiTowers.length?`<p class="muted">Where AIOps is included, dedicated AI engineers build intelligent alerting, automated root-cause analysis and self-healing, so fewer incidents need a person to resolve them.</p>`:""}`:""}
+  <h2>The team in Year 1</h2>
+  <table><thead><tr><th>Role</th><th>Services</th><th class="r">FTE</th></tr></thead><tbody>${roleRows||`<tr><td>Support engineers</td><td></td><td class="r">${n1(R.total)}</td></tr>`}<tr><td><b>Total</b></td><td class="muted">${whole?`rostered as ${fmt(R.people,0)} people, rounded up to whole people in each location`:""}</td><td class="r"><b>${n1(R.total)}</b></td></tr></tbody></table>
+  <table><thead><tr><th>Location</th><th class="r">Support engineers</th><th class="r">Senior engineers</th><th class="r">Service delivery</th><th class="r">${whole&&S.rounding!=="total"?"People":"FTE"}</th></tr></thead><tbody>${locRows}</tbody></table>
+  ${T>1?`<h2>The team over the contract</h2><table><thead><tr>${yrs.map(y=>`<th class="r">Year ${y.n}</th>`).join("")}</tr></thead><tbody><tr>${traj}</tr></tbody></table>
+  <p>From Year 2 the team gets smaller as runbooks mature and automation takes on repeat work. The people needed to cover every shift stay in place.</p>`:""}
+  <h2>What we need from you</h2><ul>${needs.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>
+  ${assume.length?`<h2>Assumptions</h2><ul>${assume.map(a=>`<li>${esc(a)}</li>`).join("")}</ul>`:""}
+  <h2>What would change the team size</h2><ul>${changes.map(c=>`<li>${esc(c)}</li>`).join("")}</ul>
+  <footer>Team sizes are full-time equivalents (FTE). One FTE is one person working full time; part-FTE roles are shared across services.</footer>
+  </main></body></html>`;
 }
 
 /* ---------- downloadable summary document ---------- */
@@ -2228,6 +2450,8 @@ function buildReport(){
   const doc=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(S.deal||"DAMO deal")} · Estimate summary</title><style>${css}</style></head><body><main>
   <div class="eyebrow">DAMO estimation workflow · deal review</div>
   <h1>${esc(S.deal||"DAMO deal")}: estimate summary</h1>
+  <p><b>Version ${S.meta.version} · ${approvalStale()?"Changed since approval":STATUS[S.meta.status]}</b>${S.meta.preparedBy?` · prepared by ${esc(S.meta.preparedBy)}`:""}${S.meta.status==="approved"&&S.meta.approvedBy?` · approved by ${esc(S.meta.approvedBy)}${S.meta.approvedAt?` on ${esc(S.meta.approvedAt)}`:""}`:""}</p>
+  ${approvalStale()?`<p class="alert">The inputs changed after approval: these numbers are not the approved ones.</p>`:""}
   <p class="muted">Prepared ${esc(date)}. FTE only: no rates, cost or price. Sources: [F] DAMO Solution Estimation Framework, [P] AI_Works DAMO Team Pricing Sheet; values marked "proposed" are calibration assumptions.</p>
   <div class="kpis">
     <div class="kpi main"><span>Year 1 team</span><b>${fmt(R.total,1)}</b><em>FTE</em></div>
@@ -2239,6 +2463,9 @@ function buildReport(){
   <table><thead><tr><th>Stage</th><th>What it did</th><th class="r">Stage FTE</th><th class="r">Team after</th></tr></thead><tbody>${build}</tbody></table>
   <h3>Final team by location</h3>
   <table><thead><tr><th>Location</th><th class="r">L2</th><th class="r">L3</th><th class="r">SDM</th><th class="r">${whole&&S.rounding!=="total"?"People":"FTE"}</th></tr></thead><tbody>${locRows}</tbody></table>
+  <h3>Year 1 team by role</h3>${tableOf("finalRoles")}
+  <h3>Allowances in the Year 1 team</h3><div class="working">${$("finalAllow").innerHTML}</div>
+  <h3>Deviations from the framework</h3>${tableOf("finalDev")}
   <p class="muted">Coverage ${esc(covLabel())} · ${S.spd} shifts a day · utilisation ${S.util1}% · leave backfill ${S.backfill?"on":"off"} · complexity ${esc(R.CX.name)} · term ${T} year${T>1?"s":""}${exTot>0?` · existing team ${fmt(exTot,1)} FTE (${sgn((R.total-exTot)/exTot*100,0)}%)`:""}</p>
   ${stageDoc(1,"Base team from coverage",tableOf("locCalc"))}
   ${stageDoc(2,"Service towers",tableOf("towerCalc")+tableOf("skillCalc"))}
@@ -2252,22 +2479,42 @@ function buildReport(){
   </main></body></html>`;
   return doc;
 }
-async function downloadReport(){
-  /* make sure every stage's lazily rendered parts are filled before reading them */
-  renderS3();renderS4();renderS5();renderS6();renderS7();renderS8();update();
-  const html=buildReport();
-  const name=`${(S.deal||"DAMO").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"")||"DAMO"}-estimate-summary.html`;
+/* hands a file to the viewer: the claude.ai downloads capability when present, otherwise a normal download */
+async function saveOut(name,data,type,okMsg){
   let dl=null;
   try{if(window.claude&&typeof window.claude.use==="function")dl=await window.claude.use("downloads")}catch(e){dl=null}
   if(dl){
-    try{await dl.save({filename:name,data:html});toast("Summary saved")}
-    catch(e){if(e&&e.code==="declined")return;toast(e&&e.code==="rate_limited"?"A save prompt is already open":"Download is not available here. Use Copy summary instead.")}
+    try{await dl.save({filename:name,data});toast(okMsg)}
+    catch(e){if(e&&e.code==="declined")return;toast(e&&e.code==="rate_limited"?"A save prompt is already open":"Download is not available here.")}
     return;
   }
-  const blob=new Blob([html],{type:"text/html"});const a=document.createElement("a");
+  const blob=new Blob([data],{type});const a=document.createElement("a");
   a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);
-  toast("Summary downloaded");
+  toast(okMsg);
+}
+const slug=()=>(S.deal||"DAMO").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"")||"DAMO";
+function saveEstimate(){
+  const data=JSON.stringify({app:"damo-estimation-workflow",format:1,savedAt:new Date().toISOString(),state:S},null,1);
+  saveOut(`${slug()}-v${S.meta.version}.damo.json`,data,"application/json",`Estimate saved as version ${S.meta.version}`);
+}
+async function openEstimate(file){
+  try{
+    const j=JSON.parse(await file.text());
+    if(!j||j.app!=="damo-estimation-workflow"||!j.state||typeof j.state!=="object")throw new Error("not an estimate");
+    S=migrate(j.state);
+    renderAll();go(S.active||1);
+    toast(`Opened ${S.deal||file.name}: version ${S.meta.version}, ${approvalStale()?"changed since approval":STATUS[S.meta.status].toLowerCase()}`);
+  }catch(e){toast("That file isn't a saved estimate from this tool.")}
+}
+async function downloadReport(){
+  /* make sure every stage's lazily rendered parts are filled before reading them */
+  renderS3();renderS4();renderS5();renderS6();renderS7();renderS8();update();renderDeskViews();
+  saveOut(`${slug()}-v${S.meta.version}-estimate-summary.html`,buildReport(),"text/html","Summary downloaded");
+}
+async function downloadCustomer(){
+  renderS3();renderS4();renderS5();renderS6();renderS7();renderS8();update();renderDeskViews();
+  saveOut(`${slug()}-proposed-team.html`,buildCustomerReport(),"text/html","Customer summary downloaded");
 }
 
 /* ---------- events ---------- */
@@ -2317,13 +2564,18 @@ document.addEventListener("click",e=>{
   else if(t.id==="resetBtn"){if(d.armed){S=defaults();renderAll();t.textContent="Reset";delete d.armed;}else{d.armed="1";t.textContent="Click again to reset";setTimeout(()=>{t.textContent="Reset";delete t.dataset.armed},3000);}}
   else if(t.id==="copyBtn"||t.id==="copyBtn2"){copySummary();}
   else if(t.id==="dlBtn"||t.id==="dlBtn2"){downloadReport();}
+  else if(t.id==="saveBtn"){saveEstimate();}
+  else if(t.id==="custBtn"){downloadCustomer();}
+  else if(t.id==="openBtn"){$("openFile").click();}
 });
 function twr(el){return S.towers.find(x=>x.id===el.closest("[data-tower]").dataset.tower)}
 function skl(el){const tw=twr(el);return tw.skills.find(k=>k.id===el.closest("[data-skill]").dataset.skill)}
 function findRisk(el){const [k,id]=pair(el.closest("[data-risk]").dataset.risk);return S.risks[k].find(r=>r.id===id)}
 document.addEventListener("input",e=>{
   const t=e.target, d=t.dataset;
-  if(t.id==="dealName"){S.deal=t.value;save();return}
+  if(t.id==="dealName"){S.deal=t.value;updateMeta();save();return}
+  if(t.id==="mPrep"){S.meta.preparedBy=t.value;save();return}
+  if(t.id==="mAppr"){S.meta.approvedBy=t.value;updateMeta();save();return}
   if(t.id==="hours"){const v=Math.round(+t.value);if(v>=1&&v<=24){S.hours=v;renderSpd();update();}return}
   if(t.id==="util1"){const v=+t.value;if(t.value!==""&&v>=50&&v<=100){S.util1=v;update()}return}
   if(t.id==="oncall1"){const v=+t.value;if(t.value!==""&&v>=0&&v<=100){S.oncall1=v;update()}return}
@@ -2352,6 +2604,14 @@ document.addEventListener("input",e=>{
 document.addEventListener("change",e=>{
   const t=e.target, d=t.dataset;
   if(d.dfile){addFiles(d.dfile,[...t.files]);t.value="";return}
+  if(t.id==="openFile"){const f=t.files[0];t.value="";if(f)openEstimate(f);return}
+  if(t.id==="mVersion"){S.meta.version=Math.max(1,Math.round(+t.value||1));updateMeta();save();return}
+  if(t.id==="mDate"){S.meta.approvedAt=t.value;updateMeta();save();return}
+  if(t.id==="mStatus"){
+    S.meta.status=t.value;
+    if(t.value==="approved"){S.meta.approvedAt=S.meta.approvedAt||new Date().toISOString().slice(0,10);S.meta.approvedHash=inputsHash()}
+    else S.meta.approvedHash="";
+    renderMeta();save();return}
   if(t.id==="days"){S.days=+t.value;update();return}
   if(t.id==="hours"){renderS1();update();return}
   if(t.id==="exSource"){S.exSource=t.value;update();return}
@@ -2385,7 +2645,7 @@ function summary(){
     L.push("","**Risks**");
     S.risks[k].forEach(r=>L.push(`- ${r.on?"[applied]":"[not applied]"} ${r.title}: ${r.pct}% FTE modifier. ${r.note}`));
   };
-  L.push(`# ${S.deal||"DAMO deal"}: estimate workflow`,"",`**Team: ${fmt(R.total,2)} FTE${S.rounding!=="none"?`, rostered as ${fmt(R.people,0)} people`:""}**`);
+  L.push(`# ${S.deal||"DAMO deal"}: estimate workflow`,"",`Version ${S.meta.version} · ${approvalStale()?"changed since approval":STATUS[S.meta.status]}${S.meta.preparedBy?` · prepared by ${S.meta.preparedBy}`:""}${S.meta.status==="approved"&&S.meta.approvedBy?` · approved by ${S.meta.approvedBy}${S.meta.approvedAt?` on ${S.meta.approvedAt}`:""}`:""}`,"",`**Team: ${fmt(R.total,2)} FTE${S.rounding!=="none"?`, rostered as ${fmt(R.people,0)} people`:""}**`);
   L.push("",`## Stage 1 · Base team (${covLabel()}, ${S.spd} shifts)`);
   L.push(`- a  Shifts to cover per week: ${S.spd} × ${S.days} = ${fmt(R.a,0)}`);
   if(R.oncDays>0)L.push(`- a′ Staffed shift-equivalents: ${fmt(R.actDays,0)} active + ${fmt(R.oncDays,0)} on-call × ${S.oncall1}% = ${fmt(R.aEff,2)}`);
@@ -2405,6 +2665,7 @@ function summary(){
   L.push("","| Skill set | Tower | Share | FTE | Base has skill |","|---|---|---|---|---|");
   R.skills.forEach(k=>L.push(`| ${k.name} | ${k.tower} | ${fmt(k.norm*100,0)}% | ${fmt(k.fte,2)} | ${k.absorb?"Yes, every shift":"No"} |`));
   L.push("",`- Tower FTE (A + B) ÷ ${S.bench.hrsMonth}: ${fmt(R.demand,2)}`);
+  L.push(`- Leave & holiday backfill: ${sgn(R.leave2,2)}`);
   L.push(`- Risk modifiers (${fmt(R.rp2*100,1)}%): ${sgn(R.risk2Add,2)}`);
   L.push(R.aiTowers.length?`- AI engineers (AIOps) for ${listNames(R.aiTowers)}: ${fmt(R.aiBase,2)} ÷ ${R.ratio} = ${fmt(R.ai2,2)}`:"- AIOps not in scope for any tower");
   L.push(`- **Tower team: ${fmt(R.s2,2)} FTE** (built from the work, compared with the base team at Stage 5)`);
@@ -2447,6 +2708,10 @@ function summary(){
     `| L2 | ${fmt(n("L2"),1)} | ${fmt(R.L2,2)} |`,`| L3 incl. SRE / automation | ${fmt(n("L3")+n("trans"),1)} | ${fmt(R.L3,2)} |`,`| Governance (SDM) | ${fmt(n("gov"),1)} | ${fmt(R.G,2)} |`,`| Other roles | ${fmt(n("other"),1)} | 0.00 |`,`| **Total** | **${fmt(exTot,1)}** | **${fmt(R.total,2)}** |`);
   L.push("",$("exVerdict").textContent);}
   rows("s8");
+  renderDeskViews();
+  L.push("","## Year 1 team by role","","| Role | Tower | FTE |","|---|---|---|");R.roles.forEach(r=>L.push(`| ${r.role} | ${r.tower} | ${fmt(r.fte,2)} |`));
+  {const A=R.allow;L.push("","## Allowances in the Year 1 team",`- Productive need ${fmt(A.core,2)}; productive-time allowance ${sgn(A.util,2)}; leave backfill ${sgn(A.leave,2)}; contingency ${sgn(A.cont,2)}; risk ${sgn(A.risk,2)} → ${fmt(A.total,2)} FTE`,`- Buffer above productive capacity: ${fmt(A.buffer,2)} FTE (${fmt(A.bufferPct,1)}%)`);}
+  L.push("","## Deviations from the framework");if(R.devs.length){L.push("","| Setting | Framework | Used |","|---|---|---|");R.devs.forEach(d=>L.push(`| ${d[0]} | ${d[1]} | ${d[2]} |`))}else L.push("- None");
   if(S.rounding!=="none")L.push("",`## Rounding`,`- ${fmt(R.total,2)} FTE rounded to ${fmt(R.people,0)} people (${sgn(R.roundAdd,2)}). By location: ${R.locs.filter(l=>l.fte>0).map(l=>`${l.name} ${S.rounding==="total"?fmt(l.fte,2):fmt(l.people,0)}`).join(", ")}`);
   return L.join("\n");
 }
@@ -2694,7 +2959,7 @@ function applyProposals(){
 }
 
 /* ---------- boot ---------- */
-function renderAll(){renderRail();renderS0();renderS1();renderS2();renderS3();renderS4();renderS5();renderS6();renderS7();renderS8();["s1","s2","s3","s4","s5","s6","s7","s8"].forEach(k=>{renderAssume(k);renderRisks(k)});update();}
+function renderAll(){renderMeta();renderRail();renderS0();renderS1();renderS2();renderS3();renderS4();renderS5();renderS6();renderS7();renderS8();["s1","s2","s3","s4","s5","s6","s7","s8"].forEach(k=>{renderAssume(k);renderRisks(k)});update();}
 renderAll();
 detectRoute();
 })();
