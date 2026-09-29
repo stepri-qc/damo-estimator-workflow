@@ -115,7 +115,9 @@ tr:last-child td{border-bottom:0}
 .loc-name{font-weight:600}
 .loc-name small{display:block;font-weight:400;color:var(--faint);font-size:11.5px}
 .shiftmap{display:grid;gap:8px}
-.shiftslot{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}
+.shiftslot{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px 10px;align-items:center}
+.shiftslot .seg button{padding:5px 9px;font-size:12px}
+@media (max-width:560px){.shiftslot{grid-template-columns:minmax(0,1fr) auto}.shiftslot .s{grid-column:1/3}}
 .shiftslot .s{font:600 12px var(--mono);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:6px 8px;white-space:nowrap}
 .dial{display:flex;height:14px;border-radius:4px;overflow:hidden;border:1px solid var(--line)}
 .dial span{display:block;height:100%}
@@ -447,6 +449,11 @@ tr.sel td{background:var(--accent-soft)}
         <div class="field">
           <div class="lbl">Who covers each shift</div>
           <div class="shiftmap" id="shiftMap"></div>
+          <div class="row" id="weekendRow"></div>
+          <div class="row" id="oncallRow">
+            <label class="inline" for="oncall1">On-call allowance <input id="oncall1" type="number" min="0" max="100" step="5">% of a staffed shift</label>
+          </div>
+          <div class="hint">Active: the shift is fully staffed (real FTE). On-call: people are reachable for P1 incidents only, counted as the on-call % of a staffed shift.</div>
           <div class="dial" id="dial" aria-hidden="true"></div>
           <div class="legend" id="dialLegend"></div>
         </div>
@@ -1172,7 +1179,7 @@ function mkTower(kind){
 function defaults(){
   return {
     deal:"",active:1,
-    days:5,hours:24,spd:3,fteHours:40,util1:85,
+    days:5,hours:24,spd:3,fteHours:40,util1:85,shiftMode:["active","active","active"],weekendMode:"active",oncall1:15,
     perShift:{L2:1,L3:1},
     locations:[pickLoc("in"),pickLoc("ro")],
     assign:["in","in","ro"],
@@ -1236,17 +1243,32 @@ function compute(){
   const days=S.days, spd=S.spd;
   const shiftLen=S.hours/spd;
   const a=spd*days, b=S.fteHours/shiftLen, c=S.perShift.L2+S.perShift.L3;
+  /* active shifts are fully staffed; on-call (P1 only) shifts count as oncall% of a staffed shift */
+  const oc1=Math.max(0,Math.min(100,+S.oncall1||0))/100;
+  const wkDays=Math.min(days,5), weDays=Math.max(0,days-5);
+  const modeOf=i=>(S.shiftMode&&S.shiftMode[i])==="oncall"?"oncall":"active";
+  const weOnCall=weDays>0&&S.weekendMode==="oncall";
+  const shiftDays=(i)=>{ /* [active shift-days, on-call shift-days] for shift i per week */
+    const m=modeOf(i);let act=0,onc=0;
+    if(m==="active")act+=wkDays;else onc+=wkDays;
+    if(weDays){if(weOnCall||m==="oncall")onc+=weDays;else act+=weDays}
+    return [act,onc];
+  };
+  let actDays=0,oncDays=0;for(let i=0;i<spd;i++){const [x,y]=shiftDays(i);actDays+=x;oncDays+=y}
+  const aEff=actDays+oncDays*oc1;
   const framework=a*c/b;
   const rp1=riskPctOf("s1");
   const u1=Math.min(1,Math.max(0.5,(+S.util1||85)/100));
   const locs=S.locations.map(l=>{
-    const slots=S.assign.filter(x=>x===l.id).length, sw=slots*days;
+    const slots=S.assign.filter(x=>x===l.id).length;
+    let sAct=0,sOnc=0;S.assign.forEach((id,i)=>{if(id!==l.id)return;const [x,y]=shiftDays(i);sAct+=x;sOnc+=y});
+    const sw=sAct+sOnc*oc1;
     const r2=sw*S.perShift.L2/b, r3=sw*S.perShift.L3/b;
     const avail=Math.max(0.1,(WORK_DAYS-(+l.leave||0)-(+l.hol||0))/WORK_DAYS);
     const f=S.backfill?1/avail:1;
     const u2=r2/u1,u3=r3/u1;
     const b2=u2*f,b3=u3*f,k2=b2*(1+rp1),k3=b3*(1+rp1);
-    return {...l,slots,sw,r2,r3,roster:r2+r3,u2,u3,utilised:u2+u3,avail,b2,b3,buffered:b2+b3,k2,k3,risked:k2+k3};
+    return {...l,slots,sw,sAct,sOnc,r2,r3,roster:r2+r3,u2,u3,utilised:u2+u3,avail,b2,b3,buffered:b2+b3,k2,k3,risked:k2+k3};
   });
   const sum=(arr,k)=>arr.reduce((s,x)=>s+x[k],0);
   const roster=sum(locs,"roster"), utilised=sum(locs,"utilised"), buffered=sum(locs,"buffered"), s1=sum(locs,"risked");
@@ -1428,7 +1450,7 @@ function compute(){
     const ppl=S.rounding==="total"?up(fte):pp;
     snaps.push({n,fte,work,lift:lf,cells,people:ppl,L2:cells.reduce((x,c)=>x+c.a2,0),L3:cells.reduce((x,c)=>x+c.a3,0),G:cells.reduce((x,c)=>x+c.g,0),L2p:P2,L3p:P3,Gp:PG});
   }
-  return {days,spd,shiftLen,a,b,c,framework,rp1,locs,roster,buffered,s1,warnings,
+  return {days,spd,shiftLen,a,b,c,framework,actDays,oncDays,oc1,aEff,rp1,locs,roster,buffered,s1,warnings,
     u1,utilised,utilAdd:utilised-roster,leaveAdd:buffered-utilised,risk1Add:s1-buffered,
     towers,skills,demand,demAbs,capacity,absorbed,added,add2,add3,rp2,s2,risk2Add:s2-added,warnings2,
     covSkills,topUp,rp3,s3,risk3Add:s3-topUp,sub2:s2,sub3,workTeam,lift,
@@ -1487,7 +1509,10 @@ function renderS1(){
   const opts=S.locations.map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join("");
   $("shiftMap").innerHTML=S.assign.map((id,i)=>{
     const from=i*S.hours/S.spd, to=(i+1)*S.hours/S.spd;
-    return `<label class="shiftslot" for="sa-${i}"><span class="s">Shift ${i+1} · h${hrs(from)}–${hrs(to)}</span><select id="sa-${i}" data-assign="${i}">${opts}</select></label>`}).join("");
+    const m=(S.shiftMode&&S.shiftMode[i])==="oncall"?"oncall":"active";
+    return `<div class="shiftslot"><span class="s">Shift ${i+1} · h${hrs(from)}–${hrs(to)}</span><select id="sa-${i}" data-assign="${i}" aria-label="Location covering shift ${i+1}">${opts}</select><div class="seg" role="group" aria-label="Shift ${i+1} support mode">${[["active","Active"],["oncall","On-call (P1)"]].map(([k,l])=>`<button type="button" data-smode="${i}:${k}" aria-pressed="${m===k}">${l}</button>`).join("")}</div></div>`}).join("");
+  $("weekendRow").innerHTML=S.days>5?`<span class="inline">Weekends (${S.days-5} day${S.days-5>1?"s":""})</span><div class="seg" role="group" aria-label="Weekend support mode">${[["active","Active, as per shift"],["oncall","On-call (P1) all day"]].map(([k,l])=>`<button type="button" data-wmode="${k}" aria-pressed="${(S.weekendMode||"active")===k}">${l}</button>`).join("")}</div>`:"";
+  $("oncall1").value=S.oncall1;
   S.assign.forEach((id,i)=>{$("sa-"+i).value=id});
 }
 function renderSpd(){$("spdSeg").innerHTML=[1,2,3,4].map(n=>`<button type="button" data-spd="${n}" aria-pressed="${S.spd===n}">${n} × ${hrs(S.hours/n)}h</button>`).join("")}
@@ -1593,23 +1618,24 @@ function updateS1(){
   const nR=S.risks.s1.filter(r=>r.on&&+r.pct).length;
   let h="";
   h+=wstep("a","Shifts to cover each week",fmt(R.a,0),`${S.spd} shifts a day × ${S.days} days`);
+  if(R.oncDays>0)h+=wstep("a′","Staffed shift-equivalents",fmt(R.aEff,2),`${fmt(R.actDays,0)} active + ${fmt(R.oncDays,0)} on-call (P1) × ${S.oncall1}% = ${fmt(R.aEff,2)}`);
   h+=wstep("b","Shifts one FTE covers each week",fmt(R.b,2),`${S.fteHours} contracted hours ÷ ${sl}h shift`);
   h+=wstep("c","People on every shift",fmt(R.c,0),`${S.perShift.L2} L2 + ${S.perShift.L3} L3`);
-  h+=wstep("1","Roster FTE",fmt(R.roster,2),`(a × c) ÷ b = (${fmt(R.a,0)} × ${R.c}) ÷ ${fmt(R.b,2)}, split by the locations covering each shift`);
+  h+=wstep("1","Roster FTE",fmt(R.roster,2),R.oncDays>0?`(a′ × c) ÷ b = (${fmt(R.aEff,2)} × ${R.c}) ÷ ${fmt(R.b,2)}, split by the locations covering each shift`:`(a × c) ÷ b = (${fmt(R.a,0)} × ${R.c}) ÷ ${fmt(R.b,2)}, split by the locations covering each shift`);
   h+=wstep("2","Utilisation per resource",`<span class="delta add">${sgn(R.utilAdd,2)}</span>`,`Roster ÷ ${S.util1}%: each person is productive ${S.util1}% of contracted hours`);
   h+=wstep("3","Leave &amp; holiday backfill",`<span class="delta add">${sgn(R.leaveAdd,2)}</span>`,S.backfill?"Utilised FTE ÷ availability per location: "+R.locs.filter(l=>l.slots).map(l=>`${esc(l.name)} ${Math.round(l.avail*100)}%`).join(", "):"Off. The roster assumes people are always available.");
   h+=wstep("4","Risk modifiers",`<span class="delta risk">${sgn(R.risk1Add,2)}</span>`,`${fmt(R.buffered,2)} × ${fmt(R.rp1*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
   h+=wstep("=","Stage 1 base team",`${fmt(R.s1,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,null,"total");
   $("steps1").innerHTML=h;
   const tot=k=>R.locs.reduce((s,l)=>s+l[k],0);
-  $("locCalc").innerHTML=R.locs.map(l=>`<tr><td class="loc-name">${esc(l.name)}</td><td class="r num">${l.sw}</td><td class="r num">${fmt(l.r2,2)}</td><td class="r num">${fmt(l.r3,2)}</td><td class="r num">${fmt(l.roster,2)}</td><td class="r num">${fmt(l.utilised-l.roster,2)}</td><td class="r num">${fmt(l.buffered-l.utilised,2)}</td><td class="r num">${fmt(l.risked-l.buffered,2)}</td><td class="r num"><b>${fmt(l.risked,2)}</b></td></tr>`).join("")
+  $("locCalc").innerHTML=R.locs.map(l=>`<tr><td class="loc-name">${esc(l.name)}</td><td class="r num">${fmt(l.sw,l.sOnc?2:0)}</td><td class="r num">${fmt(l.r2,2)}</td><td class="r num">${fmt(l.r3,2)}</td><td class="r num">${fmt(l.roster,2)}</td><td class="r num">${fmt(l.utilised-l.roster,2)}</td><td class="r num">${fmt(l.buffered-l.utilised,2)}</td><td class="r num">${fmt(l.risked-l.buffered,2)}</td><td class="r num"><b>${fmt(l.risked,2)}</b></td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td class="r num">${fmt(R.a,0)}</td><td class="r num">${fmt(tot("r2"),2)}</td><td class="r num">${fmt(tot("r3"),2)}</td><td class="r num">${fmt(R.roster,2)}</td><td class="r num">${fmt(R.utilAdd,2)}</td><td class="r num">${fmt(R.leaveAdd,2)}</td><td class="r num">${fmt(R.risk1Add,2)}</td><td class="r num"><b>${fmt(R.s1,2)}</b></td></tr>`;
-  const ok=Math.abs(R.framework-R.roster)<1e-6;
+  const ok=Math.abs(R.framework-R.roster)<1e-6||R.oncDays>0;
   $("fwCheck").className="check"+(ok?"":" off");
-  $("fwCheck").textContent=(ok?"✓ ":"")+`Framework check: (a × c) ÷ b = ${fmt(R.framework,2)} FTE, the same as the roster line. The framework's p.3 example (24×5, 2 per shift) gives 6.`;
+  $("fwCheck").textContent=R.oncDays>0?`Framework check: with every shift active, (a × c) ÷ b = ${fmt(R.framework,2)} FTE. On-call shifts bring the roster to ${fmt(R.roster,2)} (${sgn(R.roster-R.framework,2)}).`:(ok?"✓ ":"")+`Framework check: (a × c) ÷ b = ${fmt(R.framework,2)} FTE, the same as the roster line. The framework's p.3 example (24×5, 2 per shift) gives 6.`;
   updateRiskDeltas("s1",R.buffered,R.risk1Add,R.rp1);
   renderAuto("s1",[
-    ["A1",`Coverage is ${covLabel()}: ${S.hours} hours a day, ${S.days} days a week, split into ${S.spd} shift${S.spd>1?"s":""} of ${sl} hours. Shift handover overlap is absorbed inside the shift.`,"[F] 1.1 C"],
+    ["A1",`Coverage is ${covLabel()}: ${S.hours} hours a day, ${S.days} days a week, split into ${S.spd} shift${S.spd>1?"s":""} of ${sl} hours. Shift handover overlap is absorbed inside the shift.${R.oncDays>0?` ${fmt(R.actDays,0)} shift-days a week are active and ${fmt(R.oncDays,0)} are on-call for P1 incidents only, counted at ${S.oncall1}% of a staffed shift.`:" All shifts are actively staffed."}`,"[F] 1.1 C"],
     ["A2",`Each FTE works ${S.fteHours} contracted hours a week, so covers ${fmt(R.b,2)} shifts.`,"[F] p.3 b"],
     ["A3",`Each resource is productive ${S.util1}% of contracted hours (training, meetings, admin), so the roster is divided by ${S.util1}%. Leave and holidays are handled separately.`,"[F] G6"],
     ["A4",`At least ${S.perShift.L2} L2 and ${S.perShift.L3} L3 on every shift, whatever the ticket volume. Ticket-driven effort is sized separately from Stage 2 and compared with this team.`,"[F] p.3 c"],
@@ -2129,9 +2155,9 @@ async function downloadReport(){
 /* ---------- events ---------- */
 function setSpd(n){
   S.spd=n;
-  const first=S.locations[0].id, next=[];
-  for(let i=0;i<n;i++)next.push(S.assign[i]||S.assign[S.assign.length-1]||first);
-  S.assign=next;
+  const first=S.locations[0].id, next=[], modes=[];
+  for(let i=0;i<n;i++){next.push(S.assign[i]||S.assign[S.assign.length-1]||first);modes.push((S.shiftMode||[])[i]||"active")}
+  S.assign=next;S.shiftMode=modes;
 }
 const pair=v=>{const i=v.indexOf(":");return [v.slice(0,i),v.slice(i+1)]};
 document.addEventListener("click",e=>{
@@ -2141,6 +2167,8 @@ document.addEventListener("click",e=>{
   const d=t.dataset;
   if(d.go){go(+d.go)}
   else if(d.cov){const p=COV_PRESETS.find(x=>x[0]===d.cov);S.days=p[1];S.hours=p[2];setSpd(Math.max(1,Math.ceil(p[2]/8)));renderS1();update();}
+  else if(d.smode){const [i,m]=pair(d.smode);if(!S.shiftMode)S.shiftMode=[];S.shiftMode[+i]=m;renderS1();update();}
+  else if(d.wmode){S.weekendMode=d.wmode;renderS1();update();}
   else if(d.spd){setSpd(+d.spd);renderS1();update();}
   else if(d.step){const [k,dv]=d.step.split(":");S.perShift[k]=Math.max(0,Math.min(9,S.perShift[k]+(+dv)));$("out"+k).textContent=S.perShift[k];update();}
   else if(d.rmloc){S.locations=S.locations.filter(l=>l.id!==d.rmloc);S.assign=S.assign.map(a=>a===d.rmloc?S.locations[0].id:a);renderS1();update();}
@@ -2171,6 +2199,7 @@ document.addEventListener("input",e=>{
   if(t.id==="dealName"){S.deal=t.value;save();return}
   if(t.id==="hours"){const v=Math.round(+t.value);if(v>=1&&v<=24){S.hours=v;renderSpd();update();}return}
   if(t.id==="util1"){const v=+t.value;if(t.value!==""&&v>=50&&v<=100){S.util1=v;update()}return}
+  if(t.id==="oncall1"){const v=+t.value;if(t.value!==""&&v>=0&&v<=100){S.oncall1=v;update()}return}
   if(t.id==="fteHours"){const v=+t.value;if(v>=20&&v<=60){S.fteHours=v;update()}return}
   if(d.ex){const v=+t.value;if(t.value!==""&&v>=0){S.ex=Object.assign({},S.ex,{[d.ex]:v});update()}return}
   if(t.id==="exTol"){const v=+t.value;if(t.value!==""&&v>=0&&v<=50){S.exTol=v;update()}return}
@@ -2226,6 +2255,7 @@ function summary(){
   L.push(`# ${S.deal||"DAMO deal"}: estimate workflow`,"",`**Team: ${fmt(R.total,2)} FTE${S.rounding!=="none"?`, rostered as ${fmt(R.people,0)} people`:""}**`);
   L.push("",`## Stage 1 · Base team (${covLabel()}, ${S.spd} shifts)`);
   L.push(`- a  Shifts to cover per week: ${S.spd} × ${S.days} = ${fmt(R.a,0)}`);
+  if(R.oncDays>0)L.push(`- a′ Staffed shift-equivalents: ${fmt(R.actDays,0)} active + ${fmt(R.oncDays,0)} on-call × ${S.oncall1}% = ${fmt(R.aEff,2)}`);
   L.push(`- b  Shifts per FTE per week: ${S.fteHours}h ÷ ${hrs(R.shiftLen)}h = ${fmt(R.b,2)}`);
   L.push(`- c  People per shift: ${S.perShift.L2} L2 + ${S.perShift.L3} L3 = ${R.c}`);
   L.push(`- Roster FTE (a×c)÷b: ${fmt(R.roster,2)}`);

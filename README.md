@@ -51,22 +51,24 @@ Inputs:
 - **Utilisation per resource:** 85% by default ([F] G6). Each person is productive 85% of contracted hours.
 - **Minimum L2 and L3 people on every shift.**
 - **Delivery locations:** each has its own leave days and public holidays, and each shift is assigned to one location (follow-the-sun).
+- **Active or on-call per shift:** each shift is either **Active** (fully staffed, real FTE) or **On-call (P1)**, where people are reachable for P1 incidents only. For 6- or 7-day coverage, weekends can be Active (each shift's own mode) or On-call all day. On-call shift-days count as the **on-call allowance** (default 15%) of a staffed shift. All shifts start Active.
 
 Calculation (framework p.3 coverage modifier, split by location):
 
 ```
 a = shifts per day × days a week                      shifts to cover each week
+a′ = active shift-days + on-call shift-days × on-call %  staffed shift-equivalents (a′ = a when all active)
 b = contracted hours ÷ shift length                   shifts one FTE covers each week
 c = L2 per shift + L3 per shift                       people on every shift
-roster(loc, tier) = shifts per week at loc × people per shift(tier) ÷ b
-                                                      Σ roster = (a × c) ÷ b
+roster(loc, tier) = staffed shift-equivalents at loc × people per shift(tier) ÷ b
+                                                      Σ roster = (a′ × c) ÷ b
 utilised(loc)     = roster ÷ 85% utilisation
 backfill(loc)     = utilised ÷ availability           availability = (260 − leave − holidays) ÷ 260
 risk              = backfill × (1 + Σ active risk %)
 people            = rounded up per location and tier (or per location, total, or not at all)
 ```
 
-A framework check confirms that the roster total equals `(a × c) ÷ b`. The p.3 example (24×5, 2 people per shift, 8h shifts) gives 6 FTE.
+A framework check confirms that the roster total equals `(a × c) ÷ b`. With on-call shifts, the check shows the all-active figure and how much the on-call choice saves. Example: 24×5 with the night shift (Romania) on-call gives 10 active + 5 on-call × 15% = 10.75 shift-equivalents, so the roster is 4.30 instead of 6.00. The p.3 example (24×5, 2 people per shift, 8h shifts) gives 6 FTE.
 
 The default example is 24×5 with three 8h shifts: India covers two shifts and Romania covers one. The roster is 6.0 FTE, 7.06 after 85% utilisation, 8.0 after leave backfill, and 8.65 after an 8% risk modifier.
 
