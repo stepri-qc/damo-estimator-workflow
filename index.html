@@ -344,6 +344,19 @@ tr.sel td{background:var(--accent-soft)}
 .q .qh i{font:600 11px var(--mono);font-style:normal;color:var(--accent)}
 .qpath{display:flex;flex-wrap:wrap;gap:4px;font:500 11px var(--mono);color:var(--faint)}
 .qpath span.on{color:var(--accent);font-weight:700}
+/* stage results and final summary */
+.stage-result{margin-top:20px;display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;justify-content:space-between;border:1px solid var(--accent);background:var(--accent-soft);border-radius:10px;padding:14px 18px}
+.stage-result .rl{font:600 11px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.stage-result .rv{font:700 26px var(--mono);color:var(--accent);font-variant-numeric:tabular-nums}
+.stage-result .rv small{font-size:13px;color:var(--muted);font-weight:500;margin-left:4px}
+.stage-result .rd{font-size:13.5px;color:var(--ink);max-width:640px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.kpi{border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:var(--surface-2);display:grid;gap:2px}
+.kpi span{font:600 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.kpi b{font:700 24px var(--mono);color:var(--ink);font-variant-numeric:tabular-nums}
+.kpi em{font-style:normal;font-size:12px;color:var(--muted)}
+.kpi.main b{color:var(--accent)}
+@media (max-width:720px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -359,6 +372,7 @@ tr.sel td{background:var(--accent-soft)}
       <input id="dealName" type="text" placeholder="Client / opportunity name">
     </div>
     <button class="btn" id="copyBtn" type="button">Copy summary</button>
+    <button class="btn primary" id="dlBtn" type="button">Download summary</button>
     <button class="btn ghost" id="resetBtn" type="button">Reset</button>
   </div>
 </header>
@@ -488,6 +502,7 @@ tr.sel td{background:var(--accent-soft)}
       </div>
     </div>
 
+    <div class="stage-result" id="res-1" aria-live="polite"></div>
     <div class="stage-nav"><span></span><button class="btn primary" type="button" data-go="2">Next: service towers →</button></div>
   </section>
 
@@ -564,6 +579,7 @@ tr.sel td{background:var(--accent-soft)}
       </div>
     </div>
 
+    <div class="stage-result" id="res-2" aria-live="polite"></div>
     <div class="stage-nav"><button class="btn" type="button" data-go="1">← Base team</button><button class="btn primary" type="button" data-go="3">Next: skill coverage →</button></div>
   </section>
 
@@ -622,6 +638,7 @@ tr.sel td{background:var(--accent-soft)}
       </div>
     </div>
 
+    <div class="stage-result" id="res-3" aria-live="polite"></div>
     <div class="stage-nav"><button class="btn" type="button" data-go="2">← Service towers</button><button class="btn primary" type="button" data-go="4">Next: transformation →</button></div>
   </section>
 
@@ -696,6 +713,7 @@ tr.sel td{background:var(--accent-soft)}
       </div>
     </div>
 
+    <div class="stage-result" id="res-4" aria-live="polite"></div>
     <div class="stage-nav"><button class="btn" type="button" data-go="3">← Skill coverage</button><button class="btn primary" type="button" data-go="5">Next: reconcile &amp; SDM →</button></div>
   </section>
 
@@ -759,6 +777,7 @@ tr.sel td{background:var(--accent-soft)}
       </div>
     </div>
 
+    <div class="stage-result" id="res-5" aria-live="polite"></div>
     <div class="stage-nav"><button class="btn" type="button" data-go="4">← Transformation</button><button class="btn primary" type="button" data-go="6">Next: seniority &amp; contingency →</button></div>
   </section>
 
@@ -824,6 +843,7 @@ tr.sel td{background:var(--accent-soft)}
       </div>
     </div>
 
+    <div class="stage-result" id="res-6" aria-live="polite"></div>
     <div class="stage-nav"><button class="btn" type="button" data-go="5">← Reconcile &amp; SDM</button><button class="btn primary" type="button" data-go="7">Next: term &amp; savings →</button></div>
   </section>
 
@@ -897,6 +917,7 @@ tr.sel td{background:var(--accent-soft)}
       </div>
     </div>
 
+    <div class="stage-result" id="res-7" aria-live="polite"></div>
     <div class="stage-nav"><button class="btn" type="button" data-go="6">← Seniority</button><button class="btn primary" type="button" data-go="8">Next: fact check →</button></div>
   </section>
 
@@ -964,6 +985,21 @@ tr.sel td{background:var(--accent-soft)}
       </div>
     </div>
 
+    <div class="panel" style="margin-top:20px" id="finalPanel">
+      <header><h3>Overall estimate</h3><span class="sub">How each stage built the team</span></header>
+      <div class="kpis" id="finalKpis"></div>
+      <div class="loc-table">
+        <table>
+          <thead><tr><th>Stage</th><th>What it did</th><th class="r">Stage FTE</th><th class="r">Team after</th></tr></thead>
+          <tbody id="finalBuild"></tbody>
+        </table>
+      </div>
+      <div class="row" style="justify-content:space-between">
+        <span class="hint">The summary document lists every stage's working, tables, assumptions and risks, then the final team. Open it in a browser and print to PDF if needed.</span>
+        <button class="btn primary" type="button" id="dlBtn2">Download summary</button>
+      </div>
+    </div>
+    <div class="stage-result" id="res-8" aria-live="polite"></div>
     <div class="stage-nav"><button class="btn" type="button" data-go="7">← Term &amp; savings</button><button class="btn" type="button" id="copyBtn2">Copy summary</button></div>
   </section>
 
@@ -983,7 +1019,7 @@ tr.sel td{background:var(--accent-soft)}
 <footer class="fte" aria-label="FTE summary">
   <div class="wrap">
     <div class="big">
-      <span class="lbl">Estimated team</span>
+      <span class="lbl" id="barLbl">Team after Stage 1</span>
       <span class="n" id="barFte">0.0<small>FTE</small></span>
       <span class="hc" id="barHc"></span>
     </div>
@@ -1286,7 +1322,8 @@ function compute(){
   const lift=Math.max(0,s1-workTeam);
   locs.forEach(l=>{
     const f2=l.t2+l.u2, f3=l.t3+l.u3+l.v3;
-    l.c2=f2+(s1>0?lift*l.k2/s1:0); l.c3=f3+(s1>0?lift*l.k3/s1:0);
+    /* smaller work team: the base team (its locations and tiers) is the delivery team */
+    if(lift>0){l.c2=l.k2; l.c3=l.k3} else {l.c2=f2; l.c3=f3}
   });
 
   /* Stage 5: SDM at 1:N of the delivery team (Stages 1–4), governance tier, in one location */
@@ -1307,6 +1344,7 @@ function compute(){
   const s6=contRaw*(1+rp6);
   const deliv=locs.reduce((x,l)=>x+l.c2+l.c3,0);
   locs.forEach(l=>{
+    l.d2=l.c2; l.d3=l.c3;
     if(deliv>0){l.c2+=s6*l.c2/deliv; l.c3+=s6*l.c3/deliv}
     l.fte=l.c2+l.c3+l.g;
   });
@@ -1342,6 +1380,31 @@ function compute(){
     else {l.p2=l.c2;l.p3=l.c3;l.pg=l.g;l.people=l.fte}
   });
   const people=S.rounding==="total"?up(total):sum(locs,"people");
+
+  /* snapshots: the team as it stands at the end of each stage (1–6), rounded the same way as the final team */
+  const snaps=[null];
+  for(let n=1;n<=6;n++){
+    let fte, work=null, lf=0;
+    const cells=locs.map(l=>{
+      if(n===1)return {id:l.id,name:l.name,a2:l.k2,a3:l.k3,g:0};
+      if(n<=4){let a2=l.t2,a3=l.t3;if(n>=3){a2+=l.u2;a3+=l.u3}if(n>=4)a3+=l.v3;return {id:l.id,name:l.name,a2,a3,g:0}}
+      if(n===5)return {id:l.id,name:l.name,a2:l.d2,a3:l.d3,g:l.g};
+      return {id:l.id,name:l.name,a2:l.c2,a3:l.c3,g:l.g};
+    });
+    if(n===1)fte=s1;
+    else if(n<=4){work=s2+(n>=3?s3:0)+(n>=4?s4:0);lf=Math.max(0,s1-work);
+      if(lf>0)cells.forEach((c,i)=>{c.a2=locs[i].k2;c.a3=locs[i].k3});fte=work+lf}
+    else if(n===5)fte=sub5; else fte=total;
+    let P2=0,P3=0,PG=0,pp=0;
+    cells.forEach(c=>{
+      if(S.rounding==="cell"){c.p2=up(c.a2);c.p3=up(c.a3);c.pg=c.g>0?Math.max(1,Math.round(c.g)):0;c.people=c.p2+c.p3+c.pg}
+      else if(S.rounding==="loc"){c.p2=c.a2;c.p3=c.a3;c.pg=c.g;c.people=up(c.a2+c.a3+c.g)}
+      else {c.p2=c.a2;c.p3=c.a3;c.pg=c.g;c.people=c.a2+c.a3+c.g}
+      P2+=c.p2;P3+=c.p3;PG+=c.pg;pp+=c.people;
+    });
+    const ppl=S.rounding==="total"?up(fte):pp;
+    snaps.push({n,fte,work,lift:lf,cells,people:ppl,L2:cells.reduce((x,c)=>x+c.a2,0),L3:cells.reduce((x,c)=>x+c.a3,0),G:cells.reduce((x,c)=>x+c.g,0),L2p:P2,L3p:P3,Gp:PG});
+  }
   return {days,spd,shiftLen,a,b,c,framework,rp1,locs,roster,buffered,s1,warnings,
     u1,utilised,utilAdd:utilised-roster,leaveAdd:buffered-utilised,risk1Add:s1-buffered,
     towers,skills,demand,demAbs,capacity,absorbed,added,add2,add3,rp2,s2,risk2Add:s2-added,warnings2,
@@ -1351,7 +1414,7 @@ function compute(){
     sub5,CX,contPct,contRaw,rp6,s6,risk6Add:s6-contRaw,pyr,shares,
     savePct,cont2,floor,rp7,years,termRows,term,
     total,people,roundAdd:people-total,
-    L2:sum(locs,"c2"),L3:sum(locs,"c3"),G:sum(locs,"g"),L2p:sum(locs,"p2"),L3p:sum(locs,"p3"),Gp:sum(locs,"pg")};
+    snaps,L2:sum(locs,"c2"),L3:sum(locs,"c3"),G:sum(locs,"g"),L2p:sum(locs,"p2"),L3p:sum(locs,"p3"),Gp:sum(locs,"pg")};
 }
 
 /* ---------- helpers ---------- */
@@ -1374,7 +1437,7 @@ function renderRail(){
   $("upcoming").innerHTML=STAGES.filter(s=>!s.built).map(s=>`<div class="ucard"><span class="n">STAGE ${s.n}</span><b>${esc(s.t)}</b><span>${esc(s.d)}</span></div>`).join("");
   document.querySelectorAll(".stage").forEach(sec=>{sec.hidden=sec.id!=="stage"+S.active});
 }
-function go(n){S.active=n;if(n===3){renderS3();update();}if(n===4){renderS4();update();}if(n===5){renderS5();update();}if(n===6){renderS6();update();}if(n===7){renderS7();update();}if(n===8){renderS8();update();}renderRail();save();window.scrollTo({top:0,behavior:"auto"})}
+function go(n){S.active=n;if(R)renderBar();if(n===3){renderS3();update();}if(n===4){renderS4();update();}if(n===5){renderS5();update();}if(n===6){renderS6();update();}if(n===7){renderS7();update();}if(n===8){renderS8();update();}renderRail();save();window.scrollTo({top:0,behavior:"auto"})}
 
 /* ---------- stage 1 static render ---------- */
 function renderS1(){
@@ -1484,7 +1547,7 @@ function updateRiskDeltas(k,base,add,pct){
 let R;
 function update(){
   R=compute();
-  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); updateS6(); updateS7(); updateS8(); renderBar(); save();
+  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); updateS6(); updateS7(); updateS8(); updateResults(); renderBar(); save();
 }
 function updateS1(){
   document.querySelectorAll("[data-cov]").forEach(b=>{const p=COV_PRESETS.find(x=>x[0]===b.dataset.cov);b.setAttribute("aria-pressed",String(S.days===p[1]&&S.hours===p[2]))});
@@ -1663,7 +1726,7 @@ function updateS5(){
   let h="";
   h+=wstep("1","Team from the work",fmt(R.workTeam,2),`Stages 2–4: ${fmt(R.s2,2)} + ${fmt(R.s3,2)} + ${fmt(R.s4,2)}`);
   h+=wstep("2","Base team from coverage",fmt(R.s1,2),"Stage 1, the floor");
-  h+=wstep("3","Delivery team",R.lift>0?`<span class="delta round">${sgn(R.lift,2)}</span> ${fmt(R.sub4,2)}`:fmt(R.sub4,2),R.lift>0?`Work team is smaller, so it is lifted to the base team (+${fmt(R.lift,2)}), following the base team's locations and tiers`:`Work team is larger than the base team, so it is kept`);
+  h+=wstep("3","Delivery team",R.lift>0?`<span class="delta round">${sgn(R.lift,2)}</span> ${fmt(R.sub4,2)}`:fmt(R.sub4,2),R.lift>0?`Work team is smaller, so the base team is used (+${fmt(R.lift,2)}); it already staffs every shift`:`Work team is larger than the base team, so it is kept`);
   h+=wstep("4","SDM",`<span class="delta add">${sgn(R.sdmRaw,2)}</span>`,`${fmt(R.sub4,2)} ÷ ${R.sdmRatio}, based in ${esc(loc?loc.name:"")}`);
   h+=wstep("5","Risk modifiers",`<span class="delta risk">${sgn(R.risk5Add,2)}</span>`,`${fmt(R.sdmRaw,2)} × ${fmt(R.rp5*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
   h+=wstep("=","Stage 5 adds",`${sgn(R.s5,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team so far: ${fmt(R.sub4,2)} + ${fmt(R.s5,2)} = ${fmt(R.sub5,2)} FTE${S.rounding==="cell"?`; SDMs round to the nearest whole person: ${fmt(R.Gp,0)}`:""}`,"total");
@@ -1824,32 +1887,207 @@ function updateS8(){
 }
 
 function renderBar(){
-  const whole=S.rounding!=="none";
-  $("barFte").innerHTML=`${fmt(R.total,1)}<small>FTE</small>`;
-  $("barHc").innerHTML=whole?`Rostered as <b>${fmt(R.people,0)}</b> people`:"No rounding applied";
+  const n=Math.min(Math.max(1,S.active||1),8), k=Math.min(n,6), sn=R.snaps[k];
+  const whole=S.rounding!=="none", cell=S.rounding==="cell";
+  const roundAdd=sn.people-sn.fte;
+  $("barLbl").textContent=n<=6?`Team after Stage ${n}`:"Final team";
+  $("barFte").innerHTML=`${fmt(sn.fte,1)}<small>FTE</small>`;
+  $("barHc").innerHTML=whole?`Rostered as <b>${fmt(sn.people,0)}</b> people`:"No rounding applied";
   const chip=(cls,l,v,go)=>`<div class="chip ${cls}" ${go?`data-gochip="${go}" style="cursor:pointer"`:""}><span class="l">${l}</span><span class="v">${v}</span></div>`;
+  const sep=t=>`<div class="chip sep">${t||"›"}</div>`;
   let h=chip("base","Roster",fmt(R.roster,1),1)+chip("add","+ Util",sgn(R.utilAdd),1)+chip("add","+ Leave",sgn(R.leaveAdd),1)+chip("risk","+ Risk",sgn(R.risk1Add),1)+chip("base","1 · Base team",fmt(R.s1,1),1);
-  h+=`<div class="chip sep">vs</div>`;
-  h+=chip("add","2 · Towers",fmt(R.added,1),2)+chip("risk","+ Risk",sgn(R.risk2Add),2)+chip("add","3 · Skill cover",sgn(R.topUp),3)+chip("risk","+ Risk",sgn(R.risk3Add),3)+chip("add","4 · Transform",sgn(R.stage4raw),4)+chip("risk","+ Risk",sgn(R.risk4Add),4)+chip("base","Work team",fmt(R.workTeam,1),4);
-  h+=`<div class="chip sep">›</div>`;
-  h+=chip(R.lift>0?"round":"base",R.lift>0?"Lifted to base":"Work team kept",R.lift>0?sgn(R.lift):fmt(R.sub4,1),5)+chip("add","5 · SDM",sgn(R.sdmRaw),5)+chip("risk","+ Risk",sgn(R.risk5Add),5)+chip("base","Stage 5",fmt(R.sub5,1),5);
-  h+=`<div class="chip sep">›</div>`;
-  h+=chip("add","6 · Contingency",sgn(R.contRaw),6)+chip("risk","+ Risk",sgn(R.risk6Add),6)+chip("base","Stage 6",fmt(R.total,1),6);
-  h+=`<div class="chip sep">›</div>`;
-  h+=chip("base",`7 · ${R.term}-yr avg`,fmt(R.termRows[R.term-1].avg,1),7)+chip("add","vs 1-year",R.term>1?"−"+fmt(R.termRows[R.term-1].vs1*100,0)+"%":"–",7);
-  {const exTot=EX_TIERS.reduce((x,[k])=>x+Math.max(0,+(S.ex||{})[k]||0),0);h+=`<div class="chip sep">›</div>`+chip("base","8 · vs existing",exTot>0?sgn((R.total-exTot)/exTot*100,0)+"%":"–",8);}
-  h+=`<div class="chip sep">›</div>`;
-  h+=STAGES.filter(s=>!s.built).map(s=>chip("todo",`${s.n} · ${esc(s.t)}`,"—")).join("");
-  if(whole)h+=`<div class="chip sep">›</div>`+chip("round","Rounding",sgn(R.roundAdd));
+  if(n>=2){
+    h+=sep("vs")+chip("add","2 · Towers",fmt(R.added,1),2)+chip("risk","+ Risk",sgn(R.risk2Add),2);
+    if(n>=3)h+=chip("add","3 · Skill cover",sgn(R.topUp),3)+chip("risk","+ Risk",sgn(R.risk3Add),3);
+    if(n>=4)h+=chip("add","4 · Transform",sgn(R.stage4raw),4)+chip("risk","+ Risk",sgn(R.risk4Add),4);
+    const s4=R.snaps[Math.min(k,4)];
+    h+=chip("base","Work team",fmt(n>=4?R.workTeam:s4.work,1),Math.min(n,4));
+    h+=sep()+chip(s4.lift>0?"round":"base",s4.lift>0?"Lifted to base":"Work team kept",s4.lift>0?sgn(s4.lift):fmt(s4.fte,1),Math.min(n,5));
+  }
+  if(n>=5)h+=sep()+chip("add","5 · SDM",sgn(R.sdmRaw),5)+chip("risk","+ Risk",sgn(R.risk5Add),5)+chip("base","Stage 5",fmt(R.sub5,1),5);
+  if(n>=6)h+=sep()+chip("add","6 · Contingency",sgn(R.contRaw),6)+chip("risk","+ Risk",sgn(R.risk6Add),6)+chip("base","Stage 6",fmt(R.total,1),6);
+  if(n>=7)h+=sep()+chip("base",`7 · ${R.term}-yr avg`,fmt(R.termRows[R.term-1].avg,1),7)+chip("add","vs 1-year",R.term>1?"−"+fmt(R.termRows[R.term-1].vs1*100,0)+"%":"–",7);
+  if(n>=8){const exTot=EX_TIERS.reduce((x,[q])=>x+Math.max(0,+(S.ex||{})[q]||0),0);h+=sep()+chip("base","8 · vs existing",exTot>0?sgn((R.total-exTot)/exTot*100,0)+"%":"–",8);}
+  if(whole)h+=sep()+chip("round","Rounding",sgn(roundAdd));
+  if(n<6)h+=sep()+chip("todo",`Stage ${n+1} next`,"—");
   $("barChips").innerHTML=h;
-  const tot=Math.max(R.people,R.total,0.0001);
+  const tot=Math.max(sn.people,sn.fte,0.0001);
   const seg=(v,c,t)=>`<span style="width:${Math.max(0,v)/tot*100}%;background:${c}" title="${t}"></span>`;
-  $("barStack").innerHTML=seg(R.added,"#6B7C93","Towers")+seg(R.risk2Add,"var(--risk)","Stage 2 risk")+seg(R.topUp,"#3F8C9B","Skill cover")+seg(R.risk3Add,"var(--risk)","Stage 3 risk")+seg(R.stage4raw,"#8C5FA8","Transformation")+seg(R.risk4Add,"var(--risk)","Stage 4 risk")+seg(R.lift,"var(--accent)","Lift to base team")+seg(R.sdmRaw,"#9B7B3F","SDM")+seg(R.risk5Add,"var(--risk)","Stage 5 risk")+seg(R.s6,"#B0476F","Contingency")+(whole?seg(R.roundAdd,"var(--round)","Rounding"):"");
-  const cell=S.rounding==="cell";
-  $("barSplit").innerHTML=`<div class="r"><span>L2</span><b>${cell?fmt(R.L2p,0):fmt(R.L2,1)}</b></div>
-    <div class="r"><span>L3</span><b>${cell?fmt(R.L3p,0):fmt(R.L3,1)}</b></div>
-    <div class="r"><span>SDM</span><b>${cell?fmt(R.Gp,0):fmt(R.G,1)}</b></div>
-    <div class="locs">${R.locs.filter(l=>l.fte>0).map(l=>`${esc(l.name)} ${whole&&S.rounding!=="total"?fmt(l.people,0):fmt(l.fte,1)}`).join(" · ")} · ${covLabel()}</div>`;
+  let st;
+  if(k===1)st=seg(R.roster,"var(--accent)","Roster")+seg(R.utilAdd,"var(--accent-soft)","Utilisation")+seg(R.leaveAdd,"var(--add)","Leave backfill")+seg(R.risk1Add,"var(--risk)","Stage 1 risk");
+  else{
+    const s4=R.snaps[Math.min(k,4)];
+    st=seg(R.added,"#6B7C93","Towers")+seg(R.risk2Add,"var(--risk)","Stage 2 risk");
+    if(k>=3)st+=seg(R.topUp,"#3F8C9B","Skill cover")+seg(R.risk3Add,"var(--risk)","Stage 3 risk");
+    if(k>=4)st+=seg(R.stage4raw,"#8C5FA8","Transformation")+seg(R.risk4Add,"var(--risk)","Stage 4 risk");
+    st+=seg(s4.lift,"var(--accent)","Lift to base team");
+    if(k>=5)st+=seg(R.s5,"#9B7B3F","SDM");
+    if(k>=6)st+=seg(R.s6,"#B0476F","Contingency");
+  }
+  if(whole)st+=seg(roundAdd,"var(--round)","Rounding");
+  $("barStack").innerHTML=st;
+  $("barSplit").innerHTML=`<div class="r"><span>L2</span><b>${cell?fmt(sn.L2p,0):fmt(sn.L2,1)}</b></div>
+    <div class="r"><span>L3</span><b>${cell?fmt(sn.L3p,0):fmt(sn.L3,1)}</b></div>
+    <div class="r"><span>SDM</span><b>${cell?fmt(sn.Gp,0):fmt(sn.G,1)}</b></div>
+    <div class="locs">${sn.cells.filter(c=>c.a2+c.a3+c.g>0).map(c=>`${esc(c.name)} ${whole&&S.rounding!=="total"?fmt(c.people,0):fmt(c.a2+c.a3+c.g,1)}`).join(" · ")} · ${covLabel()}</div>`;
+}
+
+/* ---------- stage results and final summary ---------- */
+function buildRows(){
+  const sn=R.snaps, whole=S.rounding!=="none";
+  const ppl=x=>whole?` · ${fmt(x.people,0)} people`:"";
+  return [
+    ["1 · Base team",`Coverage ${covLabel()}, ${S.spd} shifts, ${S.perShift.L2} L2 + ${S.perShift.L3} L3 per shift. Roster ${fmt(R.roster,2)} ÷ ${S.util1}% utilisation, leave backfill, ${fmt(R.rp1*100,1)}% risk`,R.s1,sn[1]],
+    ["2 · Service towers",`${R.towers.length} tower${R.towers.length===1?"":"s"}, ${fmt(R.towers.reduce((x,t)=>x+t.tickets,0),0)} tickets a month → ${fmt(R.demand,2)} FTE of effort, ${fmt(R.rp2*100,1)}% risk. Team is the larger of base ${fmt(R.s1,2)} and work ${fmt(sn[2].work,2)}`,R.s2,sn[2]],
+    ["3 · Skill coverage",`Specialist shift cover for ${R.covSkills.length} skill set${R.covSkills.length===1?"":"s"} (on call ${S.onCallPct}%), ${fmt(R.rp3*100,1)}% risk. Work team ${fmt(sn[3].work,2)}`,R.s3,sn[3]],
+    ["4 · Transformation",`Scenario ${R.sc}: POD ${R.transPct}% vs AIOps 1:${R.ratio}, larger added, ${fmt(R.rp4*100,1)}% risk. Work team ${fmt(R.workTeam,2)}`,R.s4,sn[4]],
+    ["5 · Reconcile & SDM",`${R.lift>0?`Work team ${fmt(R.workTeam,2)} lifted to base ${fmt(R.s1,2)} (+${fmt(R.lift,2)})`:`Work team ${fmt(R.workTeam,2)} kept over base ${fmt(R.s1,2)}`}; SDM ${fmt(R.sub4,2)} ÷ ${R.sdmRatio}`,R.s5,sn[5]],
+    ["6 · Contingency",`${R.CX.name} complexity: ${R.contPct}% contingency; pyramid ${R.pyr.join(" : ")} (grade mix only)`,R.s6,sn[6]]
+  ].map(r=>({stage:r[0],what:r[1],add:r[2],snap:r[3],ppl:ppl(r[3])}));
+}
+let RES_TEXT={};
+function updateResults(){
+  const sn=R.snaps, whole=S.rounding!=="none";
+  RES_TEXT={};
+  const ppl=x=>whole?`<small>FTE · ${fmt(x.people,0)} people</small>`:"<small>FTE</small>";
+  const msg={
+    1:`Base team from coverage. This is the floor: later stages build a team from the work and the larger one is used.`,
+    2:sn[2].lift>0?`The tower team (${fmt(R.s2,2)}) is below the base team, so the base team still sets the size.`:`The tower team (${fmt(R.s2,2)}) is above the base team (${fmt(R.s1,2)}), so the work now sets the size.`,
+    3:`Specialist shift cover adds ${fmt(R.s3,2)}. Work team ${fmt(sn[3].work,2)} vs base ${fmt(R.s1,2)}.`,
+    4:`Transformation adds ${fmt(R.s4,2)}. Work team ${fmt(R.workTeam,2)} vs base ${fmt(R.s1,2)}: ${R.lift>0?"lifted to the base team":"work team kept"}.`,
+    5:`Delivery team ${fmt(R.sub4,2)} plus ${fmt(R.s5,2)} SDM.`,
+    6:`Contingency adds ${fmt(R.s6,2)}. This is the Year 1 team.`
+  };
+  for(let n=1;n<=6;n++){
+    const el=$("res-"+n);if(!el)continue;
+    const d=n>1?sn[n].fte-sn[n-1].fte:null;
+    RES_TEXT[n]=`Team after Stage ${n}: ${fmt(sn[n].fte,2)} FTE${whole?`, ${fmt(sn[n].people,0)} people`:""}. ${d!=null?`${sgn(d,2)} FTE vs Stage ${n-1}. `:""}${msg[n]}`;
+    el.innerHTML=`<div><div class="rl">Team after Stage ${n}</div><div class="rv">${fmt(sn[n].fte,2)}${ppl(sn[n])}</div></div><div class="rd">${d!=null?`<b>${sgn(d,2)} FTE</b> vs Stage ${n-1}. `:""}${esc(msg[n])}</div>`;
+  }
+  const T=R.term, tr=R.termRows[T-1];
+  RES_TEXT[7]=`${T}-year average: ${fmt(tr.avg,2)} FTE a year, ${T>1?"−"+fmt(tr.vs1*100,1)+"% vs a 1-year contract":"1-year term"}. Year 1 ${fmt(R.total,2)} FTE; Year ${T} ${fmt(R.years[T-1].fte,2)} FTE.`;
+  if($("res-7"))$("res-7").innerHTML=`<div><div class="rl">${T}-year average</div><div class="rv">${fmt(tr.avg,2)}<small>FTE / yr</small></div></div><div class="rd"><b>${T>1?"−"+fmt(tr.vs1*100,1)+"%":"no change"}</b> vs a 1-year contract. Year 1 team ${fmt(R.total,2)} FTE; Year ${T} ${fmt(R.years[T-1].fte,2)} FTE.</div>`;
+  const exTot=EX_TIERS.reduce((x,[q])=>x+Math.max(0,+(S.ex||{})[q]||0),0);
+  RES_TEXT[8]=`Final Year 1 team: ${fmt(R.total,2)} FTE${whole?`, ${fmt(sn[6].people,0)} people`:""}. ${exTot>0?`${sgn((R.total-exTot)/exTot*100,0)}% against today's team of ${fmt(exTot,1)} FTE.`:""}`;
+  if($("res-8"))$("res-8").innerHTML=`<div><div class="rl">Final Year 1 team</div><div class="rv">${fmt(R.total,2)}${ppl(sn[6])}</div></div><div class="rd">${exTot>0?`<b>${sgn((R.total-exTot)/exTot*100,0)}%</b> against today's team of ${fmt(exTot,1)} FTE. `:""}Fact check only: this stage does not change the team.</div>`;
+  /* final panel */
+  const last=sn[6];
+  $("finalKpis").innerHTML=[
+    ["Year 1 team",`${fmt(R.total,1)}`,"FTE","main"],
+    ["Rostered people",whole?fmt(last.people,0):"–",whole?`${fmt(last.L2p,0)} L2 · ${fmt(last.L3p,0)} L3 · ${fmt(last.Gp,0)} SDM`:"no rounding",""],
+    [`${T}-year average`,fmt(tr.avg,1),`FTE a year · ${T>1?"−"+fmt(tr.vs1*100,0)+"% vs 1-year":"1-year term"}`,""],
+    ["Scenario",String(R.sc),R.SC.name,""]
+  ].map(k=>`<div class="kpi ${k[3]}"><span>${k[0]}</span><b>${k[1]}</b><em>${esc(k[2])}</em></div>`).join("");
+  const rows=buildRows();
+  $("finalBuild").innerHTML=rows.map(r=>`<tr><td class="loc-name">${r.stage}</td><td class="hint">${esc(r.what)}</td><td class="r num">${sgn(r.add,2)}</td><td class="r num"><b>${fmt(r.snap.fte,2)}</b>${esc(r.ppl)}</td></tr>`).join("")
+    +(whole?`<tr><td class="loc-name">Rounding</td><td class="hint">${({cell:"Up per location and tier; SDM to nearest",loc:"Up per location",total:"Total rounded up"})[S.rounding]}</td><td class="r num">${sgn(R.roundAdd,2)}</td><td class="r num"><b>${fmt(R.people,0)} people</b></td></tr>`:"")
+    +`<tr><td class="loc-name">7 · Term</td><td class="hint">${R.savePct}% YoY savings from Y2, contingency ${R.contPct}% → ${R.cont2}%</td><td class="r num">–</td><td class="r num"><b>${fmt(tr.avg,2)}</b> avg</td></tr>`
+    +`<tr><td class="loc-name">8 · Fact check</td><td class="hint">${exTot>0?`Existing team ${fmt(exTot,1)} FTE`:"No existing team entered"}</td><td class="r num">–</td><td class="r num">${exTot>0?sgn((R.total-exTot)/exTot*100,0)+"%":"–"}</td></tr>`;
+}
+
+/* ---------- downloadable summary document ---------- */
+function tableOf(id){const el=$(id);const t=el&&el.closest("table");return t?t.outerHTML:""}
+function stageDoc(n,title,extra){
+  const auto=[...document.querySelectorAll(`#auto-s${n} li`)].map(li=>`<li><b>${esc(li.children[0].textContent)}</b> ${esc(li.children[1].textContent)} <span class="src">${esc(li.children[2].textContent)}</span></li>`).join("");
+  const user=(S.assumptions["s"+n]||[]).filter(a=>a.trim()).map((a,i)=>`<li><b>U${i+1}</b> ${esc(a)}</li>`).join("");
+  const risks=(S.risks["s"+n]||[]).map(r=>`<tr><td>${r.on?"Applied":"Not applied"}</td><td><b>${esc(r.title)}</b><br><span class="muted">${esc(r.note)}</span></td><td class="r">${n===8?"tracked":(r.pct>0?"+":"")+r.pct+"%"}</td></tr>`).join("");
+  const steps=$("steps"+n)?$("steps"+n).innerHTML:"";
+  const res=RES_TEXT[n]||"";
+  return `<section><h2>Stage ${n} · ${title}</h2>${res?`<p class="result">${esc(res)}</p>`:""}${steps?`<div class="working">${steps}</div>`:""}${extra||""}
+    <h3>Assumptions</h3><ul class="assume">${auto}${user}</ul>
+    <h3>Risks</h3><table><thead><tr><th>Status</th><th>Risk</th><th class="r">FTE modifier</th></tr></thead><tbody>${risks||'<tr><td colspan="3">None</td></tr>'}</tbody></table></section>`;
+}
+function buildReport(){
+  const sn=R.snaps, last=sn[6], whole=S.rounding!=="none", T=R.term, tr=R.termRows[T-1];
+  const exTot=EX_TIERS.reduce((x,[q])=>x+Math.max(0,+(S.ex||{})[q]||0),0);
+  const date=new Date().toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"});
+  const rows=buildRows();
+  const build=rows.map(r=>`<tr><td><b>${r.stage}</b></td><td>${esc(r.what)}</td><td class="r">${sgn(r.add,2)}</td><td class="r"><b>${fmt(r.snap.fte,2)}</b>${esc(r.ppl)}</td></tr>`).join("")
+    +(whole?`<tr><td><b>Rounding</b></td><td>${({cell:"Up per location and tier; SDM to nearest person",loc:"Up per location",total:"Total rounded up"})[S.rounding]}</td><td class="r">${sgn(R.roundAdd,2)}</td><td class="r"><b>${fmt(R.people,0)} people</b></td></tr>`:"")
+    +`<tr class="final"><td><b>Year 1 team</b></td><td>Final estimate</td><td></td><td class="r"><b>${fmt(R.total,2)} FTE${whole?` · ${fmt(R.people,0)} people`:""}</b></td></tr>`;
+  const locRows=last.cells.filter(c=>c.a2+c.a3+c.g>0).map(c=>`<tr><td>${esc(c.name)}</td><td class="r">${fmt(c.a2,2)}</td><td class="r">${fmt(c.a3,2)}</td><td class="r">${fmt(c.g,2)}</td><td class="r"><b>${whole&&S.rounding!=="total"?fmt(c.people,0):fmt(c.a2+c.a3+c.g,2)}</b></td></tr>`).join("");
+  const css=`body{font:14px/1.5 "IBM Plex Sans","Segoe UI",system-ui,sans-serif;color:#18202B;background:#fff;margin:0}
+    main{max-width:980px;margin:0 auto;padding:32px 24px 48px}
+    h1{font:800 28px/1.2 Archivo,"Helvetica Neue",Arial,sans-serif;margin:4px 0 6px}
+    h2{font:700 20px/1.3 Archivo,"Helvetica Neue",Arial,sans-serif;margin:36px 0 8px;padding-top:16px;border-top:2px solid #9B2F66}
+    h3{font:600 12px/1.2 inherit;text-transform:uppercase;letter-spacing:.08em;color:#5A6472;margin:18px 0 6px}
+    .eyebrow{font:600 11px/1 inherit;letter-spacing:.12em;text-transform:uppercase;color:#9B2F66}
+    .muted,.hint{color:#5A6472}
+    table{border-collapse:collapse;width:100%;font-size:13px;margin:8px 0}
+    th{font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#5A6472;text-align:left;padding:6px 8px;border-bottom:1px solid #DCE0E7}
+    td{padding:6px 8px;border-bottom:1px solid #EEF0F4;vertical-align:top}
+    .r{text-align:right;white-space:nowrap}
+    tr.final td{border-top:2px solid #9B2F66;background:#F7E8F0}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}
+    .kpi{border:1px solid #DCE0E7;border-radius:8px;padding:10px 12px}
+    .kpi span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#5A6472}
+    .kpi b{display:block;font:700 24px "IBM Plex Mono",ui-monospace,monospace}
+    .kpi.main b{color:#9B2F66}
+    .kpi em{font-style:normal;font-size:12px;color:#5A6472}
+    .result{background:#F7E8F0;border-left:3px solid #9B2F66;padding:8px 12px;border-radius:0 6px 6px 0}
+    .working{border:1px solid #DCE0E7;border-radius:8px;padding:6px 14px}
+    .wstep{display:grid;grid-template-columns:28px 1fr auto;gap:2px 10px;padding:8px 0;border-bottom:1px dashed #DCE0E7}
+    .wstep:last-child{border-bottom:0}
+    .wstep .k{font:600 12px "IBM Plex Mono",monospace;color:#9B2F66}
+    .wstep .t{font-weight:600}
+    .wstep .v{font:600 14px "IBM Plex Mono",monospace;text-align:right}
+    .wstep .f{grid-column:2/4;font:12px/1.5 "IBM Plex Mono",monospace;color:#5A6472}
+    .wstep.total{background:#F7E8F0;border-radius:6px;padding:10px}
+    .delta{font:600 12px "IBM Plex Mono",monospace}
+    .alert{color:#B3261E;font-size:13px}
+    .yes{color:#2B7657;font-weight:600}.no{color:#8A93A0}
+    .band{font:600 11px "IBM Plex Mono",monospace;padding:2px 6px;border-radius:4px;background:#EEF0F4}
+    .facts{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:13px;margin-top:8px}
+    .facts span{display:block;color:#5A6472;font-size:11px;text-transform:uppercase}
+    .verdict{border-left:3px solid #9B2F66;padding:8px 12px;background:#F8F9FB;margin:10px 0}
+    ul.assume{padding-left:18px;margin:4px 0}ul.assume li{margin:3px 0}
+    .src{font:500 10.5px "IBM Plex Mono",monospace;color:#5A6472;border:1px solid #DCE0E7;padding:1px 4px;border-radius:3px}
+    small{color:#5A6472}
+    footer{margin-top:40px;font-size:12px;color:#5A6472}
+    @media print{h2{break-before:page}main{padding:0}.kpis{grid-template-columns:repeat(4,1fr)}}`;
+  const doc=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(S.deal||"DAMO deal")} · Estimate summary</title><style>${css}</style></head><body><main>
+  <div class="eyebrow">DAMO estimation workflow · deal review</div>
+  <h1>${esc(S.deal||"DAMO deal")}: estimate summary</h1>
+  <p class="muted">Prepared ${esc(date)}. FTE only: no rates, cost or price. Sources: [F] DAMO Solution Estimation Framework, [P] AI_Works DAMO Team Pricing Sheet; values marked "proposed" are calibration assumptions.</p>
+  <div class="kpis">
+    <div class="kpi main"><span>Year 1 team</span><b>${fmt(R.total,1)}</b><em>FTE</em></div>
+    <div class="kpi"><span>Rostered people</span><b>${whole?fmt(last.people,0):"–"}</b><em>${whole?`${fmt(last.L2p,0)} L2 · ${fmt(last.L3p,0)} L3 · ${fmt(last.Gp,0)} SDM`:"no rounding"}</em></div>
+    <div class="kpi"><span>${T}-year average</span><b>${fmt(tr.avg,1)}</b><em>${T>1?"−"+fmt(tr.vs1*100,0)+"% vs 1-year":"1-year term"}</em></div>
+    <div class="kpi"><span>Scenario</span><b>${R.sc}</b><em>${esc(R.SC.name)}</em></div>
+  </div>
+  <h3>How the team was built</h3>
+  <table><thead><tr><th>Stage</th><th>What it did</th><th class="r">Stage FTE</th><th class="r">Team after</th></tr></thead><tbody>${build}</tbody></table>
+  <h3>Final team by location</h3>
+  <table><thead><tr><th>Location</th><th class="r">L2</th><th class="r">L3</th><th class="r">SDM</th><th class="r">${whole&&S.rounding!=="total"?"People":"FTE"}</th></tr></thead><tbody>${locRows}</tbody></table>
+  <p class="muted">Coverage ${esc(covLabel())} · ${S.spd} shifts a day · utilisation ${S.util1}% · leave backfill ${S.backfill?"on":"off"} · complexity ${esc(R.CX.name)} · term ${T} year${T>1?"s":""}${exTot>0?` · existing team ${fmt(exTot,1)} FTE (${sgn((R.total-exTot)/exTot*100,0)}%)`:""}</p>
+  ${stageDoc(1,"Base team from coverage",tableOf("locCalc"))}
+  ${stageDoc(2,"Service towers",tableOf("towerCalc")+tableOf("skillCalc"))}
+  ${stageDoc(3,"Skill coverage by shift",tableOf("covCalc"))}
+  ${stageDoc(4,"Transformation capacity",`<div class="facts">${$("scFacts").innerHTML}</div>`)}
+  ${stageDoc(5,"Reconciliation and governance",tableOf("reconTable")+`<div class="verdict">${$("verdict").innerHTML}</div>`)}
+  ${stageDoc(6,"Seniority and contingency",tableOf("gradeCalc"))}
+  ${stageDoc(7,"Term and YoY savings",tableOf("termCalc")+`<div class="verdict">${$("termVerdict").innerHTML}</div>`)}
+  ${stageDoc(8,"Fact check against the existing team",tableOf("exTable")+`<div class="verdict">${$("exVerdict").innerHTML}</div>`)}
+  <footer>Generated by the DAMO Estimation Workflow.</footer>
+  </main></body></html>`;
+  return doc;
+}
+async function downloadReport(){
+  /* make sure every stage's lazily rendered parts are filled before reading them */
+  renderS3();renderS4();renderS5();renderS6();renderS7();renderS8();update();
+  const html=buildReport();
+  const name=`${(S.deal||"DAMO").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"")||"DAMO"}-estimate-summary.html`;
+  let dl=null;
+  try{if(window.claude&&typeof window.claude.use==="function")dl=await window.claude.use("downloads")}catch(e){dl=null}
+  if(dl){
+    try{await dl.save({filename:name,data:html});toast("Summary saved")}
+    catch(e){if(e&&e.code==="declined")return;toast(e&&e.code==="rate_limited"?"A save prompt is already open":"Download is not available here. Use Copy summary instead.")}
+    return;
+  }
+  const blob=new Blob([html],{type:"text/html"});const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);
+  toast("Summary downloaded");
 }
 
 /* ---------- events ---------- */
@@ -1887,6 +2125,7 @@ document.addEventListener("click",e=>{
   else if(d.rmrisk){const [k,id]=pair(d.rmrisk);S.risks[k]=S.risks[k].filter(r=>r.id!==id);renderRisks(k);update();}
   else if(t.id==="resetBtn"){if(d.armed){S=defaults();renderAll();t.textContent="Reset";delete d.armed;}else{d.armed="1";t.textContent="Click again to reset";setTimeout(()=>{t.textContent="Reset";delete t.dataset.armed},3000);}}
   else if(t.id==="copyBtn"||t.id==="copyBtn2"){copySummary();}
+  else if(t.id==="dlBtn"||t.id==="dlBtn2"){downloadReport();}
 });
 function twr(el){return S.towers.find(x=>x.id===el.closest("[data-tower]").dataset.tower)}
 function skl(el){const tw=twr(el);return tw.skills.find(k=>k.id===el.closest("[data-skill]").dataset.skill)}

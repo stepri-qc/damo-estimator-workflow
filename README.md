@@ -231,5 +231,31 @@ It always ends with where the team lands by the end of the term against today, a
 
 Default example: the existing team is 13 FTE (6 L2, 4 L3, 1 SRE, 1 manager, 1 other). Our Year 1 is 11.7 (−10%, consistent), and Year 3 is 11.0 (−15% against today).
 
+## The FTE bar and stage results
+
+The bar at the bottom builds up **one stage at a time**. It shows the team as it stands at the end of the stage you are on, not the final estimate:
+
+| On stage | Bar shows |
+|---|---|
+| 1 | Base team from coverage |
+| 2–4 | Larger of the base team and the team from the work so far |
+| 5 | + SDM |
+| 6 | + contingency (the Year 1 team) |
+| 7–8 | Final team, plus the term average or the fact check |
+
+Rounding to whole people is applied to whatever the bar shows. If the work team is smaller than the base team, the base team itself (its locations and tiers) is the delivery team.
+
+Each stage ends with a **"Team after Stage N"** strip: FTE, people, the change from the previous stage, and one line on why.
+
+## Summary document
+
+Stage 8 ends with an **Overall estimate** panel: headline figures (Year 1 team, rostered people, term average, scenario) and a table of how each stage built the team. **Download summary** (in that panel and in the header) produces a self-contained HTML document containing:
+
+- the headline figures and the stage-by-stage build table, with rounding and the final Year 1 team
+- the final team by location and tier
+- for every stage: its result line, the full working, its tables, assumptions and risks
+
+Open it in any browser and print to PDF if needed. In the claude.ai viewer the file is offered through the page's download prompt; on Netlify it downloads directly. A sample built from the default example is in [`docs/sample-estimate-summary.html`](docs/sample-estimate-summary.html).
+
 ### Copy summary
 **Copy summary** puts each stage's working, the location table, the assumptions and the risks on the clipboard as Markdown, ready for the deal-review deck or notes.
