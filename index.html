@@ -180,6 +180,8 @@ tr:last-child td{border-bottom:0}
 .ucard .n{font:600 11px var(--mono);color:var(--faint)}
 
 /* fixed FTE bar */
+.on-docs .fte{display:none}
+body.on-docs{padding-bottom:24px}
 .fte{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 24px rgba(15,20,30,.08);padding-bottom:env(safe-area-inset-bottom,0px)}
 .fte .wrap{height:var(--bar-h);display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:24px;align-items:center}
 .fte .big{display:grid;gap:2px}
@@ -361,6 +363,37 @@ tr.sel td{background:var(--accent-soft)}
 .kpi em{font-style:normal;font-size:12px;color:var(--muted)}
 .kpi.main b{color:var(--accent)}
 @media (max-width:720px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* stage 0: documents */
+.docgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:820px){.docgrid{grid-template-columns:minmax(0,1fr)}}
+.doccard{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:10px;align-content:start}
+.doccard h3{font-size:16px}
+.doccard .sub{font-size:13px;color:var(--muted)}
+.drop{border:1.5px dashed var(--line);border-radius:8px;padding:14px;text-align:center;font-size:13px;color:var(--muted);cursor:pointer;display:block;background:var(--surface-2)}
+.drop:hover,.drop.over{border-color:var(--accent);color:var(--ink)}
+.drop b{color:var(--accent)}
+.drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.doccard textarea{width:100%;min-height:64px;resize:vertical;font-size:13px;padding:8px}
+.flist{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.flist li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;font-size:13px;border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--surface-2)}
+.flist .fn{font-weight:600;overflow-wrap:anywhere}
+.flist .fm{font:500 11.5px var(--mono);color:var(--muted);white-space:nowrap}
+.flist .err{color:var(--warn)}
+.incsum{font:12px/1.5 var(--mono);white-space:pre-wrap;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:8px 10px;max-height:220px;overflow:auto}
+.xrun{display:grid;gap:12px}
+.xroute{font-size:13px;color:var(--muted)}
+.xroute b{color:var(--ink)}
+.xstatus{font:13px var(--mono);color:var(--muted);min-height:1.5em}
+.xstatus.err{color:var(--warn)}
+.prop{display:grid;gap:8px}
+.prop h4{margin:10px 0 0;font:600 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.prow{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surface-2)}
+.prow input{margin-top:3px;accent-color:var(--accent);width:16px;height:16px}
+.prow b{font-weight:600}
+.prow .pv{font-size:13.5px}
+.prow .pe{font-size:12.5px;color:var(--muted);margin-top:3px}
+.prow .pe q{font-style:italic}
+.summary-box{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;font-size:14.5px}
 </style>
 </head>
 <body>
@@ -386,6 +419,51 @@ tr.sel td{background:var(--accent-soft)}
 </nav>
 
 <main class="wrap">
+  <!-- ===================== STAGE 0: DOCUMENTS ===================== -->
+  <section id="stage0" class="stage" aria-labelledby="s0h" hidden>
+    <div class="stage-head">
+      <span class="eyebrow">Start here · optional</span>
+      <h2 id="s0h">Documents</h2>
+      <p>Add whatever you have for this deal. Claude reads the documents and proposes inputs for every stage, each with the quote it came from. You choose what to apply; nothing changes until you do. You can also skip this and fill in the stages yourself.</p>
+    </div>
+
+    <div class="docgrid" id="docGrid"></div>
+
+    <div class="cols" style="margin-top:20px">
+      <div class="panel">
+        <header><h3>Extract with AI</h3><span class="sub" id="xTotals">No documents yet</span></header>
+        <div class="xrun">
+          <div class="xroute" id="xRoute">Checking how extraction can run here…</div>
+          <label class="inline" for="xPass" id="xPassRow" hidden>Passphrase <input id="xPass" type="text" autocomplete="off" style="width:180px"></label>
+          <div class="row">
+            <button class="btn primary" type="button" id="xRun">Extract with AI</button>
+            <button class="btn" type="button" id="xStop" hidden>Stop</button>
+            <button class="btn ghost" type="button" id="xCopy">Copy prompt</button>
+          </div>
+          <div class="xstatus" id="xStatus" aria-live="polite"></div>
+          <details id="xManual">
+            <summary style="cursor:pointer;font-weight:600;font-size:14px">Paste a reply from Claude instead</summary>
+            <div class="hint" style="margin:8px 0">Use <b>Copy prompt</b>, paste it into a Claude chat, then paste Claude's JSON reply here.</div>
+            <textarea id="xPaste" style="width:100%;min-height:110px;font:12px var(--mono)" aria-label="Claude's JSON reply"></textarea>
+            <div class="row" style="margin-top:8px"><button class="btn sm" type="button" id="xUsePaste">Use this reply</button></div>
+          </details>
+          <textarea id="xPromptBox" hidden readonly style="width:100%;min-height:120px;font:11px var(--mono)" aria-label="Extraction prompt"></textarea>
+        </div>
+      </div>
+      <div class="panel" id="xResults">
+        <header><h3>Proposed inputs</h3><span class="sub" id="xResSub">Run extraction to see proposals</span></header>
+        <div id="xSummary"></div>
+        <div class="prop" id="xProps"><div class="empty">Nothing yet. Add documents and run <b>Extract with AI</b>.</div></div>
+        <div class="row" id="xApplyRow" hidden style="justify-content:space-between">
+          <div class="row"><button class="btn ghost sm" type="button" id="xAll">Select all</button><button class="btn ghost sm" type="button" id="xNone">Select none</button></div>
+          <button class="btn primary" type="button" id="xApply">Apply selected and go to Stage 1</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-nav"><span></span><button class="btn primary" type="button" data-go="1">Skip to Stage 1 →</button></div>
+  </section>
+
   <!-- ===================== STAGE 1 ===================== -->
   <section id="stage1" class="stage" aria-labelledby="s1h">
     <div class="stage-head">
@@ -1178,7 +1256,7 @@ function mkTower(kind){
 }
 function defaults(){
   return {
-    deal:"",active:1,
+    deal:"",active:0,
     days:5,hours:24,spd:3,fteHours:40,util1:85,shiftMode:["active","active","active"],weekendMode:"active",oncall1:15,
     perShift:{L2:1,L3:1},
     locations:[pickLoc("in"),pickLoc("ro")],
@@ -1475,7 +1553,7 @@ const listNames=arr=>arr.length?arr.map(t=>t.name).join(", "):"none";
 
 /* ---------- navigation ---------- */
 function renderRail(){
-  $("stageRail").innerHTML=STAGES.map(s=>{
+  $("stageRail").innerHTML=`<li class="${S.active===0?"on":"ready"}"><button type="button" data-go="0" ${S.active===0?'aria-current="step"':""}><span class="n">0</span>Documents</button></li>`+STAGES.map(s=>{
     const cls=s.n===S.active?"on":(s.built?"ready":"locked");
     return `<li class="${cls}"><button type="button" ${s.built?`data-go="${s.n}"`:'disabled aria-disabled="true"'} ${s.n===S.active?'aria-current="step"':""}><span class="n">${s.n}</span>${esc(s.t)}${s.built?"":' <span class="d" style="color:var(--faint)">soon</span>'}</button></li>`}).join("");
   $("upcomingWrap").hidden=!STAGES.some(s=>!s.built);
@@ -1949,6 +2027,7 @@ function updateS8(){
 }
 
 function renderBar(){
+  document.body.classList.toggle("on-docs",S.active===0);
   const n=Math.min(Math.max(1,S.active||1),8), k=Math.min(n,6), sn=R.snaps[k];
   const whole=S.rounding!=="none", cell=S.rounding==="cell";
   const roundAdd=sn.people-sn.fte;
@@ -2165,7 +2244,15 @@ document.addEventListener("click",e=>{
   if(chipEl){go(+chipEl.dataset.gochip);return}
   const t=e.target.closest("button");if(!t)return;
   const d=t.dataset;
-  if(d.go){go(+d.go)}
+  if(d.drm){DOCS=DOCS.filter(x=>x.id!==d.drm);renderDocLists();}
+  else if(d.dpaste){const ta=$("dp-"+d.dpaste);const v=ta.value.trim();if(v){DOCS.push({id:uid(),type:d.dpaste,name:`Pasted text ${DOCS.filter(x=>x.type===d.dpaste).length+1}`,text:v,meta:`${v.length.toLocaleString()} chars`});ta.value="";renderDocLists();}}
+  else if(t.id==="xRun"){runExtraction();}
+  else if(t.id==="xStop"){XCTL&&XCTL.abort();}
+  else if(t.id==="xCopy"){const X=window.DamoExtract;if(!X){xStatus("The extraction module didn't load. Open the tool from a web address, not a local file.",true);return}const pr=X.buildExtractionPrompt(okDocs());const box=$("xPromptBox");const fb=()=>{box.hidden=false;box.value=pr;box.focus();box.select();xStatus("Copying was blocked. Select the prompt below and copy it by hand.")};try{navigator.clipboard.writeText(pr).then(()=>xStatus("Prompt copied. Paste it into a Claude chat, then paste the reply below."),fb)}catch(e){fb()}$("xManual").open=true;}
+  else if(t.id==="xUsePaste"){const X=window.DamoExtract;if(!X){xStatus("The extraction module didn't load.",true);return}try{showProposals(X.sanitizeExtraction(X.parseJsonReply($("xPaste").value)));xStatus("Reply read. Review the proposals, then apply.")}catch(e){xStatus("That reply isn't valid JSON. Paste Claude's whole reply.",true)}}
+  else if(t.id==="xApply"){applyProposals();}
+  else if(t.id==="xAll"||t.id==="xNone"){document.querySelectorAll("[data-xkey]").forEach(c=>c.checked=t.id==="xAll");}
+  else if(d.go){go(+d.go)}
   else if(d.cov){const p=COV_PRESETS.find(x=>x[0]===d.cov);S.days=p[1];S.hours=p[2];setSpd(Math.max(1,Math.ceil(p[2]/8)));renderS1();update();}
   else if(d.smode){const [i,m]=pair(d.smode);if(!S.shiftMode)S.shiftMode=[];S.shiftMode[+i]=m;renderS1();update();}
   else if(d.wmode){S.weekendMode=d.wmode;renderS1();update();}
@@ -2224,6 +2311,7 @@ document.addEventListener("input",e=>{
 });
 document.addEventListener("change",e=>{
   const t=e.target, d=t.dataset;
+  if(d.dfile){addFiles(d.dfile,[...t.files]);t.value="";return}
   if(t.id==="days"){S.days=+t.value;update();return}
   if(t.id==="hours"){renderS1();update();return}
   if(t.id==="exSource"){S.exSource=t.value;update();return}
@@ -2237,6 +2325,11 @@ document.addEventListener("change",e=>{
   if(d.ka){skl(t).absorb=t.checked;update();return}
   if(d.rf==="on"){const r=findRisk(t);r.on=t.checked;t.closest("[data-risk]").classList.toggle("off",!r.on);update();return}
 });
+["dragover","dragleave","drop"].forEach(ev=>document.addEventListener(ev,e=>{
+  const z=e.target.closest&&e.target.closest("[data-drop]");if(!z)return;e.preventDefault();
+  if(ev==="dragover")z.classList.add("over");else z.classList.remove("over");
+  if(ev==="drop"&&e.dataTransfer&&e.dataTransfer.files.length)addFiles(z.dataset.drop,[...e.dataTransfer.files]);
+}));
 document.addEventListener("submit",e=>{
   const f=e.target;e.preventDefault();
   if(f.dataset.addassume){const k=f.dataset.addassume, inp=$("ai-"+k), v=inp.value.trim();if(!v)return;S.assumptions[k].push(v);inp.value="";renderAssume(k);update();}
@@ -2323,10 +2416,250 @@ function copySummary(){
   try{navigator.clipboard.writeText(txt).then(()=>toast("Summary copied"),fallback)}catch(e){fallback()}
 }
 
+/* ---------- stage 0: documents and AI extraction ---------- */
+const DOC_CARDS=[
+  {type:"rfp",title:"RFP",sub:"Scope, service window, SLAs, estate description.",accept:".pdf,.docx,.txt,.md",paste:true},
+  {type:"incidents",title:"Incident dump",sub:"ITSM export (CSV or Excel). Summarised in your browser: volumes a month, priority mix, top groups.",accept:".csv,.xlsx,.xls,.txt",paste:false},
+  {type:"notes",title:"Meeting notes",sub:"Discovery calls, orals, client Q&A.",accept:".pdf,.docx,.txt,.md",paste:true},
+  {type:"other",title:"Others",sub:"Architecture docs, org charts, app inventories, anything else.",accept:".pdf,.docx,.xlsx,.xls,.csv,.txt,.md,.json",paste:true}
+];
+const CDN={
+  pdf:["https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js","https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"],
+  docx:["https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"],
+  xlsx:["https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"]
+};
+const MAX_SERVER_CHARS=600000, MAX_SAMPLE_BYTES=250000;
+let DOCS=[];              /* {id,type,name,text,meta,err} — kept in memory only, never saved */
+let XRESULT=null, XROUTE="manual", XSAMPLE=null, XCTL=null;
+const loaded={};
+function loadScript(url){
+  if(!loaded[url])loaded[url]=new Promise((res,rej)=>{const sc=document.createElement("script");sc.src=url;sc.onload=res;sc.onerror=()=>rej(new Error("Could not load "+url));document.head.appendChild(sc)});
+  return loaded[url];
+}
+async function loadLib(k){for(const u of CDN[k])await loadScript(u)}
+async function pdfText(buf){
+  await loadLib("pdf");
+  const lib=window.pdfjsLib;lib.GlobalWorkerOptions.workerSrc=CDN.pdf[1];
+  const doc=await lib.getDocument({data:buf}).promise;let out="";
+  for(let p=1;p<=doc.numPages;p++){
+    const c=await (await doc.getPage(p)).getTextContent();let y=null,endX=null;
+    c.items.forEach(it=>{const x=it.transform[4],yy=it.transform[5];if(y===null||Math.abs(yy-y)>=2){out+="\n";endX=null}else if(endX!==null&&x-endX>1)out+=" ";out+=it.str;endX=x+(it.width||0);y=yy;if(it.hasEOL){out+="\n";y=null}});
+    out+="\n";
+  }
+  return out.replace(/\n{3,}/g,"\n\n").trim();
+}
+/* Incident dump: find the date, priority, type and grouping columns, then summarise. */
+function summariseIncidents(rows,name){
+  if(!rows.length)return {text:"",meta:"no rows"};
+  const cols=Object.keys(rows[0]);
+  const find=(re,test)=>cols.find(c=>re.test(c)&&(!test||rows.slice(0,50).some(r=>test(r[c]))));
+  const toDate=v=>{if(v instanceof Date)return v;if(typeof v==="number"&&v>20000&&v<80000)return new Date(Math.round((v-25569)*864e5));const d=new Date(String(v));return isNaN(d)?null:d};
+  const dateCol=find(/open|creat|report|logged|raised|submit|date/i,v=>toDate(v));
+  const prioCol=find(/priority|severity|^sev|^p$/i);
+  const typeCol=find(/type|record|class|category/i,v=>/incident|request|change|problem|task/i.test(String(v)));
+  const grpCol=find(/assignment|group|service|application|^app|business service|ci|component|tower|category/i,v=>String(v).trim()!=="")||null;
+  const dates=dateCol?rows.map(r=>toDate(r[dateCol])).filter(Boolean):[];
+  let months=null,from=null,to=null;
+  if(dates.length){const ts=dates.map(d=>+d);from=new Date(Math.min(...ts));to=new Date(Math.max(...ts));months=Math.max(1,(to-from)/(864e5*30.44))}
+  const count=(col,norm)=>{const m={};rows.forEach(r=>{const k=norm(String(r[col]??"").trim()||"(blank)");m[k]=(m[k]||0)+1});return Object.entries(m).sort((a,b)=>b[1]-a[1])};
+  const kindOf=v=>/request|ritm|req|sr\b|service req/i.test(v)?"Service request":/incident|inc\b/i.test(v)?"Incident":/change|chg/i.test(v)?"Change":/problem|prb/i.test(v)?"Problem":v;
+  const prioOf=v=>{const m=v.match(/\b(?:p|priority|sev(?:erity)?)\s*-?\s*([1-5])\b/i)||v.match(/^([1-5])\b/);return m?"P"+m[1]:v};
+  const L=[`Incident dump summary (computed in the browser from ${name}): ${rows.length.toLocaleString()} rows.`];
+  if(months)L.push(`Date column "${dateCol}": ${from.toISOString().slice(0,10)} to ${to.toISOString().slice(0,10)} (${months.toFixed(1)} months). Average ${(rows.length/months).toFixed(1)} tickets a month.`);
+  else L.push("No usable date column found, so monthly averages cannot be computed from dates.");
+  const per=n=>months?` (${(n/months).toFixed(1)} a month)`:"";
+  if(typeCol){L.push(`By type ("${typeCol}"):`);count(typeCol,kindOf).slice(0,6).forEach(([k,n])=>L.push(`  ${k}: ${n}${per(n)}`))}
+  if(prioCol){L.push(`By priority ("${prioCol}"):`);count(prioCol,prioOf).slice(0,8).forEach(([k,n])=>L.push(`  ${k}: ${n} (${(100*n/rows.length).toFixed(0)}%)`))}
+  if(grpCol){L.push(`Top groups ("${grpCol}"):`);count(grpCol,v=>v).slice(0,20).forEach(([k,n])=>L.push(`  ${k}: ${n}${per(n)}`))}
+  L.push(`Columns: ${cols.slice(0,40).join(", ")}`);
+  L.push("First rows:");rows.slice(0,5).forEach(r=>L.push("  "+cols.slice(0,12).map(c=>`${c}=${String(r[c]??"").slice(0,40)}`).join(" | ")));
+  return {text:L.join("\n"),meta:`${rows.length.toLocaleString()} rows${months?` · ${(rows.length/months).toFixed(0)}/month`:""}`};
+}
+async function readFile(file,type){
+  const ext=(file.name.split(".").pop()||"").toLowerCase();
+  if(ext==="pdf"){const t=await pdfText(await file.arrayBuffer());return {text:t,meta:`${t.length.toLocaleString()} chars`}}
+  if(ext==="docx"){await loadLib("docx");const r=await window.mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()});return {text:r.value.trim(),meta:`${r.value.length.toLocaleString()} chars`}}
+  if(ext==="xlsx"||ext==="xls"||ext==="csv"){
+    await loadLib("xlsx");
+    const wb=window.XLSX.read(ext==="csv"?await file.text():await file.arrayBuffer(),{type:ext==="csv"?"string":"array",cellDates:true});
+    if(type==="incidents"){const ws=wb.Sheets[wb.SheetNames[0]];return summariseIncidents(window.XLSX.utils.sheet_to_json(ws,{defval:""}),file.name)}
+    const t=wb.SheetNames.map(n=>`Sheet "${n}":\n`+window.XLSX.utils.sheet_to_csv(wb.Sheets[n])).join("\n\n");
+    return {text:t.slice(0,200000),meta:`${wb.SheetNames.length} sheet${wb.SheetNames.length>1?"s":""}`};
+  }
+  if(["txt","md","json","eml","csv","log"].includes(ext)||file.type.startsWith("text/")){const t=await file.text();return {text:t,meta:`${t.length.toLocaleString()} chars`}}
+  throw new Error("Unsupported file type ."+ext);
+}
+function renderS0(){
+  $("docGrid").innerHTML=DOC_CARDS.map(c=>`<div class="doccard" data-dtype="${c.type}">
+    <div><h3>${c.title}</h3><div class="sub">${esc(c.sub)}</div></div>
+    <label class="drop" data-drop="${c.type}">Drop files here or <b>choose files</b><br><span style="font-size:12px">${c.accept.replace(/\./g," ").trim()}</span><input type="file" multiple accept="${c.accept}" data-dfile="${c.type}"></label>
+    ${c.paste?`<textarea id="dp-${c.type}" placeholder="Or paste text" aria-label="Paste ${c.title} text"></textarea><div><button class="btn sm" type="button" data-dpaste="${c.type}">Add pasted text</button></div>`:""}
+    <ul class="flist" id="dl-${c.type}"></ul>
+  </div>`).join("");
+  renderDocLists();
+}
+function renderDocLists(){
+  DOC_CARDS.forEach(c=>{
+    const el=$("dl-"+c.type);if(!el)return;
+    el.innerHTML=DOCS.filter(d=>d.type===c.type).map(d=>`<li><span class="fn">${esc(d.name)}</span><span class="fm ${d.err?"err":""}">${d.busy?"reading…":esc(d.err||d.meta||"")}</span><button type="button" class="btn ghost sm" data-drm="${d.id}" aria-label="Remove ${esc(d.name)}">Remove</button></li>`
+      +(c.type==="incidents"&&d.text&&!d.err?`<li style="display:block;padding:0;border:0;background:none"><div class="incsum">${esc(d.text)}</div></li>`:"")).join("");
+  });
+  const ok=DOCS.filter(d=>d.text&&!d.err), chars=ok.reduce((n,d)=>n+d.text.length,0);
+  $("xTotals").textContent=ok.length?`${ok.length} document${ok.length>1?"s":""} · ${chars.toLocaleString()} characters`:"No documents yet";
+  $("xRun").disabled=!ok.length||DOCS.some(d=>d.busy);$("xCopy").disabled=!ok.length;
+}
+async function addFiles(type,files){
+  for(const f of files){
+    const d={id:uid(),type,name:f.name,text:"",busy:true};DOCS.push(d);renderDocLists();
+    try{const r=await readFile(f,type);d.text=r.text;d.meta=r.meta;if(!d.text)d.err="No text found"}
+    catch(e){d.err=(e&&e.message)||"Could not read file"}
+    d.busy=false;renderDocLists();
+  }
+}
+function okDocs(){return DOCS.filter(d=>d.text&&!d.err).map(d=>({type:d.type,name:d.name,text:d.text}))}
+function xStatus(msg,err){const el=$("xStatus");el.textContent=msg;el.className="xstatus"+(err?" err":"")}
+async function detectRoute(){
+  const inViewer=!!(window.claude&&typeof window.claude.use==="function");
+  if(inViewer){
+    $("xRoute").innerHTML="Checking whether Claude can be used from this page…";
+    try{XSAMPLE=await window.claude.use("sample")}catch(e){XSAMPLE=null}
+    XROUTE=XSAMPLE?"sample":"manual";
+  }else XROUTE=/^https?:$/.test(location.protocol)?"server":"manual";
+  $("xPassRow").hidden=XROUTE!=="server";
+  try{$("xPass").value=localStorage.getItem("damo-workflow-pass")||""}catch(e){}
+  $("xRoute").innerHTML=({
+    sample:"<b>Runs on your Claude account.</b> The first run asks you to allow this page to use Claude. Documents up to about 250,000 characters.",
+    server:"<b>Runs on this site's Anthropic API key</b> (Claude Opus 5.5). If the site sets a passphrase, enter it below.",
+    manual:"<b>Extraction isn't available on this page.</b> Use Copy prompt, paste it into a Claude chat, then paste the reply below."
+  })[XROUTE];
+  if(XROUTE==="manual"){$("xRun").hidden=true;$("xManual").open=true}
+}
+async function runExtraction(){
+  const docs=okDocs();if(!docs.length)return;
+  const X=window.DamoExtract;
+  if(!X){xStatus("The extraction module didn't load. Open the tool from a web address, not a local file.",true);return}
+  const chars=docs.reduce((n,d)=>n+d.text.length,0);
+  $("xRun").disabled=true;$("xStop").hidden=false;XCTL=new AbortController();
+  const t0=Date.now();const tick=setInterval(()=>{xStatus(`Claude is reading ${docs.length} document${docs.length>1?"s":""}… ${Math.round((Date.now()-t0)/1000)} s`)},1000);
+  try{
+    let json;
+    if(XROUTE==="sample"){
+      const prompt=X.buildExtractionPrompt(docs);
+      if(new Blob([prompt]).size>MAX_SAMPLE_BYTES)throw {code:"too_long",message:`The documents are too long to send from this page (${chars.toLocaleString()} characters). Remove a document, or paste only the relevant sections.`};
+      json=await XSAMPLE.json(prompt,{modelTier:"complex",signal:XCTL.signal});
+    }else{
+      if(chars>MAX_SERVER_CHARS)throw {code:"too_long",message:`The documents are too long (${chars.toLocaleString()} characters; limit ${MAX_SERVER_CHARS.toLocaleString()}). Remove a document or paste the relevant sections.`};
+      const pass=$("xPass").value.trim();try{localStorage.setItem("damo-workflow-pass",pass)}catch(e){}
+      const jobId=(crypto.randomUUID&&crypto.randomUUID())||uid()+uid();
+      const r=await fetch("/.netlify/functions/extract-inputs-background",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({jobId,docs,passphrase:pass}),signal:XCTL.signal});
+      if(r.status===404)throw {code:"no_server",message:"This site has no extraction service. Use Copy prompt and paste Claude's reply below."};
+      if(!r.ok&&r.status!==202)throw {code:"server",message:`The extraction service returned ${r.status}.`};
+      for(let i=0;i<180;i++){
+        await new Promise((res,rej)=>{const t=setTimeout(res,2000);XCTL.signal.addEventListener("abort",()=>{clearTimeout(t);rej({code:"cancelled"})},{once:true})});
+        const st=await (await fetch("/.netlify/functions/extract-status?jobId="+encodeURIComponent(jobId),{signal:XCTL.signal})).json();
+        if(st.status==="done"){json=st.json;break}
+        if(st.status==="error")throw {code:"server",message:st.error||"Extraction failed"};
+      }
+      if(!json)throw {code:"timeout",message:"No answer after 6 minutes. Try fewer or shorter documents."};
+    }
+    showProposals(X.sanitizeExtraction(json));
+    xStatus(`Done in ${Math.round((Date.now()-t0)/1000)} s. Review the proposals, then apply.`);
+  }catch(e){
+    const code=e&&e.code;
+    if(code==="cancelled"){xStatus("Stopped.")}
+    else if(code==="not_granted"||code==="sampling_disabled"){xStatus("Claude isn't allowed for this page. Use Copy prompt and paste the reply below.",true);$("xManual").open=true}
+    else if(code==="invalid_json"){xStatus("Claude's reply wasn't valid JSON. Try again, or use Copy prompt.",true)}
+    else if(code==="prompt_too_large"){xStatus("The documents are too long to send from this page. Remove one or paste only the relevant sections.",true)}
+    else if(code==="rate_limited"){xStatus("Claude is busy for your account right now. Try again in a minute.",true)}
+    else if(code==="no_server"){xStatus(e.message,true);$("xManual").open=true}
+    else xStatus((e&&e.message)||"Extraction failed.",true);
+  }finally{clearInterval(tick);$("xRun").disabled=false;$("xStop").hidden=true;XCTL=null}
+}
+/* ---- proposals ---- */
+const KIND_NAME={AMS:"AMS",IMS:"IMS",DMS:"DMS",AI:"AI platforms"};
+function evHtml(o){return o&&(o.evidence||o.source)?`<div class="pe">${o.evidence?`<q>${esc(o.evidence)}</q>`:""}${o.source?` · ${esc(o.source)}`:""}</div>`:""}
+const STRUCT_LBL={environments:"environments",hostingPlatforms:"hosting platforms",databases:"databases",securityInScope:"security in scope",dataProducts:"data products",pipelines:"pipelines",integrations:"integrations",upstream:"upstream systems",downstream:"downstream systems",agents:"agents",models:"models",toolIntegrations:"tool integrations",knowledgeSources:"knowledge sources",highRisk:"high-risk use case"};
+function towerLine(t){
+  const parts=[];
+  if(t.volumetrics)parts.push(`volumetrics: ${t.volumetrics.incidentsPerMonth??"?"} incidents + ${t.volumetrics.serviceRequestsPerMonth??0} SRs a month`);
+  else if(t.structural){const s=t.structural;parts.push("structural: "+(s.apps?SIZES.filter(z=>s.apps[z]).map(z=>`${s.apps[z]} ${z}`).join(", ")+" apps":Object.entries(s).map(([k,v])=>typeof v==="boolean"?`${STRUCT_LBL[k]||k}: ${v?"yes":"no"}`:`${v} ${STRUCT_LBL[k]||k}`).join(", ")))}
+  else if(t.mau)parts.push(`${t.mau.toLocaleString()} monthly active users`);
+  else parts.push("demand not stated");
+  if(t.estate)parts.push(t.estate==="legacy"?(t.kind==="AI"?"self-hosted":"complex legacy"):(t.kind==="AI"?"managed AI services":"modern"));
+  if(t.skills&&t.skills.length)parts.push("skills: "+t.skills.map(k=>(SKILL_CATALOG.find(c=>c.id===k)||{}).name||k).join(", "));
+  return parts.join(" · ");
+}
+function showProposals(j){
+  XRESULT=j;const rows=[];const add=(stage,key,label,value,o)=>rows.push({stage,key,label,value,o});
+  if(j.clientName)add(0,"client","Deal name",j.clientName);
+  if(j.coverage){const c=j.coverage;const parts=[];if(c.hoursPerDay||c.daysPerWeek)parts.push(`${c.hoursPerDay??S.hours} hours a day × ${c.daysPerWeek??S.days} days`);if(c.outOfHours)parts.push(`out of hours: ${c.outOfHours==="oncall"?"on-call for P1":"active"}`);if(c.weekends)parts.push(`weekends: ${c.weekends}`);add(1,"coverage","Coverage window",parts.join(" · "),c)}
+  (j.towers||[]).forEach((t,i)=>add(2,"tower:"+i,`${KIND_NAME[t.kind]} tower${t.name?`: ${t.name}`:""}`,towerLine(t),t));
+  if(j.aiAdoption)add(4,"ai","Client AI adoption",j.aiAdoption.value,j.aiAdoption);
+  if(j.complexity)add(6,"cplx","Engagement complexity",j.complexity.value,j.complexity);
+  if(j.termYears)add(7,"term","Contract term",`${j.termYears.value} year${j.termYears.value>1?"s":""}`,j.termYears);
+  if(j.existingTeam){const e=j.existingTeam;add(8,"ex","Existing team",[["L2","L2"],["L3","L3"],["sreAutomation","SRE/automation"],["managers","managers"],["other","other"]].filter(([k])=>e[k]!=null).map(([k,l])=>`${e[k]} ${l}`).join(", "),e)}
+  (j.assumptions||[]).forEach((a,i)=>add(a.stage,"as:"+i,"Assumption",a.text,{source:a.source}));
+  (j.risks||[]).forEach((r,i)=>add(r.stage,"rk:"+i,"Risk (switched off, 0%)",`${r.title}${r.note?` — ${r.note}`:""}`,{source:r.source}));
+  $("xSummary").innerHTML=j.docSummary?`<div class="summary-box">${esc(j.docSummary)}</div>`:"";
+  const stageName=n=>n===0?"Deal":`Stage ${n} · ${(STAGES.find(s=>s.n===n)||{}).t||""}`;
+  let h="";
+  [...new Set(rows.map(r=>r.stage))].sort((a,b)=>a-b).forEach(st=>{
+    h+=`<h4>${esc(stageName(st))}</h4>`;
+    rows.filter(r=>r.stage===st).forEach(r=>{h+=`<label class="prow" for="xp-${r.key}"><input type="checkbox" id="xp-${r.key}" data-xkey="${r.key}" checked><div><div class="pv"><b>${esc(r.label)}:</b> ${esc(String(r.value))}</div>${evHtml(r.o)}</div></label>`});
+  });
+  if(j.openQuestions&&j.openQuestions.length)h+=`<h4>Open questions for the client</h4><ul style="margin:0;padding-left:18px;font-size:14px">${j.openQuestions.map(q=>`<li>${esc(q)}</li>`).join("")}</ul><div class="hint">Open questions are added to the Stage 1 assumptions as items to confirm when you apply.</div>`;
+  $("xProps").innerHTML=h||`<div class="empty">Claude found nothing it could support from these documents.</div>`;
+  $("xResSub").textContent=`${rows.length} proposal${rows.length===1?"":"s"}`;
+  $("xApplyRow").hidden=!rows.length;
+}
+function applyProposals(){
+  const j=XRESULT;if(!j)return;
+  const on=k=>{const el=document.querySelector(`[data-xkey="${k}"]`);return el&&el.checked};
+  const src=o=>o&&o.source?o.source:"documents";
+  let n=0;
+  if(j.clientName&&on("client")){S.deal=j.clientName;n++}
+  if(j.coverage&&on("coverage")){
+    const c=j.coverage;
+    if(c.daysPerWeek)S.days=c.daysPerWeek;
+    if(c.hoursPerDay){S.hours=c.hoursPerDay;setSpd(Math.max(1,Math.ceil(c.hoursPerDay/8)))}
+    if(c.outOfHours){S.shiftMode=S.assign.map((_,i)=>i===0?"active":c.outOfHours)}
+    if(c.weekends==="oncall")S.weekendMode="oncall";else if(c.weekends==="active")S.weekendMode="active";
+    n++;
+  }
+  (j.towers||[]).forEach((t,i)=>{
+    if(!on("tower:"+i))return;
+    const tw=mkTower(t.kind);tw.name=t.name||"";tw.estate=t.estate||null;
+    if(t.volumetrics){tw.vol=true;tw.inc=t.volumetrics.incidentsPerMonth??null;tw.sr=t.volumetrics.serviceRequestsPerMonth??null}
+    else if(t.structural){
+      tw.vol=false;tw.cpx=true;const st=t.structural;
+      if(t.kind==="AMS"&&st.apps)SIZES.forEach(z=>{if(st.apps[z]!=null)tw.apps[z]=st.apps[z]});
+      if(t.kind==="IMS"){tw.env=st.environments??null;tw.host=st.hostingPlatforms??null;tw.db=st.databases??null;tw.sec=!!st.securityInScope}
+      if(t.kind==="DMS"){tw.dp=st.dataProducts??null;tw.pipe=st.pipelines??null;tw.integ=st.integrations??null;tw.up=st.upstream??null;tw.down=st.downstream??null}
+      if(t.kind==="AI"){tw.agents=st.agents??null;tw.models=st.models??null;tw.tools=st.toolIntegrations??null;tw.ksrc=st.knowledgeSources??null;tw.hiRisk=!!st.highRisk}
+    }else if(t.mau){tw.vol=false;tw.cpx=false;tw.mau=t.mau}
+    (t.skills||[]).forEach(k=>{if(SKILL_CATALOG.some(c=>c.id===k))tw.skills.push(mkSkill(k,0))});
+    S.towers.push(tw);n++;
+  });
+  if(j.aiAdoption&&on("ai")){S.aiMaturity=j.aiAdoption.value;n++}
+  if(j.complexity&&on("cplx")){S.cplx=j.complexity.value;n++}
+  if(j.termYears&&on("term")){S.term=j.termYears.value;n++}
+  if(j.existingTeam&&on("ex")){const e=j.existingTeam;S.ex={L2:e.L2??null,L3:e.L3??null,trans:e.sreAutomation??null,gov:e.managers??null,other:e.other??null};const s0=(e.source||"").toLowerCase();S.exSource=/rfp|handover/.test(s0)?"rfp":/note|call|meeting/.test(s0)?"verbal":S.exSource;n++}
+  (j.assumptions||[]).forEach((a,i)=>{if(on("as:"+i)){S.assumptions["s"+a.stage].push(`${a.text} (from ${src(a)})`);n++}});
+  (j.risks||[]).forEach((r,i)=>{if(on("rk:"+i)){S.risks["s"+r.stage].push({id:uid(),on:false,pct:0,title:r.title,note:`${r.note||""} (from ${src(r)})`.trim()});n++}});
+  (j.openQuestions||[]).forEach(q=>S.assumptions.s1.push(`To confirm with the client: ${q}`));
+  renderAll();go(1);toast(`${n} input${n===1?"":"s"} applied from the documents`);
+}
+
 /* ---------- boot ---------- */
-function renderAll(){renderRail();renderS1();renderS2();renderS3();renderS4();renderS5();renderS6();renderS7();renderS8();["s1","s2","s3","s4","s5","s6","s7","s8"].forEach(k=>{renderAssume(k);renderRisks(k)});update();}
+function renderAll(){renderRail();renderS0();renderS1();renderS2();renderS3();renderS4();renderS5();renderS6();renderS7();renderS8();["s1","s2","s3","s4","s5","s6","s7","s8"].forEach(k=>{renderAssume(k);renderRisks(k)});update();}
 renderAll();
+detectRoute();
 })();
+</script>
+<script type="module">
+  /* Shared with the Netlify function so every route asks the same question. */
+  import * as X from "./extract-prompt.mjs";
+  window.DamoExtract = X;
 </script>
 </body>
 </html>

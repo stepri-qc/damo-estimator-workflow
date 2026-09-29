@@ -12,7 +12,7 @@ It is a companion to [`stepri-qc/damo-estimator`](https://github.com/stepri-qc/d
 Values not taken from either source are marked `proposed`.
 
 - **Source:** `index.html`. It is one self-contained file with no build step. State is saved in the browser's localStorage.
-- **Deploy:** Netlify serves the repo root (`netlify.toml`).
+- **Deploy:** Netlify serves the repo root and the extraction functions (`netlify.toml`). See [Documents and AI extraction](#stage-0-documents-and-ai-extraction).
 
 ## Inputs start blank from Stage 2
 
@@ -33,6 +33,7 @@ The "Default example" paragraphs below use sample inputs to show the maths. They
 
 | # | Stage | Status |
 |---|---|---|
+| 0 | Documents: upload RFP, incident dump, meeting notes, others; Claude proposes inputs | Built |
 | 1 | Base team: coverage, location, shifts | Built |
 | 2 | Service towers (AMS, IMS, DMS, AI platforms), demand and skill sets | Built |
 | 3 | Skill coverage by shift: live shifts, on call outside them | Built |
@@ -41,6 +42,38 @@ The "Default example" paragraphs below use sample inputs to show the maths. They
 | 6 | Seniority pyramid and contingency by complexity | Built |
 | 7 | Term and YoY savings as reduced FTE; 1- to 5-year comparison | Built |
 | 8 | Fact check against the existing team | Built |
+
+## Stage 0: documents and AI extraction
+
+The tool opens on an optional **Documents** page. Add what you have for the deal, run **Extract with AI**, and Claude proposes inputs for every stage. You tick what to apply; nothing changes until you do. **Skip to Stage 1** ignores the page.
+
+| Card | Accepts | What happens in the browser |
+|---|---|---|
+| RFP | PDF, DOCX, TXT, MD, pasted text | Text extracted (pdf.js, mammoth) |
+| Incident dump | CSV, XLSX, XLS | Summarised locally: date range, tickets a month, incidents vs requests, priority mix, top 20 groups, first rows. Only this summary is sent to Claude, not the raw export. |
+| Meeting notes | PDF, DOCX, TXT, MD, pasted text | Text extracted |
+| Others | PDF, DOCX, XLSX, CSV, TXT, MD, JSON, pasted text | Text extracted (spreadsheets as CSV per sheet) |
+
+Documents stay in memory for the session and are not saved to localStorage.
+
+**What Claude proposes**, each with a short quote and the document it came from: deal name, coverage window (hours, days, out-of-hours active or on-call, weekends), service towers (kind, name, volumetrics or structural counts or MAU, estate, skill sets), AI adoption, complexity, term, existing team, assumptions and risks by stage, and open questions for the client. Applied risks arrive switched off at 0%, and open questions are added to the Stage 1 assumptions. The prompt and the cleaning of Claude's reply (allowed values, numeric ranges, skill ids) live in `extract-prompt.mjs`, shared by every route.
+
+**Three routes**, picked automatically:
+
+1. **On Netlify:** the page posts the text to `netlify/functions/extract-inputs-background.mts`, which calls Claude (`claude-opus-5-5`, streaming, server-side fallback enabled) and writes the result to Netlify Blobs; the page polls `extract-status.mts`. Limit 600,000 characters.
+2. **In the claude.ai artifact viewer:** runs on the viewer's own Claude account after they allow it. Limit about 250,000 characters.
+3. **Anywhere else (or as a fallback):** **Copy prompt**, paste it into a Claude chat, paste the reply back, **Use this reply**.
+
+### Netlify setup
+
+Set these in Site configuration → Environment variables:
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Yes | Anthropic API key. It stays on the server; the page never sees it. |
+| `INTAKE_PASSPHRASE` | Recommended | If set, the page must send this passphrase (users type it once; it is remembered in their browser). Stops anyone with the URL spending your API credit. |
+
+Netlify installs `package.json` dependencies (`@anthropic-ai/sdk`, `@netlify/blobs`, `@netlify/functions`) at build time. There is no build command.
 
 ## Stage 1: base team
 
