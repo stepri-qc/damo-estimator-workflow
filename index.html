@@ -1066,19 +1066,24 @@ const LOC_COLORS=["var(--accent)","var(--round)","var(--add)","var(--risk)","#6B
 const WORK_DAYS=260;
 /* skill sets; absorb = base L2/L3 roster usually has this skill (proposed) */
 const SKILL_CATALOG=[
-  {id:"fs",name:"Full stack developer",absorb:true},
-  {id:"be",name:"Backend API dev",absorb:true},
-  {id:"fe",name:"Front end dev",absorb:true},
-  {id:"mob",name:"Mobile dev (Native / Android / iOS)",absorb:false},
-  {id:"infra",name:"Infra support engineer",absorb:true},
-  {id:"sre",name:"Service Reliability Engineer",absorb:false},
-  {id:"qa",name:"QA",absorb:false},
-  {id:"dse",name:"Data Support Engineer",absorb:false},
-  {id:"ai",name:"AI Engineer",absorb:false},
-  {id:"l1",name:"L1 support engineer",absorb:false},
-  {id:"dba",name:"Database",absorb:false},
-  {id:"data",name:"Data engineering",absorb:false},
-  {id:"spec",name:"Niche skill (name it)",absorb:false}
+  {id:"fs",name:"Full stack developer",absorb:true,g:"Application and infrastructure"},
+  {id:"be",name:"Backend API dev",absorb:true,g:"Application and infrastructure"},
+  {id:"fe",name:"Front end dev",absorb:true,g:"Application and infrastructure"},
+  {id:"mob",name:"Mobile dev (Native / Android / iOS)",absorb:false,g:"Application and infrastructure"},
+  {id:"infra",name:"Infra support engineer",absorb:true,g:"Application and infrastructure"},
+  {id:"sre",name:"Service Reliability Engineer",absorb:false,g:"Application and infrastructure"},
+  {id:"qa",name:"QA",absorb:false,g:"Application and infrastructure"},
+  {id:"l1",name:"L1 support engineer",absorb:false,g:"Application and infrastructure"},
+  {id:"dse",name:"Data Support Engineer",absorb:false,g:"Data"},
+  {id:"dba",name:"Database",absorb:false,g:"Data"},
+  {id:"data",name:"Data engineering",absorb:false,g:"Data"},
+  {id:"ai",name:"AI Engineer",absorb:false,g:"AI platforms"},
+  {id:"prompt",name:"Prompt Engineer",absorb:false,g:"AI platforms"},
+  {id:"mlops",name:"MLOps Engineer",absorb:false,g:"AI platforms"},
+  {id:"llmops",name:"LLMOps / Agent Ops Engineer",absorb:false,g:"AI platforms"},
+  {id:"aieval",name:"AI Evaluation & Guardrails Engineer",absorb:false,g:"AI platforms"},
+  {id:"ds",name:"Data Scientist",absorb:false,g:"AI platforms"},
+  {id:"spec",name:"Niche skill (name it)",absorb:false,g:"Other"}
 ];
 const KIND_DESC={AMS:"Application management",IMS:"Infrastructure management",DMS:"Data management",AI:"AI platforms and agentic solutions"};
 const SIZES=["S","M","L","XL","XXL"];
@@ -1510,7 +1515,11 @@ function renderS2(){
     if(t.vol===false&&cs===false)demand+=`<div class="q on"><span class="qh"><i>3</i>Use monthly active users to work out demand and complexity</span>${mauInputs}</div>`;
     demand+=`</div>`;
     const used=new Set(t.skills.map(k=>k.skill));
-    const opts=SKILL_CATALOG.filter(k=>k.id==="spec"||!used.has(k.id)).map(k=>`<option value="${k.id}">${esc(k.name)}</option>`).join("");
+    const avail=SKILL_CATALOG.filter(k=>k.id==="spec"||!used.has(k.id));
+    const groups=[...new Set(avail.map(k=>k.g))];
+    /* AI platform towers list their own skills first */
+    if(t.kind==="AI"&&groups.includes("AI platforms"))groups.sort((x,y)=>(y==="AI platforms")-(x==="AI platforms"));
+    const opts=groups.map(g=>`<optgroup label="${esc(g)}">${avail.filter(k=>k.g===g).map(k=>`<option value="${k.id}">${esc(k.name)}</option>`).join("")}</optgroup>`).join("");
     return `<div class="tower" data-tower="${t.id}">
       <div class="th"><span class="kbadge">${t.kind}</span><input class="tname" type="text" id="tn-${t.id}" data-tf="name" value="${esc(t.name)}" placeholder="Name this ${t.kind} tower" aria-label="Tower name"><button type="button" class="btn ghost sm" data-rmtower="${t.id}">Remove</button></div>
       <div class="tsec"><span class="h">Demand</span>

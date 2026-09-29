@@ -106,7 +106,7 @@ B          = A × 25% (modern) or 35% (complex legacy)
 tower FTE  = (A + B) ÷ 160 hours a month, keeping the L2/L3 split from the effort
 ```
 
-**Skill sets** form the bottom layer. Each tower lists the skill sets it needs, picked from a dropdown: Full stack developer, Backend API dev, Front end dev, Mobile dev (Native / Android / iOS), Infra support engineer, Service Reliability Engineer, QA, Data Support Engineer, AI Engineer, L1 support engineer, Database, Data engineering, or **Niche skill (name it)** for a specific skill the deal team names (more than one can be added). Each has a share %, and the tower's FTE is split by those shares (scaled to 100% if they don't add up, split equally until entered). Towers start with no skill sets.
+**Skill sets** form the bottom layer. Each tower lists the skill sets it needs, picked from a grouped dropdown. **Application and infrastructure:** Full stack developer, Backend API dev, Front end dev, Mobile dev (Native / Android / iOS), Infra support engineer, Service Reliability Engineer, QA, L1 support engineer. **Data:** Data Support Engineer, Database, Data engineering. **AI platforms** (listed first on AI platform towers): AI Engineer, Prompt Engineer, MLOps Engineer, LLMOps / Agent Ops Engineer, AI Evaluation & Guardrails Engineer, Data Scientist. **Other:** Niche skill (name it) for a specific skill the deal team names (more than one can be added). Each has a share %, and the tower's FTE is split by those shares (scaled to 100% if they don't add up, split equally until entered). Towers start with no skill sets.
 
 The tower team is built from the work alone. It does **not** sit on top of the base team:
 
