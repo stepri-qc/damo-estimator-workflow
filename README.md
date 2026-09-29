@@ -34,7 +34,7 @@ The "Default example" paragraphs below use sample inputs to show the maths. They
 | # | Stage | Status |
 |---|---|---|
 | 1 | Base team: coverage, location, shifts | Built |
-| 2 | Service towers and complexity (FE, BE, Mobile, Infra, SRE, Data, special skills) | Built |
+| 2 | Service towers (AMS, IMS, DMS, AI platforms), demand and skill sets | Built |
 | 3 | Skill coverage by shift: live shifts, on call outside them | Built |
 | 4 | Transformation capacity: scenario, POD share, AIOps ratio | Built |
 | 5 | Reconciliation (work team vs base team, larger wins) and SDM 1:8 | Built |
@@ -82,18 +82,19 @@ Rounding to whole people is applied once, to the final team, after all stages.
 
 ## Stage 2: service towers and complexity
 
-Towers are **AMS**, **IMS** or **DMS** ([F] 1.3 service functions). Each tower's demand comes from up to three questions, asked in order:
+Towers are **AMS**, **IMS**, **DMS** ([F] 1.3 service functions) or **AI platforms** (AI platforms and agentic solutions). Each tower's demand comes from up to three questions, asked in order:
 
 1. **Do you have volumetric data?** If yes, enter incidents + service requests a month.
 2. **If not, do you know the estate's structural complexity?** If yes:
    - AMS: T-shirt size the apps S–XXL at 4 / 10 / 17.5 / 30 / 50 tickets per app a month ([F] Sc.1 Step 1 midpoints).
    - IMS: complexity points = environments × 1 + hosting platforms × 1.5 + databases × 1 + security in scope 3, × 4.5 tickets per point.
    - DMS: complexity points = data products × 1 + pipelines × 0.5 + integrations × 1 + upstream × 0.75 + downstream × 0.75, × 3.4 tickets per point.
+   - AI platforms: complexity points = AI agents / agentic workflows × 2 + models served × 1.5 + tool/system integrations × 0.5 + knowledge sources (RAG / vector stores) × 0.75 + regulated or high-risk use cases 4, × 3.5 tickets per point (`proposed`). The estate choice is Managed AI services (APIs) at the modern non-ticketing rate, or Self-hosted models / custom agents at the complex rate.
 3. **If neither is known:** tickets = monthly active users × incident rate (0.5–2%, default 1%, [F] Sc.1 Step 2). The card also shows the **implied complexity**: equivalent medium (M) apps, and an estate band (small < 25 tickets a month, medium < 75, large < 200, very large above; `proposed`).
 
 A path marker on each card shows which route is in use. Assumption B4 lists each tower's route, and the MAU route is called out as the least certain.
 
-IMS/DMS weights and tickets per point come from the `damo-estimator` structural-complexity model (pipelines weight is new). All are `proposed` and editable in the stage's Benchmarks panel.
+IMS/DMS weights and tickets per point come from the `damo-estimator` structural-complexity model (pipelines weight is new); the AI platform weights are new. All are `proposed` and editable in the stage's Benchmarks panel.
 
 Every route ends in tickets a month, which then follow the framework effort chain ([F] 1.1, 1.4, 1.5, p.3):
 

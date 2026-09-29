@@ -243,7 +243,7 @@ tr:last-child td{border-bottom:0}
 .yes{color:var(--add);font-weight:600}
 .no{color:var(--faint)}
 /* stage 2 towers v2 */
-.kadd{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.kadd{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .kadd button{border:1px dashed var(--line);background:transparent;border-radius:8px;padding:10px 12px;text-align:left;cursor:pointer;display:grid;gap:2px}
 .kadd button:hover{border-color:var(--accent)}
 .kadd b{font:700 15px var(--display);color:var(--accent)}
@@ -513,7 +513,7 @@ tr.sel td{background:var(--accent-soft)}
     <div class="stage-head">
       <span class="eyebrow">Stage 2 of 8</span>
       <h2 id="s2h">Service towers and complexity</h2>
-      <p>Add the AMS, IMS and DMS towers in scope. For each tower, answer up to three questions: ticket volumes if the client has them, otherwise the estate's structural complexity (T-shirt sizing), and if that isn't known either, monthly active users. Tickets become effort through the framework's L2/L3 cascade, and each tower's FTE is then split across the skill sets it needs.</p>
+      <p>Add the AMS, IMS, DMS and AI platform towers in scope. For each tower, answer up to three questions: ticket volumes if the client has them, otherwise the estate's structural complexity (T-shirt sizing), and if that isn't known either, monthly active users. Tickets become effort through the framework's L2/L3 cascade, and each tower's FTE is then split across the skill sets it needs.</p>
     </div>
 
     <div class="cols">
@@ -526,6 +526,7 @@ tr.sel td{background:var(--accent-soft)}
             <button type="button" data-addkind="AMS"><b>+ AMS</b><span>Application management</span></button>
             <button type="button" data-addkind="IMS"><b>+ IMS</b><span>Infrastructure management</span></button>
             <button type="button" data-addkind="DMS"><b>+ DMS</b><span>Data management</span></button>
+            <button type="button" data-addkind="AI"><b>+ AI platforms</b><span>AI platforms and agentic solutions</span></button>
           </div>
         </div>
 
@@ -1079,7 +1080,7 @@ const SKILL_CATALOG=[
   {id:"data",name:"Data engineering",absorb:false},
   {id:"spec",name:"Niche skill (name it)",absorb:false}
 ];
-const KIND_DESC={AMS:"Application management",IMS:"Infrastructure management",DMS:"Data management"};
+const KIND_DESC={AMS:"Application management",IMS:"Infrastructure management",DMS:"Data management",AI:"AI platforms and agentic solutions"};
 const SIZES=["S","M","L","XL","XXL"];
 /* [F] Scenario 1 Step 1 complexity fingerprint */
 const SIZE_DESC={S:"Static content, UI-only, no APIs",M:"Standard CRUD, 1–2 REST APIs",L:"Financial transactions, 3+ API orchestrations",XL:"Payments, regulatory reporting, complex ESB",XXL:"ML pipelines, multi-level analytics, upstream/downstream flows"};
@@ -1088,7 +1089,8 @@ function defaultBench(){return {
   p12:70,p23:20,are2:3,are3:10,util:85,hrsMonth:160,bModern:25,bLegacy:35,       /* [F] 1.1, 1.4, 1.5, p.3 */
   tpa:{S:4,M:10,L:17.5,XL:30,XXL:50},                                              /* [F] Sc.1 midpoints */
   ims:{wEnv:1,wHost:1.5,wDb:1,sec:3,tpp:4.5},                                      /* proposed, from damo-estimator */
-  dms:{wDp:1,wPipe:0.5,wInt:1,wUp:0.75,wDown:0.75,tpp:3.4}                         /* proposed */
+  dms:{wDp:1,wPipe:0.5,wInt:1,wUp:0.75,wDown:0.75,tpp:3.4},                        /* proposed */
+  ai:{wAgent:2,wModel:1.5,wTool:0.5,wKs:0.75,risk:4,tpp:3.5}                       /* proposed */
 }}
 
 function uid(){return Math.random().toString(36).slice(2,9)}
@@ -1159,6 +1161,7 @@ function mkTower(kind){
     cpx:null,apps:{S:null,M:null,L:null,XL:null,XXL:null},mau:null,mauRate:null,
     env:null,host:null,db:null,sec:false,
     dp:null,pipe:null,integ:null,up:null,down:null,
+    agents:null,models:null,tools:null,ksrc:null,hiRisk:false,
     skills:[]};
 }
 function defaults(){
@@ -1203,7 +1206,7 @@ function load(){
       st.cov=p.cov||{};
       if(!Array.isArray(p.towers)||p.towers.some(t=>!t.kind))st.towers=defaults().towers;
       const db=defaultBench(), pb=p.bench||{};
-      st.bench=Object.assign(db,pb,{tpa:Object.assign(db.tpa,pb.tpa||{}),ims:Object.assign(db.ims,pb.ims||{}),dms:Object.assign(db.dms,pb.dms||{})});
+      st.bench=Object.assign(db,pb,{tpa:Object.assign(db.tpa,pb.tpa||{}),ims:Object.assign(db.ims,pb.ims||{}),dms:Object.assign(db.dms,pb.dms||{}),ai:Object.assign(db.ai,pb.ai||{})});
       return st;
     }
   }catch(e){}
@@ -1257,6 +1260,7 @@ function compute(){
     else if(!cpxKnown(t)){tickets=n0(t.mau)*n0(t.mauRate)/100;src="MAU proxy"}
     else if(t.kind==="AMS"){tickets=SIZES.reduce((s2,z)=>s2+n0(t.apps[z])*B.tpa[z],0);src="T-shirt sizing"}
     else if(t.kind==="IMS"){score=B.ims.wEnv*n0(t.env)+B.ims.wHost*n0(t.host)+B.ims.wDb*n0(t.db)+(t.sec?B.ims.sec:0);tickets=score*B.ims.tpp;src="Infra complexity"}
+    else if(t.kind==="AI"){score=B.ai.wAgent*n0(t.agents)+B.ai.wModel*n0(t.models)+B.ai.wTool*n0(t.tools)+B.ai.wKs*n0(t.ksrc)+(t.hiRisk?B.ai.risk:0);tickets=score*B.ai.tpp;src="AI platform complexity"}
     else {score=B.dms.wDp*n0(t.dp)+B.dms.wPipe*n0(t.pipe)+B.dms.wInt*n0(t.integ)+B.dms.wUp*n0(t.up)+B.dms.wDown*n0(t.down);tickets=score*B.dms.tpp;src="Data complexity"}
     const l2t=tickets*B.p12/100, l3t=l2t*B.p23/100;
     const A2=l2t*B.are2/(B.util/100), A3=l3t*B.are3/(B.util/100), A=A2+A3;
@@ -1493,14 +1497,16 @@ function renderS2(){
     if(t.kind==="AMS")cpxInputs=`<div class="tgrid">${SIZES.map(z=>`<label for="t-${t.id}-a${z}" title="${SIZE_DESC[z]}">${z} apps <span style="font-size:11px">${SIZE_RANGE[z]} tkts/app</span><input type="number" id="t-${t.id}-a${z}" data-tapp="${z}" min="0" max="1000" step="1" value="${t.apps[z]??""}"></label>`).join("")}</div><div class="hint">S static/UI-only · M CRUD, 1–2 APIs · L financial, 3+ APIs · XL payments, regulatory, ESB · XXL ML pipelines, analytics ([F] Sc.1 Step 1).</div>`;
     else if(t.kind==="IMS")cpxInputs=`<div class="tgrid">${numIn(t,"env","Environments",500)}${numIn(t,"host","Hosting platforms",100)}${numIn(t,"db","Databases",500)}</div>
         <label class="switch" for="t-${t.id}-sec"><input type="checkbox" id="t-${t.id}-sec" data-tc="sec" ${t.sec?"checked":""}><div><b style="font-size:13px">Security operations in scope</b><span>Patching, vulnerability and access management add a fixed load.</span></div></label>`;
+    else if(t.kind==="AI")cpxInputs=`<div class="tgrid">${numIn(t,"agents","AI agents / agentic workflows in production",500)}${numIn(t,"models","Models served (LLM / ML)",200)}${numIn(t,"tools","Tool and system integrations",2000)}${numIn(t,"ksrc","Knowledge sources (RAG / vector stores)",500)}</div>
+        <label class="switch" for="t-${t.id}-hiRisk"><input type="checkbox" id="t-${t.id}-hiRisk" data-tc="hiRisk" ${t.hiRisk?"checked":""}><div><b style="font-size:13px">Regulated or high-risk AI use cases</b><span>Extra evaluation, guardrails, human review and audit add a fixed load.</span></div></label>`;
     else cpxInputs=`<div class="tgrid">${numIn(t,"dp","Data products",500)}${numIn(t,"pipe","Pipelines",2000)}${numIn(t,"integ","Integrations",500)}${numIn(t,"up","Upstream systems",500)}${numIn(t,"down","Downstream systems",500)}</div>`;
-    const mauLabel={AMS:"Monthly active users",IMS:"Monthly active users of hosted services",DMS:"Monthly active data consumers"}[t.kind];
+    const mauLabel={AMS:"Monthly active users",IMS:"Monthly active users of hosted services",DMS:"Monthly active data consumers",AI:"Monthly active users of the AI solutions"}[t.kind];
     const mauInputs=`<div class="tgrid">${numIn(t,"mau",mauLabel,1e7,100)}${numIn(t,"mauRate","Users raising a ticket %",10,0.1)}</div><div class="hint">Framework benchmark: 0.5–2% of monthly active users raise a ticket ([F] Sc.1 Step 2). The implied complexity is shown below.</div>`;
     const cs=cpxState(t);
     const step=t.vol===false?(cs===false?3:2):1;
     let demand=`<div class="qpath"><span class="${step===1?"on":""}">① Volumetrics</span>›<span class="${step===2?"on":""}">② Structural complexity</span>›<span class="${step===3?"on":""}">③ Monthly active users</span></div><div class="qflow">
       <div class="q ${step===1?"on":""}"><span class="qh"><i>1</i>Do you have volumetric data for this tower?</span>${yn("data-tvol",t.vol,"Yes, ticket history","No")}${t.vol===true?`<div class="tgrid">${numIn(t,"inc","Incidents / month")}${numIn(t,"sr","Service requests / month")}</div>`:""}</div>`;
-    if(t.vol===false)demand+=`<div class="q ${step===2?"on":""}"><span class="qh"><i>2</i>Do you know the structural complexity of the ${t.kind==="AMS"?"application estate":t.kind==="IMS"?"infrastructure estate":"data estate"}?</span>${yn("data-tcpx",cs,t.kind==="AMS"?"Yes, T-shirt size it":"Yes, enter it","No")}${known?cpxInputs:""}</div>`;
+    if(t.vol===false)demand+=`<div class="q ${step===2?"on":""}"><span class="qh"><i>2</i>Do you know the structural complexity of the ${t.kind==="AMS"?"application estate":t.kind==="IMS"?"infrastructure estate":t.kind==="AI"?"AI platform estate":"data estate"}?</span>${yn("data-tcpx",cs,t.kind==="AMS"?"Yes, T-shirt size it":"Yes, enter it","No")}${known?cpxInputs:""}</div>`;
     if(t.vol===false&&cs===false)demand+=`<div class="q on"><span class="qh"><i>3</i>Use monthly active users to work out demand and complexity</span>${mauInputs}</div>`;
     demand+=`</div>`;
     const used=new Set(t.skills.map(k=>k.skill));
@@ -1511,7 +1517,7 @@ function renderS2(){
         ${demand}
       </div>
       <div class="tsec"><span class="h">Estate</span>
-        <div class="seg" role="group" aria-label="Estate">${[["modern","Modern / SaaS"],["legacy","Complex legacy"]].map(([k,l])=>`<button type="button" data-testate="${k}" aria-pressed="${t.estate===k}">${l}</button>`).join("")}</div>${t.estate?"":`<div class="hint">Choose one. Modern is used until you do.</div>`}
+        <div class="seg" role="group" aria-label="Estate">${(t.kind==="AI"?[["modern","Managed AI services (APIs)"],["legacy","Self-hosted models / custom agents"]]:[["modern","Modern / SaaS"],["legacy","Complex legacy"]]).map(([k,l])=>`<button type="button" data-testate="${k}" aria-pressed="${t.estate===k}">${l}</button>`).join("")}</div>${t.estate?"":`<div class="hint">Choose one. Modern is used until you do.</div>`}
       </div>
       <div class="derived" id="td-${t.id}"></div>
       <div class="skills"><span class="tsec"><span class="h">Skill sets in this tower</span></span>
@@ -1524,7 +1530,7 @@ function renderS2(){
         ${t.skills.length?"":`<div class="hint">No skill sets yet. Add the skill sets this tower needs; its FTE is split across them.</div>`}
         <div class="skfoot"><div class="addrow"><select id="sk-add-${t.id}" aria-label="Add a skill set">${opts}</select><button type="button" class="btn sm" data-addskill="${t.id}">Add skill set</button></div><span class="delta add" id="tadd-${t.id}"></span></div>
       </div>
-    </div>`}).join(""):`<div class="empty">No towers yet. Add AMS, IMS or DMS.</div>`;
+    </div>`}).join(""):`<div class="empty">No towers yet. Add AMS, IMS, DMS or AI platforms.</div>`;
   const B=S.bench;
   const bi=(path,label,val,step=1,max=1000)=>`<label for="bn-${path}">${label}<input type="number" id="bn-${path}" data-bn="${path}" min="0" max="${max}" step="${step}" value="${val}"></label>`;
   $("benchBox").innerHTML=`<h4>Ticket cascade and effort · [F] 1.1, 1.4, 1.5</h4><div class="tgrid">
@@ -1532,7 +1538,8 @@ function renderS2(){
     ${bi("util","Utilisation %",B.util,1,100)}${bi("hrsMonth","Hours per FTE a month",B.hrsMonth,1,220)}${bi("bModern","Non-ticketing B, modern %",B.bModern,1,100)}${bi("bLegacy","Non-ticketing B, legacy %",B.bLegacy,1,100)}</div>
     <h4>AMS tickets per app a month · [F] Sc.1 midpoints</h4><div class="tgrid">${SIZES.map(z=>bi("tpa."+z,z,B.tpa[z],0.5,200)).join("")}</div>
     <h4>IMS complexity points · proposed</h4><div class="tgrid">${bi("ims.wEnv","Per environment",B.ims.wEnv,0.25,20)}${bi("ims.wHost","Per hosting platform",B.ims.wHost,0.25,20)}${bi("ims.wDb","Per database",B.ims.wDb,0.25,20)}${bi("ims.sec","Security in scope",B.ims.sec,0.5,50)}${bi("ims.tpp","Tickets per point",B.ims.tpp,0.1,50)}</div>
-    <h4>DMS complexity points · proposed</h4><div class="tgrid">${bi("dms.wDp","Per data product",B.dms.wDp,0.25,20)}${bi("dms.wPipe","Per pipeline",B.dms.wPipe,0.05,20)}${bi("dms.wInt","Per integration",B.dms.wInt,0.25,20)}${bi("dms.wUp","Per upstream",B.dms.wUp,0.25,20)}${bi("dms.wDown","Per downstream",B.dms.wDown,0.25,20)}${bi("dms.tpp","Tickets per point",B.dms.tpp,0.1,50)}</div>`;
+    <h4>DMS complexity points · proposed</h4><div class="tgrid">${bi("dms.wDp","Per data product",B.dms.wDp,0.25,20)}${bi("dms.wPipe","Per pipeline",B.dms.wPipe,0.05,20)}${bi("dms.wInt","Per integration",B.dms.wInt,0.25,20)}${bi("dms.wUp","Per upstream",B.dms.wUp,0.25,20)}${bi("dms.wDown","Per downstream",B.dms.wDown,0.25,20)}${bi("dms.tpp","Tickets per point",B.dms.tpp,0.1,50)}</div>
+    <h4>AI platform complexity points · proposed</h4><div class="tgrid">${bi("ai.wAgent","Per agent / workflow",B.ai.wAgent,0.25,20)}${bi("ai.wModel","Per model served",B.ai.wModel,0.25,20)}${bi("ai.wTool","Per tool integration",B.ai.wTool,0.05,20)}${bi("ai.wKs","Per knowledge source",B.ai.wKs,0.25,20)}${bi("ai.risk","Regulated / high-risk",B.ai.risk,0.5,50)}${bi("ai.tpp","Tickets per point",B.ai.tpp,0.1,50)}</div>`;
 }
 
 /* ---------- shared: assumptions & risks ---------- */
@@ -1612,7 +1619,7 @@ function updateS2(){
       if(t.vol===true)how=`${fmt(n0v(t.inc),0)} incidents + ${fmt(n0v(t.sr),0)} SRs`;
       else if(!cpxKnown(t)){const eq=t.tickets/B.tpa.M;how=`${fmt(n0v(t.mau),0)} MAU × ${t.mauRate}%`;d.dataset.impl=`Implied complexity: about ${fmt(eq,1)} medium (M) applications' worth of demand, ${implTier(t.tickets)}.`}
       else if(t.kind==="AMS")how=SIZES.filter(z=>+t.apps[z]).map(z=>`${t.apps[z]}${z}×${B.tpa[z]}`).join(" + ")||"no apps";
-      else how=`score ${fmt(t.score,1)} × ${t.kind==="IMS"?B.ims.tpp:B.dms.tpp} tickets per point`;
+      else how=`score ${fmt(t.score,1)} × ${({IMS:B.ims.tpp,DMS:B.dms.tpp,AI:B.ai.tpp})[t.kind]} tickets per point`;
       if(t.vol===true||cpxKnown(t))delete d.dataset.impl;
       d.innerHTML=`${esc(how)} ≈ <b>${fmt(t.tickets,0)}</b> tickets/mo → L2 ${fmt(t.l2t,1)}, L3 ${fmt(t.l3t,1)} → <b>${fmt(t.fte,2)} FTE</b> (L2 ${fmt(t.fte2,2)} · L3 ${fmt(t.fte3,2)})`+(d.dataset.impl?`<br>${esc(d.dataset.impl)}`:"");
     }
@@ -1632,7 +1639,7 @@ function updateS2(){
   h+=wstep("6","Risk modifiers",`<span class="delta risk">${sgn(R.risk2Add,2)}</span>`,`${fmt(R.added,2)} × ${fmt(R.rp2*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
   h+=wstep("=","Tower team",`${fmt(R.s2,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Built from the work, separately from the ${fmt(R.s1,2)} FTE base team · L2 ${fmt(R.add2,2)} · L3 ${fmt(R.add3,2)} before risk. The two are compared at Stage 5.`,"total");
   $("steps2").innerHTML=h;
-  $("towerCalc").innerHTML=R.towers.length?R.towers.map(t=>`<tr><td class="loc-name">${esc(t.name)}<small>${t.kind}${t.estate==="legacy"?" · legacy":""}</small></td><td>${esc(t.src)}</td><td class="r num">${fmt(t.tickets,0)}</td><td class="r num">${fmt(t.l2t,1)}</td><td class="r num">${fmt(t.l3t,1)}</td><td class="r num">${fmt(t.A,0)}</td><td class="r num">${fmt(t.Bh,0)}</td><td class="r num"><b>${fmt(t.fte,2)}</b></td></tr>`).join("")
+  $("towerCalc").innerHTML=R.towers.length?R.towers.map(t=>`<tr><td class="loc-name">${esc(t.name)}<small>${t.kind}${t.estate==="legacy"?(t.kind==="AI"?" · self-hosted":" · legacy"):""}</small></td><td>${esc(t.src)}</td><td class="r num">${fmt(t.tickets,0)}</td><td class="r num">${fmt(t.l2t,1)}</td><td class="r num">${fmt(t.l3t,1)}</td><td class="r num">${fmt(t.A,0)}</td><td class="r num">${fmt(t.Bh,0)}</td><td class="r num"><b>${fmt(t.fte,2)}</b></td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td></td><td class="r num">${fmt(tk,0)}</td><td class="r num">${fmt(l2,1)}</td><td class="r num">${fmt(l3,1)}</td><td class="r num">${fmt(A,0)}</td><td class="r num">${fmt(Bh,0)}</td><td class="r num"><b>${fmt(R.demand,2)}</b></td></tr>`
     :`<tr><td colspan="8" class="hint">Add a tower to see its effect.</td></tr>`;
   $("skillCalc").innerHTML=R.skills.length?R.skills.map(k=>`<tr><td class="loc-name">${esc(k.name)}<small>${esc(k.tower)}</small></td><td class="r num">${fmt(k.norm*100,0)}%</td><td class="r num">${fmt(k.fte,2)}</td><td>${k.absorb?'<span class="yes">Yes, every shift</span>':'<span class="no">No, set shifts in Stage 3</span>'}</td></tr>`).join("")
@@ -1650,7 +1657,7 @@ function updateS2(){
       if(mu.length)parts.push(`No volumetrics or complexity data for ${listNames(mu)}: demand and implied complexity come from monthly active users, the least certain route.`);
       if(!vol.length)parts.push("Treat Stage 2 as low-confidence until ticket history is shared.");
       return parts.join(" ")||"No towers.";})(),"[F] Sc.1 Steps 1–2"],
-    ["B5",`IMS and DMS proxies use complexity points × tickets per point (IMS ${B.ims.tpp}, DMS ${B.dms.tpp}). These are calibration targets.`,"proposed"],
+    ["B5",`IMS, DMS and AI platform proxies use complexity points × tickets per point (IMS ${B.ims.tpp}, DMS ${B.dms.tpp}, AI ${B.ai.tpp}). These are calibration targets.`,"proposed"],
     ["B6",`Skill sets the base team already has (${abs.length?abs.map(kn).join(", "):"none"}) are covered on every shift by the base roster. Other skill sets get their own shift cover in Stage 3.`,"proposed"],
     ["B7","Tower FTE keeps its effort-based L2/L3 split and is spread across locations like the Stage 1 roster. Stage 3 sets which shifts each skill covers.","proposed"]
   ]);
