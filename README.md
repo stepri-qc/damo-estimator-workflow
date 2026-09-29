@@ -14,6 +14,21 @@ Values not taken from either source are marked `proposed`.
 - **Source:** `index.html`. It is one self-contained file with no build step. State is saved in the browser's localStorage.
 - **Deploy:** Netlify serves the repo root (`netlify.toml`).
 
+## Inputs start blank from Stage 2
+
+Stage 1 opens with a working base-team example so the coverage maths is visible at once. From Stage 2 onward nothing is pre-filled. The deal team supplies every input:
+
+- **Stage 2:** no towers. A new tower has no name, unanswered questions, blank numbers and no skill sets. Until a tower's questions are answered it adds nothing.
+- **Stage 3:** no live shifts picked.
+- **Stage 4:** AI adoption not chosen (Low is used until it is).
+- **Stage 6:** complexity not chosen (no contingency until it is).
+- **Stage 7:** term not chosen (1 year is shown until it is).
+- **Stage 8:** the existing team is blank.
+- **Suggested risks** for Stages 2–8 are listed but switched off, so none changes FTE until turned on.
+- **Kept as defaults:** the agreed conventions (on-call 15%, SDM 1:8, framework benchmarks).
+
+The "Default example" paragraphs below use sample inputs to show the maths. They are not what the tool pre-fills.
+
 ## Stages
 
 | # | Stage | Status |
@@ -255,7 +270,7 @@ Stage 8 ends with an **Overall estimate** panel: headline figures (Year 1 team, 
 - the final team by location and tier
 - for every stage: its result line, the full working, its tables, assumptions and risks
 
-Open it in any browser and print to PDF if needed. In the claude.ai viewer the file is offered through the page's download prompt; on Netlify it downloads directly. A sample built from the default example is in [`docs/sample-estimate-summary.html`](docs/sample-estimate-summary.html).
+Open it in any browser and print to PDF if needed. In the claude.ai viewer the file is offered through the page's download prompt; on Netlify it downloads directly. A sample built from the example inputs is in [`docs/sample-estimate-summary.html`](docs/sample-estimate-summary.html).
 
 ### Copy summary
 **Copy summary** puts each stage's working, the location table, the assumptions and the risks on the clipboard as Markdown, ready for the deal-review deck or notes.

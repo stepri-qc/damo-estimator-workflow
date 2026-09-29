@@ -936,6 +936,7 @@ tr.sel td{background:var(--accent-soft)}
         <div class="field">
           <div class="lbl">Where the numbers come from</div>
           <select id="exSource">
+            <option value="">Choose where the numbers come from</option>
             <option value="org">Client org chart or contract schedule</option>
             <option value="rfp">RFP or incumbent handover pack</option>
             <option value="verbal">Verbal estimate from discovery</option>
@@ -1145,12 +1146,12 @@ const RISKS_S3=()=>[
 ];
 function mkSkill(id,share,name){const c=SKILL_CATALOG.find(k=>k.id===id);return {id:uid(),skill:id,name:name||c.name,share,absorb:c.absorb}}
 function mkTower(kind){
-  const n=S&&S.towers?S.towers.filter(t=>t.kind===kind).length+1:1;
-  return {id:uid(),kind,name:`${kind} ${n>1?n:""}`.trim(),vol:false,inc:60,sr:20,estate:"modern",
-    amsBasis:"apps",apps:{S:2,M:3,L:1,XL:0,XXL:0},mau:5000,mauRate:1,cpx:true,
-    env:4,host:2,db:4,sec:true,
-    dp:4,pipe:10,integ:3,up:3,down:2,
-    skills:KIND_SKILLS[kind].map(([id,sh])=>mkSkill(id,sh))};
+  /* everything starts unanswered: the deal team fills it in */
+  return {id:uid(),kind,name:"",vol:null,inc:null,sr:null,estate:null,
+    cpx:null,apps:{S:null,M:null,L:null,XL:null,XXL:null},mau:null,mauRate:null,
+    env:null,host:null,db:null,sec:false,
+    dp:null,pipe:null,integ:null,up:null,down:null,
+    skills:[]};
 }
 function defaults(){
   return {
@@ -1161,24 +1162,24 @@ function defaults(){
     assign:["in","in","ro"],
     backfill:true,
     rounding:"cell",
-    towers:[Object.assign(mkTower("AMS"),{name:"Customer apps"}),Object.assign(mkTower("IMS"),{name:"Cloud platform"}),Object.assign(mkTower("DMS"),{name:"Analytics platform"})],
+    towers:[],
     bench:defaultBench(),
     sparePct:25,
     onCallPct:15,
-    aiMaturity:"low",transPct:null,aiRatio:"auto",
+    aiMaturity:null,transPct:null,aiRatio:"auto",
     sdmRatio:8,sdmLoc:null,
-    cplx:"medium",pyr:{},contPct:null,
-    term:3,savePct:null,cont2:null,protectFloor:true,
-    ex:{L2:6,L3:4,trans:1,gov:1,other:1},exSource:"rfp",exTol:10,
+    cplx:null,pyr:{},contPct:null,
+    term:null,savePct:null,cont2:null,protectFloor:true,
+    ex:{},exSource:"",exTol:10,
     cov:{},
     assumptions:{s1:["Service desk (L1) is provided by the client and is out of scope for this team."],s2:[],s3:[],s4:[],s5:[],s6:[],s7:[],s8:[]},
-    risks:{s1:RISKS_S1(),s2:RISKS_S2(),s3:RISKS_S3(),s4:RISKS_S4(),s5:RISKS_S5(),s6:RISKS_S6(),s7:RISKS_S7(),s8:RISKS_S8()}
+    risks:Object.assign({s1:RISKS_S1()},...[["s2",RISKS_S2],["s3",RISKS_S3],["s4",RISKS_S4],["s5",RISKS_S5],["s6",RISKS_S6],["s7",RISKS_S7],["s8",RISKS_S8]].map(([k,f])=>({[k]:f().map(r=>Object.assign(r,{on:false}))})))
   };
 }
 function pickLoc(id){const c=LOC_CATALOG.find(l=>l.id===id);return {id:c.id,name:c.name,kind:c.kind,leave:c.leave,hol:c.hol}}
 
 /* ---------- state ---------- */
-const KEY="damo-workflow-v1";
+const KEY="damo-workflow-v2";
 let S=null;
 S=load();
 function load(){
@@ -1200,14 +1201,16 @@ function load(){
   }catch(e){}
   return defaults();
 }
-function covOf(id){if(!S.cov[id])S.cov[id]={shifts:[0],people:1};return S.cov[id]}
+function covOf(id){if(!S.cov[id])S.cov[id]={shifts:[],people:1};return S.cov[id]}
 function sdmLocOf(){
   if(S.sdmLoc&&S.locations.some(l=>l.id===S.sdmLoc))return S.sdmLoc;
   const pick=S.locations.find(l=>/Onshore/.test(l.kind))||S.locations.find(l=>/Nearshore/.test(l.kind))||S.locations[0];
   return pick.id;
 }
-function pyrOf(){const p=S.pyr&&S.pyr[S.cplx];return Array.isArray(p)&&p.length===3?p:(CPLX[S.cplx]||CPLX.medium).pyr}
-function cpxKnown(t){return t.cpx!=null?t.cpx!==false:t.amsBasis!=="mau"}
+function pyrOf(){const p=S.pyr&&S.pyr[S.cplx];return Array.isArray(p)&&p.length===3?p:(CPLX[S.cplx]||CX_UNSET).pyr}
+function cpxKnown(t){return t.cpx===true}
+function cpxState(t){return t.cpx===true||t.cpx===false?t.cpx:null}
+const CX_UNSET={name:"Not set",desc:"choose Low, Medium or High",pyr:[1,2,4],cont:0};
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 
 /* ---------- engine ---------- */
@@ -1238,9 +1241,11 @@ function compute(){
 
   /* Stage 2: towers → tickets → effort ([F] 1.1 A+B, p.3 cascade) → FTE → skill sets; base spare capacity absorbs skill-matched FTE first */
   const B=S.bench, n0=v=>Math.max(0,Math.min(1e6,+v||0));
-  const towers=S.towers.map(t=>{
+  const towers=S.towers.map(t0=>{
+    const t={...t0,name:t0.name||`${t0.kind} tower`};
     let tickets, src, score=null;
-    if(t.vol){tickets=n0(t.inc)+n0(t.sr);src="Ticket history"}
+    if(t.vol===true){tickets=n0(t.inc)+n0(t.sr);src="Ticket history"}
+    else if(t.vol!==false||cpxState(t)===null){tickets=0;src="Not answered yet"}
     else if(!cpxKnown(t)){tickets=n0(t.mau)*n0(t.mauRate)/100;src="MAU proxy"}
     else if(t.kind==="AMS"){tickets=SIZES.reduce((s2,z)=>s2+n0(t.apps[z])*B.tpa[z],0);src="T-shirt sizing"}
     else if(t.kind==="IMS"){score=B.ims.wEnv*n0(t.env)+B.ims.wHost*n0(t.host)+B.ims.wDb*n0(t.db)+(t.sec?B.ims.sec:0);tickets=score*B.ims.tpp;src="Infra complexity"}
@@ -1251,7 +1256,7 @@ function compute(){
     const Bh=A*bp;
     const fte2=A2*(1+bp)/B.hrsMonth, fte3=A3*(1+bp)/B.hrsMonth, fte=fte2+fte3;
     const shareSum=t.skills.reduce((s2,k)=>s2+n0(k.share),0);
-    const skills=t.skills.map(k=>{const sh=shareSum>0?n0(k.share)/shareSum:0;return {...k,tower:t.name,towerId:t.id,norm:sh,fte:fte*sh,f2:fte2*sh,f3:fte3*sh}});
+    const skills=t.skills.map(k=>{const sh=shareSum>0?n0(k.share)/shareSum:1/t.skills.length;return {...k,tower:t.name,towerId:t.id,norm:sh,fte:fte*sh,f2:fte2*sh,f3:fte3*sh}});
     return {...t,tickets,src,score,l2t,l3t,A,Bh,bp,fte,fte2,fte3,shareSum,skills};
   });
   const skills=towers.flatMap(t=>t.skills);
@@ -1296,7 +1301,7 @@ function compute(){
   const sub3=s2+s3; /* run team from the work (Stages 2–3) */
 
   /* Stage 4: scenario from AI maturity × volumetric availability; Transformation POD % vs AIOps ratio, AIOps inside the POD */
-  const volFte=towers.filter(t=>t.vol).reduce((x,t)=>x+t.fte,0);
+  const volFte=towers.filter(t=>t.vol===true).reduce((x,t)=>x+t.fte,0);
   const volShare=demand>0?volFte/demand:0;
   const volAvail=towers.length>0&&volShare>=0.5;
   const mod=S.aiMaturity==="moderate";
@@ -1337,7 +1342,7 @@ function compute(){
 
   /* Stage 6: contingency by complexity on Stages 1–5, spread over delivery L2/L3 cells; pyramid splits by grade only */
   const sub5=sub4+s5;
-  const CX=CPLX[S.cplx]||CPLX.medium;
+  const CX=CPLX[S.cplx]||CX_UNSET;
   const contPct=S.contPct==null?CX.cont:+S.contPct;
   const contRaw=sub5*contPct/100;
   const rp6=riskPctOf("s6");
@@ -1367,9 +1372,10 @@ function compute(){
   });
   const termRows=[1,2,3,4,5].map(T=>{const ys=years.slice(0,T);const sumY=ys.reduce((x,y)=>x+y.fte,0);return {T,ys,sum:sumY,avg:sumY/T}});
   termRows.forEach(t=>t.vs1=1-t.avg/termRows[0].avg);
-  const term=Math.min(5,Math.max(1,+S.term||3));
-  towers.filter(t=>t.skills.length&&t.shareSum!==100).forEach(t=>warnings2.push(`${t.name}: skill shares add up to ${fmt(t.shareSum,0)}%. They are scaled to 100%.`));
-  towers.filter(t=>!t.skills.length).forEach(t=>warnings2.push(`${t.name} has no skill sets, so its ${fmt(t.fte,2)} FTE is not staffed. Add at least one skill set.`));
+  const term=Math.min(5,Math.max(1,+S.term||1));
+  towers.filter(t=>t.skills.length&&t.shareSum>0&&t.shareSum!==100).forEach(t=>warnings2.push(`${t.name}: skill shares add up to ${fmt(t.shareSum,0)}%. They are scaled to 100%.`));
+  towers.filter(t=>t.skills.length&&t.shareSum===0).forEach(t=>warnings2.push(`${t.name}: enter a share for each skill set. Until then the FTE is split equally.`));
+  towers.filter(t=>!t.skills.length&&t.fte>0).forEach(t=>warnings2.push(`${t.name} has no skill sets, so its ${fmt(t.fte,2)} FTE is not staffed. Add at least one skill set.`));
 
   /* rounding on the combined team */
   const up=x=>Math.ceil(x-1e-6);
@@ -1470,42 +1476,44 @@ function renderS1(){
 function renderSpd(){$("spdSeg").innerHTML=[1,2,3,4].map(n=>`<button type="button" data-spd="${n}" aria-pressed="${S.spd===n}">${n} × ${hrs(S.hours/n)}h</button>`).join("")}
 
 /* ---------- stage 2 static render ---------- */
-function numIn(t,f,label,max=100000,step=1,val){return `<label for="t-${t.id}-${f}">${label}<input type="number" id="t-${t.id}-${f}" data-tn="${f}" min="0" max="${max}" step="${step}" value="${val!=null?val:t[f]}"></label>`}
+function numIn(t,f,label,max=100000,step=1,val){return `<label for="t-${t.id}-${f}">${label}<input type="number" id="t-${t.id}-${f}" data-tn="${f}" min="0" max="${max}" step="${step}" value="${(val!=null?val:t[f])??""}"></label>`}
 function renderS2(){
   $("towerList").innerHTML=S.towers.length?S.towers.map(t=>{
     const known=cpxKnown(t);
     const yn=(attr,val,yes,no)=>`<div class="seg" role="group">${[[true,yes],[false,no]].map(([v,l])=>`<button type="button" ${attr}="${v?1:0}" aria-pressed="${val===v}">${l}</button>`).join("")}</div>`;
     let cpxInputs;
-    if(t.kind==="AMS")cpxInputs=`<div class="tgrid">${SIZES.map(z=>`<label for="t-${t.id}-a${z}" title="${SIZE_DESC[z]}">${z} apps <span style="font-size:11px">${SIZE_RANGE[z]} tkts/app</span><input type="number" id="t-${t.id}-a${z}" data-tapp="${z}" min="0" max="1000" step="1" value="${t.apps[z]}"></label>`).join("")}</div><div class="hint">S static/UI-only · M CRUD, 1–2 APIs · L financial, 3+ APIs · XL payments, regulatory, ESB · XXL ML pipelines, analytics ([F] Sc.1 Step 1).</div>`;
+    if(t.kind==="AMS")cpxInputs=`<div class="tgrid">${SIZES.map(z=>`<label for="t-${t.id}-a${z}" title="${SIZE_DESC[z]}">${z} apps <span style="font-size:11px">${SIZE_RANGE[z]} tkts/app</span><input type="number" id="t-${t.id}-a${z}" data-tapp="${z}" min="0" max="1000" step="1" value="${t.apps[z]??""}"></label>`).join("")}</div><div class="hint">S static/UI-only · M CRUD, 1–2 APIs · L financial, 3+ APIs · XL payments, regulatory, ESB · XXL ML pipelines, analytics ([F] Sc.1 Step 1).</div>`;
     else if(t.kind==="IMS")cpxInputs=`<div class="tgrid">${numIn(t,"env","Environments",500)}${numIn(t,"host","Hosting platforms",100)}${numIn(t,"db","Databases",500)}</div>
         <label class="switch" for="t-${t.id}-sec"><input type="checkbox" id="t-${t.id}-sec" data-tc="sec" ${t.sec?"checked":""}><div><b style="font-size:13px">Security operations in scope</b><span>Patching, vulnerability and access management add a fixed load.</span></div></label>`;
     else cpxInputs=`<div class="tgrid">${numIn(t,"dp","Data products",500)}${numIn(t,"pipe","Pipelines",2000)}${numIn(t,"integ","Integrations",500)}${numIn(t,"up","Upstream systems",500)}${numIn(t,"down","Downstream systems",500)}</div>`;
     const mauLabel={AMS:"Monthly active users",IMS:"Monthly active users of hosted services",DMS:"Monthly active data consumers"}[t.kind];
     const mauInputs=`<div class="tgrid">${numIn(t,"mau",mauLabel,1e7,100)}${numIn(t,"mauRate","Users raising a ticket %",10,0.1)}</div><div class="hint">Framework benchmark: 0.5–2% of monthly active users raise a ticket ([F] Sc.1 Step 2). The implied complexity is shown below.</div>`;
-    const step=t.vol?1:(known?2:3);
+    const cs=cpxState(t);
+    const step=t.vol===false?(cs===false?3:2):1;
     let demand=`<div class="qpath"><span class="${step===1?"on":""}">① Volumetrics</span>›<span class="${step===2?"on":""}">② Structural complexity</span>›<span class="${step===3?"on":""}">③ Monthly active users</span></div><div class="qflow">
-      <div class="q ${step===1?"on":""}"><span class="qh"><i>1</i>Do you have volumetric data for this tower?</span>${yn("data-tvol",t.vol,"Yes, ticket history","No")}${t.vol?`<div class="tgrid">${numIn(t,"inc","Incidents / month")}${numIn(t,"sr","Service requests / month")}</div>`:""}</div>`;
-    if(!t.vol)demand+=`<div class="q ${step===2?"on":""}"><span class="qh"><i>2</i>Do you know the structural complexity of the ${t.kind==="AMS"?"application estate":t.kind==="IMS"?"infrastructure estate":"data estate"}?</span>${yn("data-tcpx",known,t.kind==="AMS"?"Yes, T-shirt size it":"Yes, enter it","No")}${known?cpxInputs:""}</div>`;
-    if(!t.vol&&!known)demand+=`<div class="q on"><span class="qh"><i>3</i>Use monthly active users to work out demand and complexity</span>${mauInputs}</div>`;
+      <div class="q ${step===1?"on":""}"><span class="qh"><i>1</i>Do you have volumetric data for this tower?</span>${yn("data-tvol",t.vol,"Yes, ticket history","No")}${t.vol===true?`<div class="tgrid">${numIn(t,"inc","Incidents / month")}${numIn(t,"sr","Service requests / month")}</div>`:""}</div>`;
+    if(t.vol===false)demand+=`<div class="q ${step===2?"on":""}"><span class="qh"><i>2</i>Do you know the structural complexity of the ${t.kind==="AMS"?"application estate":t.kind==="IMS"?"infrastructure estate":"data estate"}?</span>${yn("data-tcpx",cs,t.kind==="AMS"?"Yes, T-shirt size it":"Yes, enter it","No")}${known?cpxInputs:""}</div>`;
+    if(t.vol===false&&cs===false)demand+=`<div class="q on"><span class="qh"><i>3</i>Use monthly active users to work out demand and complexity</span>${mauInputs}</div>`;
     demand+=`</div>`;
     const used=new Set(t.skills.map(k=>k.skill));
     const opts=SKILL_CATALOG.filter(k=>k.id==="spec"||!used.has(k.id)).map(k=>`<option value="${k.id}">${esc(k.name)}</option>`).join("");
     return `<div class="tower" data-tower="${t.id}">
-      <div class="th"><span class="kbadge">${t.kind}</span><input class="tname" type="text" id="tn-${t.id}" data-tf="name" value="${esc(t.name)}" aria-label="Tower name"><button type="button" class="btn ghost sm" data-rmtower="${t.id}">Remove</button></div>
+      <div class="th"><span class="kbadge">${t.kind}</span><input class="tname" type="text" id="tn-${t.id}" data-tf="name" value="${esc(t.name)}" placeholder="Name this ${t.kind} tower" aria-label="Tower name"><button type="button" class="btn ghost sm" data-rmtower="${t.id}">Remove</button></div>
       <div class="tsec"><span class="h">Demand</span>
         ${demand}
       </div>
       <div class="tsec"><span class="h">Estate</span>
-        <div class="seg" role="group" aria-label="Estate">${[["modern","Modern / SaaS"],["legacy","Complex legacy"]].map(([k,l])=>`<button type="button" data-testate="${k}" aria-pressed="${t.estate===k}">${l}</button>`).join("")}</div>
+        <div class="seg" role="group" aria-label="Estate">${[["modern","Modern / SaaS"],["legacy","Complex legacy"]].map(([k,l])=>`<button type="button" data-testate="${k}" aria-pressed="${t.estate===k}">${l}</button>`).join("")}</div>${t.estate?"":`<div class="hint">Choose one. Modern is used until you do.</div>`}
       </div>
       <div class="derived" id="td-${t.id}"></div>
       <div class="skills"><span class="tsec"><span class="h">Skill sets in this tower</span></span>
         ${t.skills.map(k=>`<div class="skrow" data-skill="${k.id}">
           <span class="nm">${k.skill==="spec"?`<input type="text" id="kn-${k.id}" data-kn="1" value="${esc(k.name)}" aria-label="Special skill name" style="width:100%">`:esc(k.name)}</span>
-          <span class="pin"><input type="number" id="ks-${k.id}" data-ks="1" min="0" max="100" step="5" value="${k.share}" aria-label="${esc(k.name)} share of tower">%</span>
+          <span class="pin"><input type="number" id="ks-${k.id}" data-ks="1" min="0" max="100" step="5" value="${k.share||""}" placeholder="%" aria-label="${esc(k.name)} share of tower">%</span>
           <label class="ab" for="ka-${k.id}"><input type="checkbox" id="ka-${k.id}" data-ka="1" ${k.absorb?"checked":""}>Base has skill</label>
           <button type="button" class="btn ghost sm" data-rmskill="${k.id}" aria-label="Remove ${esc(k.name)}">Remove</button>
         </div>`).join("")}
+        ${t.skills.length?"":`<div class="hint">No skill sets yet. Add the skill sets this tower needs; its FTE is split across them.</div>`}
         <div class="skfoot"><div class="addrow"><select id="sk-add-${t.id}" aria-label="Add a skill set">${opts}</select><button type="button" class="btn sm" data-addskill="${t.id}">Add skill set</button></div><span class="delta add" id="tadd-${t.id}"></span></div>
       </div>
     </div>`}).join(""):`<div class="empty">No towers yet. Add AMS, IMS or DMS.</div>`;
@@ -1592,11 +1600,12 @@ function updateS2(){
     const d=$("td-"+t.id);
     if(d){
       let how;
-      if(t.vol)how=`${fmt(n0v(t.inc),0)} incidents + ${fmt(n0v(t.sr),0)} SRs`;
+      if(t.src==="Not answered yet"){delete d.dataset.impl;d.innerHTML="Answer the questions above to size this tower.";const a=$("tadd-"+t.id);if(a)a.textContent="";return}
+      if(t.vol===true)how=`${fmt(n0v(t.inc),0)} incidents + ${fmt(n0v(t.sr),0)} SRs`;
       else if(!cpxKnown(t)){const eq=t.tickets/B.tpa.M;how=`${fmt(n0v(t.mau),0)} MAU × ${t.mauRate}%`;d.dataset.impl=`Implied complexity: about ${fmt(eq,1)} medium (M) applications' worth of demand, ${implTier(t.tickets)}.`}
       else if(t.kind==="AMS")how=SIZES.filter(z=>+t.apps[z]).map(z=>`${t.apps[z]}${z}×${B.tpa[z]}`).join(" + ")||"no apps";
       else how=`score ${fmt(t.score,1)} × ${t.kind==="IMS"?B.ims.tpp:B.dms.tpp} tickets per point`;
-      if(t.vol||cpxKnown(t))delete d.dataset.impl;
+      if(t.vol===true||cpxKnown(t))delete d.dataset.impl;
       d.innerHTML=`${esc(how)} ≈ <b>${fmt(t.tickets,0)}</b> tickets/mo → L2 ${fmt(t.l2t,1)}, L3 ${fmt(t.l3t,1)} → <b>${fmt(t.fte,2)} FTE</b> (L2 ${fmt(t.fte2,2)} · L3 ${fmt(t.fte3,2)})`+(d.dataset.impl?`<br>${esc(d.dataset.impl)}`:"");
     }
     const a=$("tadd-"+t.id); if(a)a.textContent=`${fmt(t.fte,2)} FTE from the work`;
@@ -1702,6 +1711,7 @@ function updateS4(){
   h+=wstep("5","Transformation added",`<span class="delta add">${sgn(R.stage4raw,2)}</span>`,`Larger of the two: AIOps ${fmt(R.aiops,2)} + other transformation (SRE, automation, CI/CD) ${fmt(R.otherTrans,2)}`);
   h+=wstep("6","Risk modifiers",`<span class="delta risk">${sgn(R.risk4Add,2)}</span>`,`${fmt(R.stage4raw,2)} × ${fmt(R.rp4*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
   h+=wstep("=","Stage 4 adds",`${sgn(R.s4,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team from the work: ${fmt(R.sub3,2)} + ${fmt(R.s4,2)} = ${fmt(R.workTeam,2)} FTE, compared with the ${fmt(R.s1,2)} FTE base team at Stage 5`,"total");
+  if(S.aiMaturity==null)h=`<div class="alert" style="margin-bottom:10px">Choose the client's AI adoption. Low is used until you do.</div>`+h;
   $("steps4").innerHTML=h;
   $("scFacts").innerHTML=[["Estimation confidence",SC.conf],["Y1 contingency",SC.cont],["Team shape",SC.shape],["AIOps timeline",SC.aiops],["Commercial model",SC.comm],["Volume band clause",SC.band],["YoY savings target",SC.savings]].map(([k,v])=>`<div><span>${k}</span><b>${esc(v)}</b></div>`).join("");
   updateRiskDeltas("s4",R.stage4raw,R.risk4Add,R.rp4);
@@ -1776,6 +1786,7 @@ function updateS6(){
   h+=wstep("3","Risk modifiers",`<span class="delta risk">${sgn(R.risk6Add,2)}</span>`,`${fmt(R.contRaw,2)} × ${fmt(R.rp6*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
   h+=wstep("=","Stage 6 adds",`${sgn(R.s6,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team: ${fmt(R.sub5,2)} + ${fmt(R.s6,2)} = ${fmt(R.total,2)} FTE. Contingency is spread across L2 and L3 in each location.`,"total");
   h+=wstep("4","Grade mix",R.pyr.join(" : "),`Lead : Senior : Consultant on L2 and L3. SDMs are graded Lead. No change to FTE.`);
+  if(!S.cplx)h=`<div class="alert" style="margin-bottom:10px">Choose the engagement complexity. No contingency is added until you do.</div>`+h;
   $("steps6").innerHTML=h;
   /* grade table */
   const L2=R.L2, L3=R.L3, G=R.G;
@@ -1825,6 +1836,7 @@ function updateS7(){
   h+=wstep("4","Contingency taper",`${R.contPct}% → ${R.cont2}%`,"Year 1 carries transition risk; later years carry less");
   if(nR)h+=wstep("5","Risk modifiers",`+${fmt(R.rp7*100,1)}%`,"Added to Year 2+ FTE");
   h+=wstep("=",`${T}-year term`,`${fmt(tr.avg,2)} <small style="font-size:13px;color:var(--muted)">avg FTE / yr</small>`,`${y.slice(0,T).map(v=>fmt(v.fte,1)).join(" → ")} · ${fmt(tr.sum,1)} FTE-years`,"total");
+  if(!S.term)h=`<div class="alert" style="margin-bottom:10px">Choose the contract term. A 1-year term is shown until you do.</div>`+h;
   $("steps7").innerHTML=h;
   const mx=Math.max(...y.map(v=>v.fte),0.0001);
   $("yrChart").innerHTML=y.map(v=>`<div class="yr ${v.n>T?"off":""}"><span class="n">${fmt(v.fte,1)}</span><span class="col" style="height:${v.fte/mx*140}px"></span><span class="l">Y${v.n}${v.n>T?" · outside term":""}</span></div>`).join("")
@@ -1845,7 +1857,7 @@ function updateS7(){
 
 function renderS8(){
   $("exInputs").innerHTML=EX_TIERS.map(([k,l])=>`<label for="ex-${k}">${l}<input type="number" id="ex-${k}" data-ex="${k}" min="0" max="1000" step="0.5" value="${(S.ex||{})[k]??0}"></label>`).join("");
-  $("exSource").value=S.exSource||"rfp";
+  $("exSource").value=S.exSource||"";
   $("exTol").value=S.exTol;
 }
 function updateS8(){
@@ -1879,7 +1891,7 @@ function updateS8(){
   }
   $("exVerdict").innerHTML=v;
   renderAuto("s8",[
-    ["H1",`The existing team is ${fmt(exTot,1)} FTE, taken from the ${EX_SOURCE[S.exSource]||EX_SOURCE.rfp}.`,"input"],
+    ["H1",`The existing team is ${fmt(exTot,1)} FTE, ${S.exSource?`taken from the ${EX_SOURCE[S.exSource]}`:"source not stated"}.`,"input"],
     ["H2","Existing L3 and SRE/automation roles are compared with our L3, which includes transformation capacity. Existing service and delivery managers are compared with our SDMs.","proposed"],
     ["H3",`Differences within ±${S.exTol}% count as consistent.`,"proposed"],
     ["H4","This stage is a check only. It does not change the estimate in Stages 1–7.","agreed"]
@@ -2147,9 +2159,9 @@ document.addEventListener("input",e=>{
   if(t.id==="onCallPct"){const v=+t.value;if(t.value!==""&&v>=0&&v<=100){S.onCallPct=v;update()}return}
   if(d.cpeople){const v=Math.round(+t.value);if(v>=1&&v<=9){covOf(d.cpeople).people=v;update()}return}
   if(t.id==="sparePct"){const v=+t.value;if(v>=0&&v<=80){S.sparePct=v;update()}return}
-  if(d.tn){const v=+t.value;if(t.value!==""&&v>=0){twr(t)[d.tn]=v;update()}return}
-  if(d.tapp){const v=+t.value;if(t.value!==""&&v>=0){twr(t).apps[d.tapp]=v;update()}return}
-  if(d.ks){const v=+t.value;if(t.value!==""&&v>=0&&v<=100){skl(t).share=v;update()}return}
+  if(d.tn){if(t.value===""){twr(t)[d.tn]=null;update()}else{const v=+t.value;if(v>=0){twr(t)[d.tn]=v;update()}}return}
+  if(d.tapp){if(t.value===""){twr(t).apps[d.tapp]=null;update()}else{const v=+t.value;if(v>=0){twr(t).apps[d.tapp]=v;update()}}return}
+  if(d.ks){if(t.value===""){skl(t).share=0;update()}else{const v=+t.value;if(v>=0&&v<=100){skl(t).share=v;update()}}return}
   if(d.kn){skl(t).name=t.value;update();return}
   if(d.bn){const v=+t.value;if(t.value!==""&&v>=0){const [a,b2]=d.bn.split(".");if(b2)S.bench[a][b2]=v;else S.bench[a]=v;update()}return}
   if(d.f){const l=S.locations.find(x=>x.id===t.closest("tr").dataset.loc);const v=+t.value;if(t.value!==""&&v>=0&&v<=100){l[d.f]=v;update()}return}
