@@ -105,7 +105,7 @@ B          = A × 25% (modern) or 35% (complex legacy)
 tower FTE  = (A + B) ÷ 160 hours a month, keeping the L2/L3 split from the effort
 ```
 
-**Skill sets** form the bottom layer. Each tower lists the skill sets it needs (Front end, Back end / APIs, Mobile, Infra / Cloud, SRE, Database, Data engineering, named special skills) with a share %. The tower's FTE is split by those shares (scaled to 100% if they don't add up). Defaults: AMS Back end 60 / Front end 40, IMS Infra 80 / Database 20, DMS Data engineering 100.
+**Skill sets** form the bottom layer. Each tower lists the skill sets it needs, picked from a dropdown: Full stack developer, Backend API dev, Front end dev, Mobile dev (Native / Android / iOS), Infra support engineer, Service Reliability Engineer, QA, Database, Data engineering, or **Niche skill (name it)** for a specific skill the deal team names (more than one can be added). Each has a share %, and the tower's FTE is split by those shares (scaled to 100% if they don't add up, split equally until entered). Towers start with no skill sets.
 
 The tower team is built from the work alone. It does **not** sit on top of the base team:
 
@@ -113,7 +113,7 @@ The tower team is built from the work alone. It does **not** sit on top of the b
 stage 2 tower team = tower FTE × (1 + Σ active stage 2 risk %)
 ```
 
-"Base has skill" (on by default for Front end, Back end and Infra / Cloud) means the skill set is covered on every shift by the base roster. Other skill sets get their own shift cover in Stage 3. Tower FTE is spread across locations in the same proportion as the Stage 1 roster.
+"Base has skill" (on by default for Full stack developer, Backend API dev, Front end dev and Infra support engineer) means the skill set is covered on every shift by the base roster. Other skill sets get their own shift cover in Stage 3. Tower FTE is spread across locations in the same proportion as the Stage 1 roster.
 
 Default example: AMS "Customer apps" (2 S, 3 M, 1 L apps), IMS "Cloud platform" (4 environments, 2 hosting platforms, 4 databases, security) and DMS "Analytics platform" (4 data products, 10 pipelines, 3 integrations, 3 upstream, 2 downstream). That is 172 tickets a month and 5.53 tower FTE, or 6.36 after 15% risk.
 

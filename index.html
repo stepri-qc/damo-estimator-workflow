@@ -1063,17 +1063,18 @@ const LOC_COLORS=["var(--accent)","var(--round)","var(--add)","var(--risk)","#6B
 const WORK_DAYS=260;
 /* skill sets; absorb = base L2/L3 roster usually has this skill (proposed) */
 const SKILL_CATALOG=[
-  {id:"fe",name:"Front end",absorb:true},
-  {id:"be",name:"Back end / APIs",absorb:true},
-  {id:"mob",name:"Mobile",absorb:false},
-  {id:"infra",name:"Infra / Cloud",absorb:true},
-  {id:"sre",name:"SRE",absorb:false},
+  {id:"fs",name:"Full stack developer",absorb:true},
+  {id:"be",name:"Backend API dev",absorb:true},
+  {id:"fe",name:"Front end dev",absorb:true},
+  {id:"mob",name:"Mobile dev (Native / Android / iOS)",absorb:false},
+  {id:"infra",name:"Infra support engineer",absorb:true},
+  {id:"sre",name:"Service Reliability Engineer",absorb:false},
+  {id:"qa",name:"QA",absorb:false},
   {id:"dba",name:"Database",absorb:false},
   {id:"data",name:"Data engineering",absorb:false},
-  {id:"spec",name:"Special skill",absorb:false}
+  {id:"spec",name:"Niche skill (name it)",absorb:false}
 ];
 const KIND_DESC={AMS:"Application management",IMS:"Infrastructure management",DMS:"Data management"};
-const KIND_SKILLS={AMS:[["be",60],["fe",40]],IMS:[["infra",80],["dba",20]],DMS:[["data",100]]};
 const SIZES=["S","M","L","XL","XXL"];
 /* [F] Scenario 1 Step 1 complexity fingerprint */
 const SIZE_DESC={S:"Static content, UI-only, no APIs",M:"Standard CRUD, 1–2 REST APIs",L:"Financial transactions, 3+ API orchestrations",XL:"Payments, regulatory reporting, complex ESB",XXL:"ML pipelines, multi-level analytics, upstream/downstream flows"};
@@ -1144,7 +1145,9 @@ const RISKS_S3=()=>[
   {id:uid(),on:true,pct:0,title:"On-call rota too thin",note:"One specialist cannot carry a sustainable on-call rota. Tracked only: at least two people share each on-call rota."},
   {id:uid(),on:false,pct:3,title:"Shift pattern changes after transition",note:"The client moves core hours or adds a region, so live shifts move. Mitigation: shift changes handled as a change request."}
 ];
-function mkSkill(id,share,name){const c=SKILL_CATALOG.find(k=>k.id===id);return {id:uid(),skill:id,name:name||c.name,share,absorb:c.absorb}}
+/* niche skills start unnamed; the deal team names them */
+function mkSkill(id,share,name){const c=SKILL_CATALOG.find(k=>k.id===id);return {id:uid(),skill:id,name:name!=null?name:c.name,share,absorb:c.absorb}}
+function skillName(k){return k.name||(k.skill==="spec"?"Niche skill":"Skill set")}
 function mkTower(kind){
   /* everything starts unanswered: the deal team fills it in */
   return {id:uid(),kind,name:"",vol:null,inc:null,sr:null,estate:null,
@@ -1256,7 +1259,7 @@ function compute(){
     const Bh=A*bp;
     const fte2=A2*(1+bp)/B.hrsMonth, fte3=A3*(1+bp)/B.hrsMonth, fte=fte2+fte3;
     const shareSum=t.skills.reduce((s2,k)=>s2+n0(k.share),0);
-    const skills=t.skills.map(k=>{const sh=shareSum>0?n0(k.share)/shareSum:1/t.skills.length;return {...k,tower:t.name,towerId:t.id,norm:sh,fte:fte*sh,f2:fte2*sh,f3:fte3*sh}});
+    const skills=t.skills.map(k=>{const sh=shareSum>0?n0(k.share)/shareSum:1/t.skills.length;return {...k,name:skillName(k),tower:t.name,towerId:t.id,norm:sh,fte:fte*sh,f2:fte2*sh,f3:fte3*sh}});
     return {...t,tickets,src,score,l2t,l3t,A,Bh,bp,fte,fte2,fte3,shareSum,skills};
   });
   const skills=towers.flatMap(t=>t.skills);
@@ -1508,7 +1511,7 @@ function renderS2(){
       <div class="derived" id="td-${t.id}"></div>
       <div class="skills"><span class="tsec"><span class="h">Skill sets in this tower</span></span>
         ${t.skills.map(k=>`<div class="skrow" data-skill="${k.id}">
-          <span class="nm">${k.skill==="spec"?`<input type="text" id="kn-${k.id}" data-kn="1" value="${esc(k.name)}" aria-label="Special skill name" style="width:100%">`:esc(k.name)}</span>
+          <span class="nm">${k.skill==="spec"?`<input type="text" id="kn-${k.id}" data-kn="1" value="${esc(k.name)}" placeholder="Name the niche skill, e.g. Mainframe COBOL" aria-label="Niche skill name" style="width:100%">`:esc(k.name)}</span>
           <span class="pin"><input type="number" id="ks-${k.id}" data-ks="1" min="0" max="100" step="5" value="${k.share||""}" placeholder="%" aria-label="${esc(k.name)} share of tower">%</span>
           <label class="ab" for="ka-${k.id}"><input type="checkbox" id="ka-${k.id}" data-ka="1" ${k.absorb?"checked":""}>Base has skill</label>
           <button type="button" class="btn ghost sm" data-rmskill="${k.id}" aria-label="Remove ${esc(k.name)}">Remove</button>
@@ -1653,11 +1656,11 @@ function implTier(tk){return tk<25?"a small, low-complexity estate":tk<75?"a med
 function shiftLabel(i){const from=i*S.hours/S.spd,to=(i+1)*S.hours/S.spd;const l=S.locations.find(x=>x.id===S.assign[i]);return {h:`Shift ${i+1}`,s:`h${hrs(from)}–${hrs(to)} · ${l?l.name:""}`}}
 function renderS3(){
   $("onCallPct").value=S.onCallPct;
-  const all=S.towers.flatMap(t=>t.skills.map(k=>({...k,tower:t.name,kind:t.kind})));
+  const all=S.towers.flatMap(t=>t.skills.map(k=>({...k,tower:t.name||`${t.kind} tower`,kind:t.kind})));
   $("covList").innerHTML=all.length?all.map(k=>{
-    if(k.absorb)return `<div class="covrow base"><div class="ch"><span><b>${esc(k.name)}</b><small>${esc(k.kind)} · ${esc(k.tower)}</small></span><span class="yes" style="font-size:13px">Base team, every shift</span></div></div>`;
+    if(k.absorb)return `<div class="covrow base"><div class="ch"><span><b>${esc(skillName(k))}</b><small>${esc(k.kind)} · ${esc(k.tower)}</small></span><span class="yes" style="font-size:13px">Base team, every shift</span></div></div>`;
     const cv=covOf(k.id);
-    return `<div class="covrow" data-cskill="${k.id}"><div class="ch"><span><b>${esc(k.name)}</b><small>${esc(k.kind)} · ${esc(k.tower)}</small></span>
+    return `<div class="covrow" data-cskill="${k.id}"><div class="ch"><span><b>${esc(skillName(k))}</b><small>${esc(k.kind)} · ${esc(k.tower)}</small></span>
       <span class="row" style="gap:6px"><button type="button" class="btn ghost sm" data-callall="${k.id}">All shifts</button></span></div>
       <div class="shiftchips" role="group" aria-label="Live shifts for ${esc(k.name)}">${Array.from({length:S.spd},(_,i)=>{const L=shiftLabel(i);const on=cv.shifts.includes(i);return `<button type="button" data-kshift="${k.id}:${i}" aria-pressed="${on}" class="${on?"":"oc"}"><b>${L.h} · ${on?"live":"on call"}</b><span>${esc(L.s)}</span></button>`}).join("")}</div>
       <div class="covmeta"><label class="inline" for="cp-${k.id}">People per live shift <input type="number" class="w-s" id="cp-${k.id}" data-cpeople="${k.id}" min="1" max="9" step="1" value="${cv.people}"></label><span class="derived" id="cd-${k.id}" style="padding:4px 8px"></span></div>
@@ -2125,7 +2128,7 @@ document.addEventListener("click",e=>{
   else if(d.tvol){twr(t).vol=d.tvol==="1";renderS2();update();}
   else if(d.tcpx){twr(t).cpx=d.tcpx==="1";renderS2();update();}
   else if(d.testate){twr(t).estate=d.testate;renderS2();update();}
-  else if(d.addskill){const tw=S.towers.find(x=>x.id===d.addskill);const id=$("sk-add-"+tw.id).value;if(id){tw.skills.push(mkSkill(id,0,id==="spec"?"Special skill":null));renderS2();update();}}
+  else if(d.addskill){const tw=S.towers.find(x=>x.id===d.addskill);const id=$("sk-add-"+tw.id).value;if(id){tw.skills.push(mkSkill(id,0,id==="spec"?"":null));renderS2();update();}}
   else if(d.term){S.term=+d.term;update();}
   else if(d.cplx){S.cplx=d.cplx;renderS6();update();}
   else if(d.ai){S.aiMaturity=d.ai;update();}
