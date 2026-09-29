@@ -29,6 +29,24 @@ Stage 1 opens with a working base-team example so the coverage maths is visible 
 
 The "Default example" paragraphs below use sample inputs to show the maths. They are not what the tool pre-fills.
 
+## Base team vs work team
+
+The tool builds the team twice, from two different questions, and keeps the larger:
+
+| | Base team (Stage 1) | Work team (Stages 2–4) |
+|---|---|---|
+| Question | How many people does it take to keep someone on every shift? | How many people does the work take? |
+| Driven by | Support window, shifts, people per shift, locations | Tickets (or estate size / users), service levels, enhancements, skill sets, specialist shift cover, transformation |
+| Ignores | Ticket volume | Whether the shifts are covered |
+
+Both get the same utilisation and leave backfill. At Stage 5 they are compared, not added:
+
+- **Work team larger:** the work team is the delivery team. Its people staff the shifts as part of doing the work, so the base team adds nothing on top.
+- **Base team larger:** the work doesn't need that many people, but the shifts do. The team is lifted to the base team; the spare time is available for enhancements or transformation.
+- **AI engineers are the exception:** they build automation and don't staff shifts, so they are left out of the comparison and always kept on top.
+
+So `delivery team = max(work team without AI engineers, base team) + AI engineers`, then SDM and contingency are added to that.
+
 ## Stages
 
 | # | Stage | Status |
@@ -111,6 +129,17 @@ This base team is the **floor**. Stages 2–4 build a second team from the work 
 
 Rounding to whole people is applied once, to the final team, after all stages.
 
+### On-call allowance from P1 volume
+
+The on-call allowance can be a flat % (default 15%) or **From P1 volume** (`proposed`):
+
+```
+busy share      = P1s a month (all hours) × hours per P1 call-out ÷ 728 hours a month
+on-call allowance = standby % (default 10%) + busy share
+```
+
+P1s arrive around the clock, so the busy share doesn't depend on how many shifts are on call. The incident dump summary on the Documents page shows the P1 count and months, and extraction proposes P1s a month; applying it switches the mode to From P1 volume.
+
 ### Assumptions and risks
 - Auto assumptions (A1–A7) are generated from the inputs and cite their source. Assumptions added during the review (U1…) can be edited.
 - Each risk has a title, an impact/mitigation note, an on/off toggle and an **FTE modifier %**. Active modifiers are added up and applied to the stage's post-backfill FTE. A 0% risk is recorded but adds no FTE.
@@ -167,6 +196,20 @@ stage 2 tower team = support FTE + AI engineers
 The ratio panel appears once a tower has AIOps in scope. It sets client AI adoption, the same input Stage 4 uses for the scenario. AI engineers count as L3 engineering, are spread across locations like the Stage 1 roster, get no shift cover in Stage 3, and are kept on top of the base team at reconciliation (they build automation; they do not staff shifts). The Documents page proposes AIOps scope per tower when the documents mention it.
 
 Default example: AMS "Customer apps" (2 S, 3 M, 1 L apps), IMS "Cloud platform" (4 environments, 2 hosting platforms, 4 databases, security) and DMS "Analytics platform" (4 data products, 10 pipelines, 3 integrations, 3 upstream, 2 downstream). That is 172 tickets a month and 5.53 tower FTE, or 6.36 after 15% risk.
+
+### Service levels, where counts are measured, and enhancements
+
+Each tower asks **which service levels we provide**: L2 + L3 (default), L2 only (L3 escalations go to the client or another supplier), or L3 only (someone else runs L2). With ticket history it also asks **where the counts are measured**:
+
+| Counts measured at | L2 tickets | L3 tickets |
+|---|---|---|
+| All tickets (service desk, L1) | tickets × 70% | L2 × 20% |
+| Tickets reaching L2 | tickets | tickets × 20% |
+| Tickets reaching L3 | unknown (warning) | tickets |
+
+Then L2 only sets L3 to 0, and L3 only sets L2 to 0. Proxy routes (T-shirt sizing, MAU) are L1-inflow benchmarks. If every tower is L2 only (or L3 only) while the base team still puts L3 (or L2) on every shift, Stages 1 and 2 warn.
+
+**Enhancements and minor change** (optional, hours a month per tower) become effort C = hours ÷ 85% utilisation, added to the tower as L3 work (L2 when the tower is L2 only): `tower FTE = (A + B + C) ÷ 160`.
 
 ## Stage 3: skill coverage by shift
 
@@ -261,6 +304,26 @@ stage 6     = contingency × (1 + Σ active stage 6 risk %)
 
 Default example (Medium): 10.91 × 7.5% = +0.82, so the team is 11.7 FTE, rostered as 13 people (6 L2, 6 L3, 1 SDM). By grade: 3 Lead (including the SDM), 4 Senior, 6 Consultant.
 
+### Estimate confidence ([F] Annexure 1)
+
+Stage 6 scores the framework's nine confidence drivers from 1 to 5, with the Annexure's rubric shown for the chosen score:
+
+| Driver | Weight |
+|---|---|
+| Ticket volumetrics and cross-functional demand | 22 |
+| SLA/SLO tier | 15 |
+| Coverage model | 13 |
+| Portfolio complexity index | 12 |
+| Transition and incumbent handoff risk | 10 |
+| Domain criticality | 10 |
+| Change intensity and enhancement load | 8 |
+| Tech stack and tooling | 6 |
+| AIOps maturity | 4 |
+
+`score = Σ weight × score ÷ 5` (out of 100). Bands: 0–39 Low, 40–59 Medium, 60–79 High, 80–100 Highest, with the Annexure's Year 1 contingency guidance (about 10%, 8–9%, about 8%, 5–6%); the page flags when the contingency used is outside it. Scores are suggested from earlier stages (e.g. share of tower FTE from ticket history, whether enhancements or transition are entered, AI adoption) and can be overridden. Drivers scored 1–2 are listed as due diligence items (Annexure Step 4).
+
+**Range** (`proposed`): the engine is re-run with demand (tickets and enhancement hours) moved ±25% (Low), ±15% (Medium), ±10% (High) or ±5% (Highest). The coverage floor doesn't move, so the range narrows where the base team sets the size. Confidence and range replace the scenario tile in the Overall estimate.
+
 ## Stage 7: term and YoY savings
 
 This stage is **FTE only**. No cost or rate factors are used anywhere in the tool.
@@ -277,6 +340,19 @@ FTE(Yn)    = base(Yn) × (1 + contingency(Yn)) × (1 + Σ active stage 7 risk %,
 - **Term comparison:** a table shows 1- to 5-year terms with FTE by year, FTE-years, average FTE a year and the reduction against a 1-year contract. A generated sentence explains why a 3-year or longer term is better.
 
 Default example (3-year term): 11.7 → 11.2 → 11.0, averaging 11.31 FTE a year. That is 4% below a 1-year contract; 5 years averages 11.03 (−6%). The savings are small here because the 8.65 FTE coverage floor is most of the team. Switch the floor off, or use a larger estate, to see the full effect.
+
+### Transition (optional)
+
+A one-off panel in Stage 7, not part of the Year 1 team (`proposed` method):
+
+```
+knowledge transfer = KT weeks × team present during KT (default 50%) × Year 1 team
+parallel run       = parallel-run weeks × Year 1 team
+management         = transition management FTE (default 1) × transition months
+transition effort  = sum, in FTE-months (weeks × 12 ÷ 52), with average and peak team
+```
+
+It appears in the Overall estimate, both summaries and the customer summary's Transition section.
 
 ## Stage 8: fact check against the existing team
 
@@ -322,6 +398,10 @@ The Overall estimate panel at Stage 8 adds three views for approval:
 - **Year 1 team by role.** Every FTE traced to the skill set and tower that asked for it, plus AI engineers, transformation, shift cover (when the base team is larger) and SDM. Contingency is spread over the delivery roles. The rows add up to the Year 1 team.
 - **Allowances in the Year 1 team.** Productive need, then the productive-time allowance (utilisation), leave backfill, contingency and risk, each measured by switching it off in turn and re-running the engine, so they add up even though reconciliation keeps the larger of two teams. The headline is the buffer above productive capacity (leave + contingency + risk) in FTE and %, plus rounding.
 - **Deviations from the framework.** Every benchmark, ratio or allowance changed from its framework or agreed value, with both values and the source. Empty when nothing was changed.
+
+### Where the inputs came from
+
+Inputs applied from the Documents page keep their source and quote: shown under the coverage window, on each tower card, and in a table in the Overall estimate and both internal summaries. If an imported input is changed later it is marked **edited since** / **Edited after import**.
 
 ### Version and approval
 

@@ -365,6 +365,8 @@ tr.sel td{background:var(--accent-soft)}
 .stage-result .rv small{font-size:13px;color:var(--muted);font-weight:500;margin-left:4px}
 .stage-result .rd{font-size:13.5px;color:var(--ink);max-width:640px}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.prov{font-size:12px;color:var(--muted);border-left:2px solid var(--accent);padding:2px 8px;margin:6px 0}
+.prov .edited{color:var(--risk);font-weight:600}
 .subh{font:600 12px/1.2 var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:24px 0 8px}
 .kpi{border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:var(--surface-2);display:grid;gap:2px}
 .kpi span{font:600 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -492,6 +494,7 @@ tr.sel td{background:var(--accent-soft)}
         <div class="field">
           <div class="lbl">Coverage window <span class="tag">[F] 1.1 C · Coverage model</span></div>
           <div class="seg" id="covPresets"></div>
+          <div id="provCov"></div>
           <div class="row">
             <label class="inline" for="days">Days a week <select id="days"><option>5</option><option>6</option><option>7</option></select></label>
             <label class="inline" for="hours">Hours a day <input id="hours" type="number" min="1" max="24" step="1"></label>
@@ -542,8 +545,16 @@ tr.sel td{background:var(--accent-soft)}
           <div class="shiftmap" id="shiftMap"></div>
           <div class="row" id="weekendRow"></div>
           <div class="row" id="oncallRow">
-            <label class="inline" for="oncall1">On-call allowance <input id="oncall1" type="number" min="0" max="100" step="5">% of a staffed shift</label>
+            <span class="lbl" style="margin:0">On-call allowance</span>
+            <div class="seg" role="group" aria-label="On-call allowance"><button type="button" data-ocm="flat">Flat %</button><button type="button" data-ocm="p1">From P1 volume</button></div>
+            <label class="inline" for="oncall1" id="ocFlat"><input id="oncall1" type="number" min="0" max="100" step="5">% of a staffed shift</label>
           </div>
+          <div class="tgrid" id="ocP1" hidden>
+            <label for="p1PerMonth">P1 incidents a month (all hours)<input id="p1PerMonth" type="number" min="0" max="10000" step="1" placeholder="e.g. 6"></label>
+            <label for="p1Hours">Hours per P1 call-out<input id="p1Hours" type="number" min="0" max="48" step="0.5"></label>
+            <label for="standby">Standby allowance %<input id="standby" type="number" min="0" max="100" step="1"></label>
+          </div>
+          <div class="hint" id="ocHint"></div>
           <div class="hint">Active: the shift is fully staffed (real FTE). On-call: people are reachable for P1 incidents only, counted as the on-call % of a staffed shift.</div>
           <div class="dial" id="dial" aria-hidden="true"></div>
           <div class="legend" id="dialLegend"></div>
@@ -660,7 +671,7 @@ tr.sel td{background:var(--accent-soft)}
         <div class="working" id="steps2"></div>
         <div class="loc-table">
           <table>
-            <thead><tr><th>Tower</th><th>Demand from</th><th class="r">Tickets / mo</th><th class="r">L2 tkts</th><th class="r">L3 tkts</th><th class="r">A hrs</th><th class="r">B hrs</th><th class="r">FTE</th></tr></thead>
+            <thead><tr><th>Tower</th><th>Demand from</th><th class="r">Tickets / mo</th><th class="r">L2 tkts</th><th class="r">L3 tkts</th><th class="r">A hrs</th><th class="r">B hrs</th><th class="r">C hrs</th><th class="r">FTE</th></tr></thead>
             <tbody id="towerCalc"></tbody>
           </table>
         </div>
@@ -931,6 +942,18 @@ tr.sel td{background:var(--accent-soft)}
       </div>
     </div>
 
+    <div class="panel" style="margin-top:20px" id="confPanel">
+      <header><h3>Estimate confidence</h3><span class="sub">[F] Annexure 1 · nine drivers scored 1–5</span></header>
+      <div class="hint" style="margin-bottom:8px">Scores are suggested from what the earlier stages know. Override any score with what the deal team has actually seen. Score = Σ weight × score ÷ 5.</div>
+      <div class="loc-table">
+        <table>
+          <thead><tr><th>Driver</th><th class="r">Weight</th><th>Score</th><th>What the score means</th><th class="r">Points</th></tr></thead>
+          <tbody id="confTable"></tbody>
+        </table>
+      </div>
+      <div class="verdict" id="confVerdict"></div>
+    </div>
+
     <div class="cols even" data-stage="s6">
       <div class="panel">
         <header><h3>Assumptions</h3><span class="sub">Stage 6</span></header>
@@ -1003,6 +1026,22 @@ tr.sel td{background:var(--accent-soft)}
         </table>
       </div>
       <div class="verdict" id="termVerdict"></div>
+    </div>
+
+    <div class="panel" style="margin-top:20px" id="transPanel">
+      <header><h3>Transition <span style="font-weight:400;color:var(--muted)">(optional)</span></h3><span class="sub">One-off effort before service start · not in the Year 1 team</span></header>
+      <div class="cols" style="margin:0">
+        <div>
+          <div class="tgrid">
+            <label for="trKt">Knowledge transfer, weeks<input id="trKt" type="number" min="0" max="52" step="1" placeholder="e.g. 6"></label>
+            <label for="trPar">Parallel run (reverse shadow), weeks<input id="trPar" type="number" min="0" max="52" step="1" placeholder="e.g. 4"></label>
+            <label for="trKtPct">Team present during KT, %<input id="trKtPct" type="number" min="0" max="100" step="5"></label>
+            <label for="trMgr">Transition management, FTE<input id="trMgr" type="number" min="0" max="10" step="0.5"></label>
+          </div>
+          <div class="hint">During knowledge transfer the incoming team ramps up alongside the incumbent (default 50% present on average). In the parallel run our full Year 1 team runs the service with the incumbent on hand. Leave the weeks blank if transition is priced separately. Method is <span class="tag">proposed</span>.</div>
+        </div>
+        <div class="working" id="stepsTr"></div>
+      </div>
     </div>
 
     <div class="cols even" data-stage="s7">
@@ -1122,6 +1161,13 @@ tr.sel td{background:var(--accent-soft)}
       <div class="hint">Each role includes its share of contingency. Rostered people by location are in the location table of the summary.</div>
       <h4 class="subh">Allowances in the Year 1 team</h4>
       <div class="working" id="finalAllow"></div>
+      <h4 class="subh">Where the inputs came from</h4>
+      <div class="loc-table">
+        <table>
+          <thead><tr><th>Input</th><th>Source</th><th>Evidence</th><th>Status</th></tr></thead>
+          <tbody id="finalProv"></tbody>
+        </table>
+      </div>
       <h4 class="subh">Deviations from the framework</h4>
       <div class="loc-table">
         <table>
@@ -1298,12 +1344,12 @@ function mkTower(kind){
     env:null,host:null,db:null,sec:false,
     dp:null,pipe:null,integ:null,up:null,down:null,
     agents:null,models:null,tools:null,ksrc:null,hiRisk:false,
-    aiops:null,skills:[]};
+    aiops:null,levels:null,tktLevel:null,enh:null,skills:[]};
 }
 function defaults(){
   return {
     deal:"",active:0,
-    days:5,hours:24,spd:3,fteHours:40,util1:85,shiftMode:["active","active","active"],weekendMode:"active",oncall1:15,
+    days:5,hours:24,spd:3,fteHours:40,util1:85,shiftMode:["active","active","active"],weekendMode:"active",oncall1:15,ocMode:"flat",p1PerMonth:null,p1Hours:3,standby:10,
     perShift:{L2:1,L3:1},
     locations:[pickLoc("in"),pickLoc("ro")],
     assign:["in","in","ro"],
@@ -1319,6 +1365,7 @@ function defaults(){
     term:null,savePct:null,cont2:null,protectFloor:true,
     ex:{},exSource:"",exTol:10,
     cov:{},
+    conf:{},trans:{kt:null,par:null,ktPct:50,mgr:1},prov:{},
     meta:{version:1,status:"draft",preparedBy:"",approvedBy:"",approvedAt:"",approvedHash:""},
     assumptions:{s1:["Service desk (L1) is provided by the client and is out of scope for this team."],s2:[],s3:[],s4:[],s5:[],s6:[],s7:[],s8:[]},
     risks:Object.assign({s1:RISKS_S1()},...[["s2",RISKS_S2],["s3",RISKS_S3],["s4",RISKS_S4],["s5",RISKS_S5],["s6",RISKS_S6],["s7",RISKS_S7],["s8",RISKS_S8]].map(([k,f])=>({[k]:f().map(r=>Object.assign(r,{on:false}))})))
@@ -1382,7 +1429,10 @@ function compute(){
   const shiftLen=S.hours/spd;
   const a=spd*days, b=S.fteHours/shiftLen, c=S.perShift.L2+S.perShift.L3;
   /* active shifts are fully staffed; on-call (P1 only) shifts count as oncall% of a staffed shift */
-  const oc1=Math.max(0,Math.min(100,+S.oncall1||0))/100;
+  /* on-call allowance: flat %, or standby plus the share of time spent working P1 call-outs.
+     P1s arrive around the clock, so the busy share is P1s a month × hours each ÷ hours in a month (728) */
+  const p1Busy=Math.max(0,+S.p1PerMonth||0)*Math.max(0,+S.p1Hours||0)/(168*52/12);
+  const oc1=S.ocMode==="p1"?Math.min(1,Math.max(0,+S.standby||0)/100+p1Busy):Math.max(0,Math.min(100,+S.oncall1||0))/100;
   const wkDays=Math.min(days,5), weDays=Math.max(0,days-5);
   const modeOf=i=>(S.shiftMode&&S.shiftMode[i])==="oncall"?"oncall":"active";
   const weOnCall=weDays>0&&S.weekendMode==="oncall";
@@ -1416,7 +1466,7 @@ function compute(){
   locs.filter(l=>l.slots===0).forEach(l=>warnings.push(`${l.name} is not covering any shift, so it adds no FTE. Assign it a shift or remove it.`));
 
   /* Stage 2: towers → tickets → effort ([F] 1.1 A+B, p.3 cascade) → FTE → skill sets; base spare capacity absorbs skill-matched FTE first */
-  const B=S.bench, n0=v=>Math.max(0,Math.min(1e6,+v||0));
+  const B=S.bench, n0=v=>Math.max(0,Math.min(1e6,+v||0)), dm=S._demandMul||1;
   const towers=S.towers.map(t0=>{
     const t={...t0,name:t0.name||`${t0.kind} tower`};
     let tickets, src, score=null;
@@ -1427,14 +1477,25 @@ function compute(){
     else if(t.kind==="IMS"){score=B.ims.wEnv*n0(t.env)+B.ims.wHost*n0(t.host)+B.ims.wDb*n0(t.db)+(t.sec?B.ims.sec:0);tickets=score*B.ims.tpp;src="Infra complexity"}
     else if(t.kind==="AI"){score=B.ai.wAgent*n0(t.agents)+B.ai.wModel*n0(t.models)+B.ai.wTool*n0(t.tools)+B.ai.wKs*n0(t.ksrc)+(t.hiRisk?B.ai.risk:0);tickets=score*B.ai.tpp;src="AI platform complexity"}
     else {score=B.dms.wDp*n0(t.dp)+B.dms.wPipe*n0(t.pipe)+B.dms.wInt*n0(t.integ)+B.dms.wUp*n0(t.up)+B.dms.wDown*n0(t.down);tickets=score*B.dms.tpp;src="Data complexity"}
-    const l2t=tickets*B.p12/100, l3t=l2t*B.p23/100;
+    tickets*=dm;
+    /* where the counts are measured (ticket history only; proxies are L1-inflow benchmarks), then the levels we serve */
+    const lvl=t.vol===true?(t.tktLevel||"l1"):"l1", sv=t.levels||"both";
+    let l2t,l3t;
+    if(lvl==="l1"){l2t=tickets*B.p12/100;l3t=l2t*B.p23/100}
+    else if(lvl==="l2"){l2t=tickets;l3t=tickets*B.p23/100}
+    else {l2t=0;l3t=tickets}
+    const l2Unknown=lvl==="l3"&&sv!=="l3"&&tickets>0;
+    if(sv==="l2")l3t=0;
+    if(sv==="l3")l2t=0;
     const A2=l2t*B.are2/(B.util/100), A3=l3t*B.are3/(B.util/100), A=A2+A3;
     const bp=(t.estate==="legacy"?B.bLegacy:B.bModern)/100;
     const Bh=A*bp;
-    const fte2=A2*(1+bp)/B.hrsMonth, fte3=A3*(1+bp)/B.hrsMonth, fte=fte2+fte3;
+    /* C: enhancements and minor change, entered as hours a month; engineering work, so L3 unless we only serve L2 */
+    const enhH=n0(t.enh)*dm, C=enhH/(B.util/100);
+    const fte2=(A2*(1+bp)+(sv==="l2"?C:0))/B.hrsMonth, fte3=(A3*(1+bp)+(sv==="l2"?0:C))/B.hrsMonth, fte=fte2+fte3;
     const shareSum=t.skills.reduce((s2,k)=>s2+n0(k.share),0);
     const skills=t.skills.map(k=>{const sh=shareSum>0?n0(k.share)/shareSum:1/t.skills.length;return {...k,name:skillName(k),tower:t.name,towerId:t.id,norm:sh,fte:fte*sh,f2:fte2*sh,f3:fte3*sh}});
-    return {...t,tickets,src,score,l2t,l3t,A,Bh,bp,fte,fte2,fte3,shareSum,skills};
+    return {...t,tickets,src,score,lvl,sv,l2Unknown,l2t,l3t,A,Bh,bp,enhH,C,fte,fte2,fte3,shareSum,skills};
   });
   const skills=towers.flatMap(t=>t.skills);
   const demand=sum(towers,"fte");
@@ -1573,6 +1634,9 @@ function compute(){
   const term=Math.min(5,Math.max(1,+S.term||1));
   towers.filter(t=>t.skills.length&&t.shareSum>0&&t.shareSum!==100).forEach(t=>warnings2.push(`${t.name}: skill shares add up to ${fmt(t.shareSum,0)}%. They are scaled to 100%.`));
   towers.filter(t=>t.skills.length&&t.shareSum===0).forEach(t=>warnings2.push(`${t.name}: enter a share for each skill set. Until then the FTE is split equally.`));
+  towers.filter(t=>t.l2Unknown).forEach(t=>warnings2.push(`${t.name}: the ticket counts are at L3, so the L2 volume is unknown and no L2 effort is sized. Enter counts at L1 or L2, or choose L3 only.`));
+  if(towers.length&&towers.every(t=>t.sv==="l2")&&S.perShift.L3>0)[warnings,warnings2].forEach(w=>w.push(`Every tower is L2 only, but the base team puts ${S.perShift.L3} L3 on every shift. Set L3 per shift to 0 in Stage 1 if no L3 cover is needed.`));
+  if(towers.length&&towers.every(t=>t.sv==="l3")&&S.perShift.L2>0)[warnings,warnings2].forEach(w=>w.push(`Every tower is L3 only, but the base team puts ${S.perShift.L2} L2 on every shift. Set L2 per shift to 0 in Stage 1 if no L2 cover is needed.`));
   towers.filter(t=>!t.skills.length&&t.fte>0).forEach(t=>warnings2.push(`${t.name} has no skill sets, so its ${fmt(t.fte,2)} FTE is not staffed. Add at least one skill set.`));
 
   /* rounding on the combined team */
@@ -1598,6 +1662,13 @@ function compute(){
   });
   const people=S.rounding==="total"?up(total):sum(locs,"people");
 
+  /* transition (optional, one-off before service start; not part of the Year 1 run team):
+     knowledge transfer with part of the team present, then a parallel run with the full team, plus transition management */
+  const tr=S.trans||{}, ktW=Math.max(0,+tr.kt||0), parW=Math.max(0,+tr.par||0), ktP=Math.max(0,Math.min(100,tr.ktPct==null?50:+tr.ktPct))/100, mgr=Math.max(0,tr.mgr==null?1:+tr.mgr);
+  const w2m=12/52, trMonths=(ktW+parW)*w2m;
+  const trans={ktW,parW,ktP,mgr,months:trMonths,kt:ktW*w2m*total*ktP,par:parW*w2m*total,mg:trMonths*mgr};
+  trans.total=trans.kt+trans.par+trans.mg;trans.avg=trMonths>0?trans.total/trMonths:0;trans.peak=parW>0?total+mgr:total*ktP+mgr;
+
   /* snapshots: the team as it stands at the end of each stage (1–6), rounded the same way as the final team */
   const snaps=[null];
   for(let n=1;n<=6;n++){
@@ -1622,7 +1693,7 @@ function compute(){
     const ppl=S.rounding==="total"?up(fte):pp;
     snaps.push({n,fte,work,lift:lf,cells,people:ppl,L2:cells.reduce((x,c)=>x+c.a2,0),L3:cells.reduce((x,c)=>x+c.a3,0),G:cells.reduce((x,c)=>x+c.g,0),L2p:P2,L3p:P3,Gp:PG});
   }
-  return {days,spd,shiftLen,a,b,c,framework,actDays,oncDays,oc1,aEff,rp1,locs,roster,buffered,s1,warnings,
+  return {days,spd,shiftLen,a,b,c,framework,actDays,oncDays,oc1,p1Busy,aEff,rp1,locs,roster,buffered,s1,warnings,
     u1,utilised,utilAdd:utilised-roster,leaveAdd:buffered-utilised,risk1Add:s1-buffered,
     towers,skills,demand,demAbs,capacity,absorbed,added,add2,add3,rp2,s2,s2run,bf2,leave2,risk2Add:s2run-added*bf2,warnings2,
     aiTowers,aiBase,scRatio,ai2,
@@ -1631,8 +1702,69 @@ function compute(){
     sub4,sdmRatio,sdmRaw,rp5,s5,risk5Add:s5-sdmRaw,sdmLoc,
     sub5,CX,contPct,contRaw,rp6,s6,risk6Add:s6-contRaw,pyr,shares,
     savePct,cont2,floor,rp7,years,termRows,term,
-    total,people,roundAdd:people-total,roles,
+    total,people,roundAdd:people-total,roles,trans,
     snaps,L2:sum(locs,"c2"),L3:sum(locs,"c3"),G:sum(locs,"g"),L2p:sum(locs,"p2"),L3p:sum(locs,"p3"),Gp:sum(locs,"pg")};
+}
+
+/* ---------- provenance: inputs applied from documents ---------- */
+const TOWER_KEYS=["vol","inc","sr","tktLevel","levels","cpx","apps","env","host","db","sec","dp","pipe","integ","up","down","agents","models","tools","ksrc","hiRisk","mau","estate","aiops","enh"];
+function provVal(key){
+  if(key==="client")return S.deal;
+  if(key==="coverage")return `${S.hours}x${S.days}|${(S.shiftMode||[]).join(",")}|${S.weekendMode}`;
+  if(key==="p1")return String(S.p1PerMonth);
+  if(key==="ai")return S.aiMaturity;
+  if(key==="cplx")return S.cplx;
+  if(key==="term")return String(S.term);
+  if(key==="ex")return JSON.stringify(S.ex);
+  if(key.startsWith("tower:")){const t=S.towers.find(x=>x.id===key.slice(6));return t?JSON.stringify(TOWER_KEYS.map(k=>t[k])):null}
+  return null;
+}
+function provRows(){
+  return Object.entries(S.prov||{}).map(([k,v])=>{const cur=provVal(k);return cur==null&&k.startsWith("tower:")?null:{key:k,...v,edited:cur!==v.snap}}).filter(Boolean);
+}
+function provLine(key){
+  const v=(S.prov||{})[key];if(!v)return "";
+  const cur=provVal(key);if(cur==null&&key.startsWith("tower:"))return "";
+  return `<div class="prov">From ${esc(v.source||"documents")}${v.evidence?`: “${esc(v.evidence)}”`:""}${cur!==v.snap?' <b class="edited">· edited since</b>':""}</div>`;
+}
+
+/* ---------- estimate confidence, [F] Annexure 1 ---------- */
+const CONF_DRIVERS=[
+  ["vol","Ticket volumetrics and cross-functional demand",22,["No ticket history, no enhancement hours, no severity mix","Only anecdotal volumes or incumbent verbal estimates","Partial extracts, e.g. 2–4 weeks of tickets or sampled enhancements","3–6 months of incidents, SRs, severity, geography and enhancement demand","Full validated volumetrics reconciled with SMEs and the incumbent team"]],
+  ["sla","SLA/SLO tier",15,["Service levels unclear or contradictory","Broad expectations known, no incident response thresholds","P1/P2 expectations known; seasonal or peak obligations unclear","Service levels documented with clear restoration and response targets","Full SLA/SLO pack incl. peak obligations and fee-at-risk logic"]],
+  ["cov","Coverage model",13,["Support window unknown","High-level business-hours assumption only","Window known, active vs passive coverage unclear","Coverage window and geography model known","Follow-the-sun or shift model validated by criticality and time zones"]],
+  ["cpx","Portfolio complexity index",12,["Application inventory unavailable","Only a high-level app count known","App count and broad patterns known; integrations and tech debt unclear","App, service, integration and environment inventory substantially known","Complexity validated with architecture, code, tech debt and dependency evidence"]],
+  ["trans","Transition and incumbent handoff risk",10,["No KT plan, no incumbent access, no runbooks","KT expected but undocumented","Transition duration known, limited handoff artefacts","Shadow and reverse-shadow plan with runbooks and key people identified","Full transition plan, handoff quality and hypercare validated"]],
+  ["crit","Domain criticality",10,["Critical systems not identified","Only broad business criticality known","Revenue-critical systems known; DR or compliance unclear","Criticality, compliance and DR posture substantially understood","System-by-system criticality mapped to service depth and contingency"]],
+  ["change","Change intensity and enhancement load",8,["No view of enhancement demand","Rough estimate of CR volume only","Some history of release cadence or an enhancement pool","Monthly enhancement capacity and release patterns known","Stable BAU vs change history with validated reserved capacity"]],
+  ["tech","Tech stack and tooling",6,["Stack and toolchain largely unknown","Only top-level stack types known","ITSM, observability, CI/CD and major technologies known directionally","Stack, legacy footprint and tool maturity mostly validated","Toolchain fit, supportability and engineering constraints validated"]],
+  ["aiops","AIOps maturity",4,["No AI or automation signals","Some interest in AI, no operational use cases or tooling","Limited pilots or isolated runbooks","Observability and automation signals can support AI-led deflation","Operational AI maturity validated with measurable automation coverage"]]
+];
+const CONF_BANDS=[[80,"Highest","Strongest basis for fixed fee and an outcome-linked posture",5,6,5],[60,"High","Commercially usable with standard diligence",8,8,10],[40,"Medium","Directional; discovery still needed before strong commitments",8,9,15],[0,"Low","Proxy-led only; do not overcommit a fixed fee",10,10,25]];
+function confSuggest(k){
+  const T=R.towers;
+  if(k==="vol")return !T.length?1:R.volShare>=0.99?4:R.volShare>=0.5?3:R.volShare>0?2:1;
+  if(k==="cov")return 4;
+  if(k==="cpx")return !T.length?1:T.some(t=>t.src==="MAU proxy")?2:3;
+  if(k==="trans")return (+(S.trans||{}).kt||0)>0?3:1;
+  if(k==="crit")return S.cplx?2:1;
+  if(k==="change")return T.some(t=>t.enhH>0)?3:1;
+  if(k==="tech")return 2;
+  if(k==="aiops")return S.aiMaturity==="moderate"?4:S.aiMaturity==="low"?2:1;
+  return 1;
+}
+/* weighted score out of 100, the band, and a low/high range from re-running the engine with demand
+   (tickets and enhancement hours) moved by the band's range; the coverage floor does not move */
+function confidence(){
+  const rows=CONF_DRIVERS.map(([k,name,w,rub])=>{const sug=confSuggest(k), user=S.conf&&S.conf[k]?+S.conf[k]:null, sc=user||sug;return {k,name,w,rub,sug,user,sc,pts:w*sc/5}});
+  const score=rows.reduce((x,r)=>x+r.pts,0);
+  const b=CONF_BANDS.find(x=>score>=x[0]);
+  const r=b[5]/100;
+  return {rows,score,band:b[1],meaning:b[2],cLo:b[3],cHi:b[4],rangePct:b[5],lo:altTotal({_demandMul:1-r}),hi:altTotal({_demandMul:1+r}),weak:rows.filter(x=>x.sc<=2)};
+}
+function confTableHtml(C,editable){
+  return C.rows.map(r=>`<tr><td class="loc-name">${esc(r.name)}</td><td class="r num">${r.w}</td><td>${editable?`<select data-conf="${r.k}" aria-label="${esc(r.name)} score"><option value="">Suggested: ${r.sug}</option>${[1,2,3,4,5].map(n=>`<option value="${n}" ${r.user===n?"selected":""}>${n}</option>`).join("")}</select>`:`${r.sc}${r.user?"":" (suggested)"}`}</td><td class="hint">${esc(r.rub[r.sc-1])}</td><td class="r num">${fmt(r.pts,1)}</td></tr>`).join("")
+    +`<tr><td><b>Confidence score</b></td><td class="r num">100</td><td></td><td><b>${C.band}</b>: ${esc(C.meaning)}</td><td class="r num"><b>${fmt(C.score,1)}</b></td></tr>`;
 }
 
 /* ---------- allowances and deviations (deal desk view) ---------- */
@@ -1656,7 +1788,7 @@ function deviations(){
   const out=[], add=(l,d,u,src)=>{if(String(d)!==String(u))out.push([l,d,u,src])};
   add("Utilisation per resource (Stage 1) %",85,S.util1,"[F] G6");
   add("Contracted hours a week",40,S.fteHours,"[F] p.3");
-  add("On-call allowance, base team %",15,S.oncall1,"agreed");
+  if(S.ocMode==="p1")out.push(["On-call allowance, base team","flat 15%",`from P1 volume: ${fmt(R.oc1*100,1)}%`,"proposed"]);else add("On-call allowance, base team %",15,S.oncall1,"agreed");
   add("On-call allowance, specialists %",15,S.onCallPct,"proposed");
   add("Leave & holiday backfill","on",S.backfill?"on":"off","[F] G3");
   const db=defaultBench();
@@ -1722,7 +1854,7 @@ function renderS1(){
     const m=(S.shiftMode&&S.shiftMode[i])==="oncall"?"oncall":"active";
     return `<div class="shiftslot"><span class="s">Shift ${i+1} · h${hrs(from)}–${hrs(to)}</span><select id="sa-${i}" data-assign="${i}" aria-label="Location covering shift ${i+1}">${opts}</select><div class="seg" role="group" aria-label="Shift ${i+1} support mode">${[["active","Active"],["oncall","On-call (P1)"]].map(([k,l])=>`<button type="button" data-smode="${i}:${k}" aria-pressed="${m===k}">${l}</button>`).join("")}</div></div>`}).join("");
   $("weekendRow").innerHTML=S.days>5?`<span class="inline">Weekends (${S.days-5} day${S.days-5>1?"s":""})</span><div class="seg" role="group" aria-label="Weekend support mode">${[["active","Active, as per shift"],["oncall","On-call (P1) all day"]].map(([k,l])=>`<button type="button" data-wmode="${k}" aria-pressed="${(S.weekendMode||"active")===k}">${l}</button>`).join("")}</div>`:"";
-  $("oncall1").value=S.oncall1;
+  $("oncall1").value=S.oncall1;$("p1PerMonth").value=S.p1PerMonth??"";$("p1Hours").value=S.p1Hours;$("standby").value=S.standby;
   S.assign.forEach((id,i)=>{$("sa-"+i).value=id});
 }
 function renderSpd(){$("spdSeg").innerHTML=[1,2,3,4].map(n=>`<button type="button" data-spd="${n}" aria-pressed="${S.spd===n}">${n} × ${hrs(S.hours/n)}h</button>`).join("")}
@@ -1745,7 +1877,8 @@ function renderS2(){
     const cs=cpxState(t);
     const step=t.vol===false?(cs===false?3:2):1;
     let demand=`<div class="qpath"><span class="${step===1?"on":""}">① Volumetrics</span>›<span class="${step===2?"on":""}">② Structural complexity</span>›<span class="${step===3?"on":""}">③ Monthly active users</span></div><div class="qflow">
-      <div class="q ${step===1?"on":""}"><span class="qh"><i>1</i>Do you have volumetric data for this tower?</span>${yn("data-tvol",t.vol,"Yes, ticket history","No")}${t.vol===true?`<div class="tgrid">${numIn(t,"inc","Incidents / month")}${numIn(t,"sr","Service requests / month")}</div>`:""}</div>`;
+      <div class="q ${step===1?"on":""}"><span class="qh"><i>1</i>Do you have volumetric data for this tower?</span>${yn("data-tvol",t.vol,"Yes, ticket history","No")}${t.vol===true?`<div class="tgrid">${numIn(t,"inc","Incidents / month")}${numIn(t,"sr","Service requests / month")}</div>
+      <span class="qh" style="margin-top:10px">Where are these counts measured?</span><div class="seg" role="group" aria-label="Where the counts are measured">${[["l1","All tickets (service desk, L1)"],["l2","Tickets reaching L2"],["l3","Tickets reaching L3"]].map(([k,l])=>`<button type="button" data-ttl="${k}" aria-pressed="${(t.tktLevel||"l1")===k}">${l}</button>`).join("")}</div>${t.tktLevel?"":`<div class="hint">Assumed all tickets (L1) until you choose. An ITSM export of the whole queue is L1; an incumbent's L2 queue is L2.</div>`}`:""}</div>`;
     if(t.vol===false)demand+=`<div class="q ${step===2?"on":""}"><span class="qh"><i>2</i>Do you know the structural complexity of the ${t.kind==="AMS"?"application estate":t.kind==="IMS"?"infrastructure estate":t.kind==="AI"?"AI platform estate":"data estate"}?</span>${yn("data-tcpx",cs,t.kind==="AMS"?"Yes, T-shirt size it":"Yes, enter it","No")}${known?cpxInputs:""}</div>`;
     if(t.vol===false&&cs===false)demand+=`<div class="q on"><span class="qh"><i>3</i>Use monthly active users to work out demand and complexity</span>${mauInputs}</div>`;
     demand+=`</div>`;
@@ -1757,8 +1890,17 @@ function renderS2(){
     const opts=groups.map(g=>`<optgroup label="${esc(g)}">${avail.filter(k=>k.g===g).map(k=>`<option value="${k.id}">${esc(k.name)}</option>`).join("")}</optgroup>`).join("");
     return `<div class="tower" data-tower="${t.id}">
       <div class="th"><span class="kbadge">${t.kind}</span><input class="tname" type="text" id="tn-${t.id}" data-tf="name" value="${esc(t.name)}" placeholder="Name this ${t.kind} tower" aria-label="Tower name"><button type="button" class="btn ghost sm" data-rmtower="${t.id}">Remove</button></div>
+      <div id="pv-${t.id}"></div>
+      <div class="tsec"><span class="h">Service levels we provide</span>
+        <div class="seg" role="group" aria-label="Service levels">${[["both","L2 + L3"],["l2","L2 only"],["l3","L3 only"]].map(([k,l])=>`<button type="button" data-tlev="${k}" aria-pressed="${t.levels===k}">${l}</button>`).join("")}</div>
+        <div class="hint">${t.levels==="l2"?"We resolve L2 tickets; L3 escalations go to the client or another supplier.":t.levels==="l3"?"The client or another supplier handles L2; we take L3 escalations only.":t.levels==="both"?"We resolve L2 and L3 tickets.":"Choose one. L2 + L3 is used until you do."}</div>
+      </div>
       <div class="tsec"><span class="h">Demand</span>
         ${demand}
+      </div>
+      <div class="tsec"><span class="h">Enhancements and minor change <span style="text-transform:none;letter-spacing:0;font-weight:400">(optional)</span></span>
+        <div class="tgrid">${numIn(t,"enh","Hours a month",100000,10)}</div>
+        <div class="hint">Change requests and small enhancements in the run scope ([F] change intensity). Leave blank if out of scope or priced separately.</div>
       </div>
       <div class="tsec"><span class="h">Estate</span>
         <div class="seg" role="group" aria-label="Estate">${(t.kind==="AI"?[["modern","Managed AI services (APIs)"],["legacy","Self-hosted models / custom agents"]]:[["modern","Modern / SaaS"],["legacy","Complex legacy"]]).map(([k,l])=>`<button type="button" data-testate="${k}" aria-pressed="${t.estate===k}">${l}</button>`).join("")}</div>${t.estate?"":`<div class="hint">Choose one. Modern is used until you do.</div>`}
@@ -1820,7 +1962,7 @@ function updateRiskDeltas(k,base,add,pct){
 let R;
 function update(){
   R=compute();
-  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); updateS6(); updateS7(); updateS8(); updateResults(); renderBar(); updateMeta(); save();
+  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); updateS6(); updateS7(); updateTrans(); updateS8(); updateResults(); renderBar(); updateMeta(); save();
 }
 function updateS1(){
   document.querySelectorAll("[data-cov]").forEach(b=>{const p=COV_PRESETS.find(x=>x[0]===b.dataset.cov);b.setAttribute("aria-pressed",String(S.days===p[1]&&S.hours===p[2]))});
@@ -1830,11 +1972,17 @@ function updateS1(){
   R.locs.forEach(l=>{const el=$("av-"+l.id);if(el)el.textContent=Math.round(l.avail*100)+"%"});
   $("dial").innerHTML=S.assign.map(id=>`<span style="width:${100/S.assign.length}%;background:${locColor(id)}"></span>`).join("");
   $("dialLegend").innerHTML=R.locs.map(l=>`<span><i style="background:${locColor(l.id)}"></i>${esc(l.name)} · ${l.slots} of ${S.spd} shift${S.spd>1?"s":""}</span>`).join("");
+  document.querySelectorAll("[data-ocm]").forEach(b=>b.setAttribute("aria-pressed",String((S.ocMode||"flat")===b.dataset.ocm)));
+  $("ocFlat").hidden=S.ocMode==="p1";$("ocP1").hidden=S.ocMode!=="p1";
+  $("ocHint").innerHTML=S.ocMode==="p1"
+    ?(S.p1PerMonth==null?"Enter P1s a month (the incident dump summary on the Documents page shows them). Until then only the standby allowance is used. ":"")+`Busy share: ${fmt(+S.p1PerMonth||0,1)} P1s × ${S.p1Hours}h ÷ 728 hours a month = ${fmt(R.p1Busy*100,1)}%, plus ${S.standby}% standby = <b>${fmt(R.oc1*100,1)}% of a staffed shift</b> (proposed method).`
+    :"A flat share of a staffed shift for every on-call shift, whatever the P1 volume. Choose From P1 volume when the client's P1 rate is known.";
+  $("provCov").innerHTML=provLine("coverage")+(S.ocMode==="p1"?provLine("p1"):"");
   $("alerts1").innerHTML=R.warnings.map(w=>`<div class="alert">${esc(w)}</div>`).join("");
   const nR=S.risks.s1.filter(r=>r.on&&+r.pct).length;
   let h="";
   h+=wstep("a","Shifts to cover each week",fmt(R.a,0),`${S.spd} shifts a day × ${S.days} days`);
-  if(R.oncDays>0)h+=wstep("a′","Staffed shift-equivalents",fmt(R.aEff,2),`${fmt(R.actDays,0)} active + ${fmt(R.oncDays,0)} on-call (P1) × ${S.oncall1}% = ${fmt(R.aEff,2)}`);
+  if(R.oncDays>0)h+=wstep("a′","Staffed shift-equivalents",fmt(R.aEff,2),`${fmt(R.actDays,0)} active + ${fmt(R.oncDays,0)} on-call (P1) × ${fmt(R.oc1*100,1)}% = ${fmt(R.aEff,2)}`);
   h+=wstep("b","Shifts one FTE covers each week",fmt(R.b,2),`${S.fteHours} contracted hours ÷ ${sl}h shift`);
   h+=wstep("c","People on every shift",fmt(R.c,0),`${S.perShift.L2} L2 + ${S.perShift.L3} L3`);
   h+=wstep("1","Roster FTE",fmt(R.roster,2),R.oncDays>0?`(a′ × c) ÷ b = (${fmt(R.aEff,2)} × ${R.c}) ÷ ${fmt(R.b,2)}, split by the locations covering each shift`:`(a × c) ÷ b = (${fmt(R.a,0)} × ${R.c}) ÷ ${fmt(R.b,2)}, split by the locations covering each shift`);
@@ -1851,7 +1999,7 @@ function updateS1(){
   $("fwCheck").textContent=R.oncDays>0?`Framework check: with every shift active, (a × c) ÷ b = ${fmt(R.framework,2)} FTE. On-call shifts bring the roster to ${fmt(R.roster,2)} (${sgn(R.roster-R.framework,2)}).`:(ok?"✓ ":"")+`Framework check: (a × c) ÷ b = ${fmt(R.framework,2)} FTE, the same as the roster line. The framework's p.3 example (24×5, 2 per shift) gives 6.`;
   updateRiskDeltas("s1",R.buffered,R.risk1Add,R.rp1);
   renderAuto("s1",[
-    ["A1",`Coverage is ${covLabel()}: ${S.hours} hours a day, ${S.days} days a week, split into ${S.spd} shift${S.spd>1?"s":""} of ${sl} hours. Shift handover overlap is absorbed inside the shift.${R.oncDays>0?` ${fmt(R.actDays,0)} shift-days a week are active and ${fmt(R.oncDays,0)} are on-call for P1 incidents only, counted at ${S.oncall1}% of a staffed shift.`:" All shifts are actively staffed."}`,"[F] 1.1 C"],
+    ["A1",`Coverage is ${covLabel()}: ${S.hours} hours a day, ${S.days} days a week, split into ${S.spd} shift${S.spd>1?"s":""} of ${sl} hours. Shift handover overlap is absorbed inside the shift.${R.oncDays>0?` ${fmt(R.actDays,0)} shift-days a week are active and ${fmt(R.oncDays,0)} are on-call for P1 incidents only, counted at ${fmt(R.oc1*100,1)}% of a staffed shift${S.ocMode==="p1"?` (${S.standby}% standby plus ${fmt(R.p1Busy*100,1)}% busy on ${fmt(+S.p1PerMonth||0,1)} P1s a month at ${S.p1Hours}h each)`:""}.`:" All shifts are actively staffed."}`,"[F] 1.1 C"],
     ["A2",`Each FTE works ${S.fteHours} contracted hours a week, so covers ${fmt(R.b,2)} shifts.`,"[F] p.3 b"],
     ["A3",`Each resource is productive ${S.util1}% of contracted hours (training, meetings, admin), so the roster is divided by ${S.util1}%. Leave and holidays are handled separately.`,"[F] G6"],
     ["A4",`At least ${S.perShift.L2} L2 and ${S.perShift.L3} L3 on every shift, whatever the ticket volume. Ticket-driven effort is sized separately from Stage 2 and compared with this team.`,"[F] p.3 c"],
@@ -1872,9 +2020,11 @@ function updateS2(){
       else if(t.kind==="AMS")how=SIZES.filter(z=>+t.apps[z]).map(z=>`${t.apps[z]}${z}×${B.tpa[z]}`).join(" + ")||"no apps";
       else how=`score ${fmt(t.score,1)} × ${({IMS:B.ims.tpp,DMS:B.dms.tpp,AI:B.ai.tpp})[t.kind]} tickets per point`;
       if(t.vol===true||cpxKnown(t))delete d.dataset.impl;
-      d.innerHTML=`${esc(how)} ≈ <b>${fmt(t.tickets,0)}</b> tickets/mo → L2 ${fmt(t.l2t,1)}, L3 ${fmt(t.l3t,1)} → <b>${fmt(t.fte,2)} FTE</b> (L2 ${fmt(t.fte2,2)} · L3 ${fmt(t.fte3,2)})`+(d.dataset.impl?`<br>${esc(d.dataset.impl)}`:"");
+      const lvTxt={l1:"",l2:" (counted at L2)",l3:" (counted at L3)"}[t.lvl], svTxt={both:"",l2:" · L2 only",l3:" · L3 only"}[t.sv];
+      d.innerHTML=`${esc(how)} ≈ <b>${fmt(t.tickets,0)}</b> tickets/mo${lvTxt} → L2 ${fmt(t.l2t,1)}, L3 ${fmt(t.l3t,1)}${svTxt}${t.enhH>0?` + ${fmt(t.enhH,0)}h enhancements`:""} → <b>${fmt(t.fte,2)} FTE</b> (L2 ${fmt(t.fte2,2)} · L3 ${fmt(t.fte3,2)})`+(d.dataset.impl?`<br>${esc(d.dataset.impl)}`:"");
     }
     const a=$("tadd-"+t.id); if(a)a.textContent=`${fmt(t.fte,2)} FTE from the work`;
+    const pv=$("pv-"+t.id); if(pv)pv.innerHTML=provLine("tower:"+t.id);
     const ai=$("tai-"+t.id);
     if(ai&&t.aiops===true)ai.innerHTML=`<b>AI Engineer (AIOps): ${fmt(t.ai,2)} FTE</b> = ${fmt(t.run,2)} support FTE ÷ ${R.ratio}. Builds the automation; does not staff shifts.`;
     else if(ai&&t.aiops===false)ai.textContent="No AI engineers for this tower.";
@@ -1889,18 +2039,21 @@ function updateS2(){
   const kn=k=>`${k.tower} · ${k.name}`;
   let h=R.warnings2.map(w=>`<div class="alert" style="margin-bottom:10px">${esc(w)}</div>`).join("");
   h+=wstep("1","Tickets per month",fmt(tk,0),R.towers.length?R.towers.map(t=>`${esc(t.name)} ${fmt(t.tickets,0)} (${t.src})`).join(" + "):"No towers added");
-  h+=wstep("2","L2 / L3 cascade",`${fmt(l2,1)} / ${fmt(l3,1)}`,`L2 = tickets × ${B.p12}% · L3 = L2 × ${B.p23}%. L1 is the client's service desk.`);
+  const nonStd=R.towers.filter(t=>t.lvl!=="l1"||t.sv!=="both");
+  h+=wstep("2","L2 / L3 cascade",`${fmt(l2,1)} / ${fmt(l3,1)}`,`L2 = tickets × ${B.p12}% · L3 = L2 × ${B.p23}%. L1 is the client's service desk.${nonStd.length?" "+nonStd.map(t=>`${esc(t.name)}: ${t.lvl==="l2"?"counts already at L2, so L2 = tickets":t.lvl==="l3"?"counts at L3, so L3 = tickets":"counts at L1"}${t.sv==="l2"?", L2 only (L3 = 0)":t.sv==="l3"?", L3 only (L2 = 0)":""}`).join("; ")+".":""}`);
   h+=wstep("3","A · Ticketing effort",`${fmt(A,0)} h`,`(L2 × ${B.are2}h + L3 × ${B.are3}h) ÷ ${B.util}% utilisation`);
   h+=wstep("4","B · Non-ticketing effort",`${fmt(Bh,0)} h`,`A × ${B.bModern}% modern or ${B.bLegacy}% legacy estate, per tower`);
-  h+=wstep("5","Tower FTE",fmt(R.demand,2),`(A + B) ÷ ${B.hrsMonth} hours a month`);
+  const Ch=R.towers.reduce((x,t)=>x+t.C,0);
+  if(Ch>0)h+=wstep("4b","C · Enhancements",`${fmt(Ch,0)} h`,`Enhancement hours ÷ ${B.util}% utilisation: ${R.towers.filter(t=>t.enhH>0).map(t=>`${esc(t.name)} ${fmt(t.enhH,0)}h`).join(", ")}`);
+  h+=wstep("5","Tower FTE",fmt(R.demand,2),`(A + B${Ch>0?" + C":""}) ÷ ${B.hrsMonth} hours a month`);
   h+=wstep("6","Leave &amp; holiday backfill",`<span class="delta add">${sgn(R.leave2,2)}</span>`,S.backfill?`Tower FTE ÷ availability of the locations it sits in (spread like the Stage 1 roster): ×${fmt(R.bf2,3)}`:"Off, as in Stage 1");
   h+=wstep("7","Risk modifiers",`<span class="delta risk">${sgn(R.risk2Add,2)}</span>`,`${fmt(R.added*R.bf2,2)} × ${fmt(R.rp2*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
   h+=wstep("8","AI engineers (AIOps)",`<span class="delta add">${sgn(R.ai2,2)}</span>`,R.aiTowers.length?`${listNames(R.aiTowers)}: ${fmt(R.aiBase,2)} support FTE ÷ ${R.ratio} (1 AI engineer per ${R.ratio} support FTE)`:`No tower has AIOps in scope`);
   h+=wstep("=","Tower team",`${fmt(R.s2,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Built from the work, separately from the ${fmt(R.s1,2)} FTE base team · L2 ${fmt(R.add2,2)} · L3 ${fmt(R.add3,2)} before risk${R.ai2>0?` · AI engineers ${fmt(R.ai2,2)}`:""}. The two are compared at Stage 5.`,"total");
   $("steps2").innerHTML=h;
-  $("towerCalc").innerHTML=R.towers.length?R.towers.map(t=>`<tr><td class="loc-name">${esc(t.name)}<small>${t.kind}${t.estate==="legacy"?(t.kind==="AI"?" · self-hosted":" · legacy"):""}</small></td><td>${esc(t.src)}</td><td class="r num">${fmt(t.tickets,0)}</td><td class="r num">${fmt(t.l2t,1)}</td><td class="r num">${fmt(t.l3t,1)}</td><td class="r num">${fmt(t.A,0)}</td><td class="r num">${fmt(t.Bh,0)}</td><td class="r num"><b>${fmt(t.fte,2)}</b></td></tr>`).join("")
-    +`<tr><td><b>Total</b></td><td></td><td class="r num">${fmt(tk,0)}</td><td class="r num">${fmt(l2,1)}</td><td class="r num">${fmt(l3,1)}</td><td class="r num">${fmt(A,0)}</td><td class="r num">${fmt(Bh,0)}</td><td class="r num"><b>${fmt(R.demand,2)}</b></td></tr>`
-    :`<tr><td colspan="8" class="hint">Add a tower to see its effect.</td></tr>`;
+  $("towerCalc").innerHTML=R.towers.length?R.towers.map(t=>`<tr><td class="loc-name">${esc(t.name)}<small>${t.kind}${t.estate==="legacy"?(t.kind==="AI"?" · self-hosted":" · legacy"):""}</small></td><td>${esc(t.src)}</td><td class="r num">${fmt(t.tickets,0)}</td><td class="r num">${fmt(t.l2t,1)}</td><td class="r num">${fmt(t.l3t,1)}</td><td class="r num">${fmt(t.A,0)}</td><td class="r num">${fmt(t.Bh,0)}</td><td class="r num">${fmt(t.C,0)}</td><td class="r num"><b>${fmt(t.fte,2)}</b></td></tr>`).join("")
+    +`<tr><td><b>Total</b></td><td></td><td class="r num">${fmt(tk,0)}</td><td class="r num">${fmt(l2,1)}</td><td class="r num">${fmt(l3,1)}</td><td class="r num">${fmt(A,0)}</td><td class="r num">${fmt(Bh,0)}</td><td class="r num">${fmt(R.towers.reduce((x,t)=>x+t.C,0),0)}</td><td class="r num"><b>${fmt(R.demand,2)}</b></td></tr>`
+    :`<tr><td colspan="9" class="hint">Add a tower to see its effect.</td></tr>`;
   $("skillCalc").innerHTML=R.skills.length?R.skills.map(k=>`<tr><td class="loc-name">${esc(k.name)}<small>${esc(k.tower)}</small></td><td class="r num">${fmt(k.norm*100,0)}%</td><td class="r num">${fmt(k.fte,2)}</td><td>${k.absorb?'<span class="yes">Yes, every shift</span>':'<span class="no">No, set shifts in Stage 3</span>'}</td></tr>`).join("")
     +R.aiTowers.map(t=>`<tr><td class="loc-name">AI Engineer (AIOps)<small>${esc(t.name)}</small></td><td class="r num">1:${R.ratio}</td><td class="r num">${fmt(t.ai,2)}</td><td><span class="no">No, builds automation</span></td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td></td><td class="r num"><b>${fmt(R.demand+R.ai2,2)}</b></td><td></td></tr>`
@@ -1908,7 +2061,8 @@ function updateS2(){
   updateRiskDeltas("s2",R.added*R.bf2,R.risk2Add,R.rp2);
   const proxy=R.towers.filter(t=>!t.vol), vol=R.towers.filter(t=>t.vol);
   renderAuto("s2",[
-    ["B1",`The client runs the L1 service desk. Tickets are L1 inflow: ${B.p12}% pass to L2 and ${B.p23}% of those to L3 (Year 1 benchmark).`,"[F] 1.4"],
+    ["B1",`The client runs the L1 service desk. Unless a tower says otherwise, tickets are L1 inflow: ${B.p12}% pass to L2 and ${B.p23}% of those to L3 (Year 1 benchmark).${R.towers.filter(t=>t.lvl!=="l1").map(t=>` ${t.name}'s counts are already at ${t.lvl.toUpperCase()}.`).join("")}`,"[F] 1.4"],
+    ["B1a",(()=>{const g={both:[],l2:[],l3:[]};R.towers.forEach(t=>g[t.sv].push(t.name));return [g.both.length?`L2 and L3 for ${g.both.join(", ")}.`:"",g.l2.length?`L2 only for ${g.l2.join(", ")}: L3 escalations go to the client or another supplier.`:"",g.l3.length?`L3 only for ${g.l3.join(", ")}: L2 is handled by the client or another supplier.`:""].filter(Boolean).join(" ")||"No towers yet."})(),"input"],
     ["B2",`Average resolution effort is ${B.are2}h at L2 and ${B.are3}h at L3, at ${B.util}% utilisation and ${B.hrsMonth} hours per FTE a month.`,"[F] 1.5 · p.3"],
     ["B3",`Non-ticketing effort (automation, CFR, patching, governance) is ${B.bModern}% of A for a modern estate and ${B.bLegacy}% for complex legacy.`,"[F] 1.1 B"],
     ["B4",(()=>{const cx=proxy.filter(t=>cpxKnown(t)), mu=proxy.filter(t=>!cpxKnown(t));const parts=[];
@@ -2051,6 +2205,12 @@ function renderS6(){
 }
 function updateS6(){
   const CX=R.CX;
+  const C=confidence();R.conf=C;
+  if(document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.conf){}else $("confTable").innerHTML=confTableHtml(C,true);
+  const cOut=R.contPct<C.cLo?"below":R.contPct>C.cHi?"above":"";
+  $("confVerdict").innerHTML=`<b>${fmt(C.score,0)} / 100 · ${C.band} confidence.</b> ${esc(C.meaning)}. Annexure 1 guidance for Year 1 contingency: ${C.cLo===C.cHi?`about ${C.cLo}%`:`${C.cLo}–${C.cHi}%`}; this estimate uses ${R.contPct}%${cOut?` (<b>${cOut} guidance</b>; contingency here follows complexity)`:""}.
+    <br>Range if demand is ±${C.rangePct}% (<span class="tag">proposed</span> for a ${C.band.toLowerCase()} band): <b>${fmt(C.lo,1)} – ${fmt(C.hi,1)} FTE</b> around ${fmt(R.total,1)}. The coverage floor does not move, so the range is narrower where the base team sets the size.
+    ${C.weak.length?`<br>Due diligence items (drivers scored 1–2, Annexure 1 Step 4): ${C.weak.map(r=>esc(r.name)).join("; ")}.`:""}`;
   document.querySelectorAll("[data-cplx]").forEach(b=>b.setAttribute("aria-pressed",String(S.cplx===b.dataset.cplx)));
   $("pyrHint").textContent=`${CX.name} complexity default ${CX.pyr.join(" : ")}. The grade mix does not change headcount.`;
   $("contPct").placeholder=String(CX.cont);
@@ -2143,6 +2303,16 @@ function updateMeta(){
   if(stale)a=`<div class="alert" style="margin-bottom:12px">Inputs changed after this estimate was approved${m.approvedAt?` on ${esc(m.approvedAt)}`:""}. The approval no longer matches these numbers: approve again, or set the status back to Draft.</div>`;
   else if(m.status==="approved"&&!m.approvedBy.trim())a=`<div class="alert" style="margin-bottom:12px">Name the approver.</div>`;
   $("mAlert").innerHTML=a;
+}
+function updateTrans(){
+  const T=R.trans, tr=S.trans||{};
+  if(document.activeElement&&["trKt","trPar","trKtPct","trMgr"].includes(document.activeElement.id)){}else{$("trKt").value=tr.kt??"";$("trPar").value=tr.par??"";$("trKtPct").value=tr.ktPct??50;$("trMgr").value=tr.mgr??1;}
+  if(!(T.ktW+T.parW)){$("stepsTr").innerHTML=`<div class="hint">No transition entered. Add knowledge transfer or parallel-run weeks to size it.</div>`;return}
+  let h=wstep("1","Knowledge transfer",`${fmt(T.kt,1)} FTE-months`,`${T.ktW} weeks × ${fmt(T.ktP*100,0)}% of the ${fmt(R.total,1)} FTE Year 1 team`);
+  h+=wstep("2","Parallel run",`${fmt(T.par,1)} FTE-months`,`${T.parW} weeks × the full Year 1 team`);
+  h+=wstep("3","Transition management",`${fmt(T.mg,1)} FTE-months`,`${fmt(T.mgr,1)} FTE for ${fmt(T.months,1)} months`);
+  h+=wstep("=","Transition effort",`${fmt(T.total,1)} <small style="font-size:13px;color:var(--muted)">FTE-months</small>`,`Over ${T.ktW+T.parW} weeks: average team ${fmt(T.avg,1)} FTE, peak ${fmt(T.peak,1)} FTE. One-off, before service start; not in the Year 1 team`,"total");
+  $("stepsTr").innerHTML=h;
 }
 function renderS8(){
   $("exInputs").innerHTML=EX_TIERS.map(([k,l])=>`<label for="ex-${k}">${l}<input type="number" id="ex-${k}" data-ex="${k}" min="0" max="1000" step="0.5" value="${(S.ex||{})[k]??0}"></label>`).join("");
@@ -2279,12 +2449,13 @@ function updateResults(){
     ["Year 1 team",`${fmt(R.total,1)}`,"FTE","main"],
     ["Rostered people",whole?fmt(last.people,0):"–",whole?`${fmt(last.L2p,0)} L2 · ${fmt(last.L3p,0)} L3 · ${fmt(last.Gp,0)} SDM`:"no rounding",""],
     [`${T}-year average`,fmt(tr.avg,1),`FTE a year · ${T>1?"−"+fmt(tr.vs1*100,0)+"% vs 1-year":"1-year term"}`,""],
-    ["Scenario",String(R.sc),R.SC.name,""]
+    ["Confidence",R.conf?fmt(R.conf.score,0):"–",R.conf?`${R.conf.band} · range ${fmt(R.conf.lo,1)}–${fmt(R.conf.hi,1)} FTE`:"",""]
   ].map(k=>`<div class="kpi ${k[3]}"><span>${k[0]}</span><b>${k[1]}</b><em>${esc(k[2])}</em></div>`).join("");
   const rows=buildRows();
   $("finalBuild").innerHTML=rows.map(r=>`<tr><td class="loc-name">${r.stage}</td><td class="hint">${esc(r.what)}</td><td class="r num">${sgn(r.add,2)}</td><td class="r num"><b>${fmt(r.snap.fte,2)}</b>${esc(r.ppl)}</td></tr>`).join("")
     +(whole?`<tr><td class="loc-name">Rounding</td><td class="hint">${({cell:"Up per location and tier; SDM to nearest",loc:"Up per location",total:"Total rounded up"})[S.rounding]}</td><td class="r num">${sgn(R.roundAdd,2)}</td><td class="r num"><b>${fmt(R.people,0)} people</b></td></tr>`:"")
     +`<tr><td class="loc-name">7 · Term</td><td class="hint">${R.savePct}% YoY savings from Y2, contingency ${R.contPct}% → ${R.cont2}%</td><td class="r num">–</td><td class="r num"><b>${fmt(tr.avg,2)}</b> avg</td></tr>`
+    +(R.trans.ktW+R.trans.parW?`<tr><td class="loc-name">Transition</td><td class="hint">One-off before service start: ${R.trans.ktW} weeks KT + ${R.trans.parW} weeks parallel run; average ${fmt(R.trans.avg,1)} FTE</td><td class="r num">–</td><td class="r num"><b>${fmt(R.trans.total,1)}</b> FTE-months</td></tr>`:"")
     +`<tr><td class="loc-name">8 · Fact check</td><td class="hint">${exTot>0?`Existing team ${fmt(exTot,1)} FTE`:"No existing team entered"}</td><td class="r num">–</td><td class="r num">${exTot>0?sgn((R.total-exTot)/exTot*100,0)+"%":"–"}</td></tr>`;
   if(S.active===8)renderDeskViews();
 }
@@ -2302,6 +2473,10 @@ function renderDeskViews(){
   h+=wstep("=","Year 1 team",`${fmt(A.total,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Buffer above productive capacity (leave + contingency + risk): ${fmt(A.buffer,2)} FTE, <b>${fmt(A.bufferPct,1)}%</b>${S.rounding!=="none"?`. Rounding to ${fmt(A.people,0)} people adds ${sgn(A.round,2)}`:""}. Each allowance is measured by switching it off in turn`,"total");
   $("finalAllow").innerHTML=h;
   R.allow=A;
+  const pr=provRows();R.provRows=pr;
+  $("finalProv").innerHTML=pr.length?pr.map(r=>`<tr><td class="loc-name">${esc(r.label)}</td><td>${esc(r.source)}</td><td class="hint">${r.evidence?`“${esc(r.evidence)}”`:"–"}</td><td>${r.edited?'<span class="no" style="color:var(--risk)">Edited after import</span>':'<span class="yes">As imported</span>'}</td></tr>`).join("")
+    +`<tr><td colspan="4" class="hint">Every other input was entered by the deal team.</td></tr>`
+    :`<tr><td colspan="4" class="hint">No inputs were applied from documents; every input was entered by the deal team.</td></tr>`;
   const dv=deviations();R.devs=dv;
   $("finalDev").innerHTML=dv.length?dv.map(d=>`<tr><td class="loc-name">${esc(d[0])}</td><td class="r num">${esc(String(d[1]))}</td><td class="r num"><b>${esc(String(d[2]))}</b></td><td><span class="src">${esc(d[3])}</span></td></tr>`).join("")
     :`<tr><td colspan="4" class="hint">None: every benchmark and ratio is at its framework or agreed value.</td></tr>`;
@@ -2321,7 +2496,7 @@ function buildCustomerReport(){
   /* scope */
   const scope=R.towers.filter(t=>t.src!=="Not answered yet").map(t=>{
     const basis=t.src==="Ticket history"?`sized on ${fmt(t.tickets,0)} tickets a month from your ticket history`:t.src==="MAU proxy"?`sized from user numbers (about ${fmt(t.tickets,0)} tickets a month); to be confirmed with ticket history`:`sized from the estate's size and complexity (about ${fmt(t.tickets,0)} tickets a month); to be confirmed with ticket history`;
-    return `<tr><td><b>${esc(t.name)}</b><br><span class="muted">${KIND_PLAIN[t.kind]}</span></td><td>${esc(basis)}</td><td>${t.aiops===true?"Included":"Not included"}</td></tr>`}).join("");
+    return `<tr><td><b>${esc(t.name)}</b><br><span class="muted">${KIND_PLAIN[t.kind]}</span></td><td>${esc(basis)}</td><td>${({both:"L2 and L3",l2:"L2",l3:"L3"})[t.sv]}</td><td>${t.aiops===true?"Included":"Not included"}</td></tr>`}).join("");
   /* roles, merged across towers */
   const byRole={};R.roles.forEach(r=>{const k=ROLE_PLAIN[r.role]||r.role;(byRole[k]=byRole[k]||{fte:0,towers:new Set()}).fte+=r.fte;byRole[k].towers.add(r.tower)});
   const roleRows=Object.entries(byRole).map(([k,v])=>`<tr><td>${esc(k)}</td><td class="muted">${esc([...v.towers].join(", "))}</td><td class="r">${n1(v.fte)}</td></tr>`).join("");
@@ -2373,13 +2548,14 @@ function buildCustomerReport(){
   </div>
   <h2>How you are covered</h2>
   <p>Support runs ${S.hours} hours a day, ${S.days} days a week, in ${S.spd} shift${S.spd>1?"s":""}:</p><ul>${shiftTxt}</ul><p>${wk}</p>
-  ${scope?`<h2>What is in scope</h2><table><thead><tr><th>Service</th><th>How it was sized</th><th>AIOps</th></tr></thead><tbody>${scope}</tbody></table>
+  ${scope?`<h2>What is in scope</h2><table><thead><tr><th>Service</th><th>How it was sized</th><th>Support levels</th><th>AIOps</th></tr></thead><tbody>${scope}</tbody></table>
   ${R.aiTowers.length?`<p class="muted">Where AIOps is included, dedicated AI engineers build intelligent alerting, automated root-cause analysis and self-healing, so fewer incidents need a person to resolve them.</p>`:""}`:""}
   <h2>The team in Year 1</h2>
   <table><thead><tr><th>Role</th><th>Services</th><th class="r">FTE</th></tr></thead><tbody>${roleRows||`<tr><td>Support engineers</td><td></td><td class="r">${n1(R.total)}</td></tr>`}<tr><td><b>Total</b></td><td class="muted">${whole?`rostered as ${fmt(R.people,0)} people, rounded up to whole people in each location`:""}</td><td class="r"><b>${n1(R.total)}</b></td></tr></tbody></table>
   <table><thead><tr><th>Location</th><th class="r">Support engineers</th><th class="r">Senior engineers</th><th class="r">Service delivery</th><th class="r">${whole&&S.rounding!=="total"?"People":"FTE"}</th></tr></thead><tbody>${locRows}</tbody></table>
   ${T>1?`<h2>The team over the contract</h2><table><thead><tr>${yrs.map(y=>`<th class="r">Year ${y.n}</th>`).join("")}</tr></thead><tbody><tr>${traj}</tr></tbody></table>
   <p>From Year 2 the team gets smaller as runbooks mature and automation takes on repeat work. The people needed to cover every shift stay in place.</p>`:""}
+  ${R.trans.ktW+R.trans.parW?`<h2>Transition</h2><p>${R.trans.ktW?`${R.trans.ktW} weeks of knowledge transfer with your current team`:""}${R.trans.ktW&&R.trans.parW?", then ":""}${R.trans.parW?`${R.trans.parW} weeks running the service in parallel with your current team on hand`:""}, before we take full responsibility. A transition manager leads it throughout.</p>`:""}
   <h2>What we need from you</h2><ul>${needs.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>
   ${assume.length?`<h2>Assumptions</h2><ul>${assume.map(a=>`<li>${esc(a)}</li>`).join("")}</ul>`:""}
   <h2>What would change the team size</h2><ul>${changes.map(c=>`<li>${esc(c)}</li>`).join("")}</ul>
@@ -2457,7 +2633,7 @@ function buildReport(){
     <div class="kpi main"><span>Year 1 team</span><b>${fmt(R.total,1)}</b><em>FTE</em></div>
     <div class="kpi"><span>Rostered people</span><b>${whole?fmt(last.people,0):"–"}</b><em>${whole?`${fmt(last.L2p,0)} L2 · ${fmt(last.L3p,0)} L3 · ${fmt(last.Gp,0)} SDM`:"no rounding"}</em></div>
     <div class="kpi"><span>${T}-year average</span><b>${fmt(tr.avg,1)}</b><em>${T>1?"−"+fmt(tr.vs1*100,0)+"% vs 1-year":"1-year term"}</em></div>
-    <div class="kpi"><span>Scenario</span><b>${R.sc}</b><em>${esc(R.SC.name)}</em></div>
+    <div class="kpi"><span>Confidence</span><b>${fmt(R.conf.score,0)}</b><em>${R.conf.band} · range ${fmt(R.conf.lo,1)}–${fmt(R.conf.hi,1)} FTE</em></div>
   </div>
   <h3>How the team was built</h3>
   <table><thead><tr><th>Stage</th><th>What it did</th><th class="r">Stage FTE</th><th class="r">Team after</th></tr></thead><tbody>${build}</tbody></table>
@@ -2465,6 +2641,7 @@ function buildReport(){
   <table><thead><tr><th>Location</th><th class="r">L2</th><th class="r">L3</th><th class="r">SDM</th><th class="r">${whole&&S.rounding!=="total"?"People":"FTE"}</th></tr></thead><tbody>${locRows}</tbody></table>
   <h3>Year 1 team by role</h3>${tableOf("finalRoles")}
   <h3>Allowances in the Year 1 team</h3><div class="working">${$("finalAllow").innerHTML}</div>
+  <h3>Where the inputs came from</h3>${tableOf("finalProv")}
   <h3>Deviations from the framework</h3>${tableOf("finalDev")}
   <p class="muted">Coverage ${esc(covLabel())} · ${S.spd} shifts a day · utilisation ${S.util1}% · leave backfill ${S.backfill?"on":"off"} · complexity ${esc(R.CX.name)} · term ${T} year${T>1?"s":""}${exTot>0?` · existing team ${fmt(exTot,1)} FTE (${sgn((R.total-exTot)/exTot*100,0)}%)`:""}</p>
   ${stageDoc(1,"Base team from coverage",tableOf("locCalc"))}
@@ -2472,8 +2649,8 @@ function buildReport(){
   ${stageDoc(3,"Skill coverage by shift",tableOf("covCalc"))}
   ${stageDoc(4,"Transformation capacity",`<div class="facts">${$("scFacts").innerHTML}</div>`)}
   ${stageDoc(5,"Reconciliation and governance",tableOf("reconTable")+`<div class="verdict">${$("verdict").innerHTML}</div>`)}
-  ${stageDoc(6,"Seniority and contingency",tableOf("gradeCalc"))}
-  ${stageDoc(7,"Term and YoY savings",tableOf("termCalc")+`<div class="verdict">${$("termVerdict").innerHTML}</div>`)}
+  ${stageDoc(6,"Seniority and contingency",tableOf("gradeCalc")+`<h3>Estimate confidence · [F] Annexure 1</h3><table><thead><tr><th>Driver</th><th class="r">Weight</th><th>Score</th><th>What the score means</th><th class="r">Points</th></tr></thead><tbody>${confTableHtml(R.conf,false)}</tbody></table><div class="verdict">${$("confVerdict").innerHTML}</div>`)}
+  ${stageDoc(7,"Term and YoY savings",tableOf("termCalc")+`<div class="verdict">${$("termVerdict").innerHTML}</div>`+(R.trans.ktW+R.trans.parW?`<h3>Transition (one-off, before service start)</h3><div class="working">${$("stepsTr").innerHTML}</div>`:""))}
   ${stageDoc(8,"Fact check against the existing team",tableOf("exTable")+`<div class="verdict">${$("exVerdict").innerHTML}</div>`)}
   <footer>Generated by the DAMO Estimation Workflow.</footer>
   </main></body></html>`;
@@ -2548,6 +2725,9 @@ document.addEventListener("click",e=>{
   else if(t.id==="locAddBtn"){const id=$("locAdd").value;if(id){S.locations.push(pickLoc(id));renderS1();update();}}
   else if(d.addkind){S.towers.push(mkTower(d.addkind));renderS2();update();}
   else if(d.tvol){twr(t).vol=d.tvol==="1";renderS2();update();}
+  else if(d.ocm){S.ocMode=d.ocm;update();}
+  else if(d.ttl){twr(t).tktLevel=d.ttl;renderS2();update();}
+  else if(d.tlev){twr(t).levels=d.tlev;renderS2();update();}
   else if(d.taiops){twr(t).aiops=d.taiops==="1";renderS2();update();}
   else if(d.tcpx){twr(t).cpx=d.tcpx==="1";renderS2();update();}
   else if(d.testate){twr(t).estate=d.testate;renderS2();update();}
@@ -2579,6 +2759,9 @@ document.addEventListener("input",e=>{
   if(t.id==="hours"){const v=Math.round(+t.value);if(v>=1&&v<=24){S.hours=v;renderSpd();update();}return}
   if(t.id==="util1"){const v=+t.value;if(t.value!==""&&v>=50&&v<=100){S.util1=v;update()}return}
   if(t.id==="oncall1"){const v=+t.value;if(t.value!==""&&v>=0&&v<=100){S.oncall1=v;update()}return}
+  if(t.id==="p1PerMonth"){S.p1PerMonth=t.value===""?null:Math.max(0,+t.value);update();return}
+  if(t.id==="p1Hours"){const v=+t.value;if(t.value!==""&&v>=0){S.p1Hours=v;update()}return}
+  if(t.id==="standby"){const v=+t.value;if(t.value!==""&&v>=0&&v<=100){S.standby=v;update()}return}
   if(t.id==="fteHours"){const v=+t.value;if(v>=20&&v<=60){S.fteHours=v;update()}return}
   if(d.ex){const v=+t.value;if(t.value!==""&&v>=0){S.ex=Object.assign({},S.ex,{[d.ex]:v});update()}return}
   if(t.id==="exTol"){const v=+t.value;if(t.value!==""&&v>=0&&v<=50){S.exTol=v;update()}return}
@@ -2605,6 +2788,8 @@ document.addEventListener("change",e=>{
   const t=e.target, d=t.dataset;
   if(d.dfile){addFiles(d.dfile,[...t.files]);t.value="";return}
   if(t.id==="openFile"){const f=t.files[0];t.value="";if(f)openEstimate(f);return}
+  if(["trKt","trPar","trKtPct","trMgr"].includes(t.id)){S.trans=S.trans||{};const k={trKt:"kt",trPar:"par",trKtPct:"ktPct",trMgr:"mgr"}[t.id];S.trans[k]=t.value===""?null:Math.max(0,+t.value);update();return}
+  if(d.conf){S.conf=S.conf||{};if(t.value)S.conf[d.conf]=+t.value;else delete S.conf[d.conf];t.blur();update();return}
   if(t.id==="mVersion"){S.meta.version=Math.max(1,Math.round(+t.value||1));updateMeta();save();return}
   if(t.id==="mDate"){S.meta.approvedAt=t.value;updateMeta();save();return}
   if(t.id==="mStatus"){
@@ -2648,7 +2833,7 @@ function summary(){
   L.push(`# ${S.deal||"DAMO deal"}: estimate workflow`,"",`Version ${S.meta.version} · ${approvalStale()?"changed since approval":STATUS[S.meta.status]}${S.meta.preparedBy?` · prepared by ${S.meta.preparedBy}`:""}${S.meta.status==="approved"&&S.meta.approvedBy?` · approved by ${S.meta.approvedBy}${S.meta.approvedAt?` on ${S.meta.approvedAt}`:""}`:""}`,"",`**Team: ${fmt(R.total,2)} FTE${S.rounding!=="none"?`, rostered as ${fmt(R.people,0)} people`:""}**`);
   L.push("",`## Stage 1 · Base team (${covLabel()}, ${S.spd} shifts)`);
   L.push(`- a  Shifts to cover per week: ${S.spd} × ${S.days} = ${fmt(R.a,0)}`);
-  if(R.oncDays>0)L.push(`- a′ Staffed shift-equivalents: ${fmt(R.actDays,0)} active + ${fmt(R.oncDays,0)} on-call × ${S.oncall1}% = ${fmt(R.aEff,2)}`);
+  if(R.oncDays>0)L.push(`- a′ Staffed shift-equivalents: ${fmt(R.actDays,0)} active + ${fmt(R.oncDays,0)} on-call × ${fmt(R.oc1*100,1)}% = ${fmt(R.aEff,2)}`);
   L.push(`- b  Shifts per FTE per week: ${S.fteHours}h ÷ ${hrs(R.shiftLen)}h = ${fmt(R.b,2)}`);
   L.push(`- c  People per shift: ${S.perShift.L2} L2 + ${S.perShift.L3} L3 = ${R.c}`);
   L.push(`- Roster FTE (a×c)÷b: ${fmt(R.roster,2)}`);
@@ -2660,8 +2845,8 @@ function summary(){
   R.locs.forEach(l=>L.push(`| ${l.name} | ${l.sw} | ${fmt(l.roster,2)} | ${fmt(l.utilised-l.roster,2)} | ${fmt(l.buffered-l.utilised,2)} | ${fmt(l.risked-l.buffered,2)} | ${fmt(l.risked,2)} |`));
   rows("s1");
   L.push("","## Stage 2 · Service towers");
-  L.push("","| Tower | Demand from | Tickets/mo | L2 | L3 | A hrs | B hrs | FTE |","|---|---|---|---|---|---|---|---|");
-  R.towers.forEach(t=>L.push(`| ${t.kind} · ${t.name} | ${t.src} | ${fmt(t.tickets,0)} | ${fmt(t.l2t,1)} | ${fmt(t.l3t,1)} | ${fmt(t.A,0)} | ${fmt(t.Bh,0)} | ${fmt(t.fte,2)} |`));
+  L.push("","| Tower | Demand from | Tickets/mo | L2 | L3 | A hrs | B hrs | C hrs | FTE |","|---|---|---|---|---|---|---|---|---|");
+  R.towers.forEach(t=>L.push(`| ${t.kind} · ${t.name} (${({both:"L2 + L3",l2:"L2 only",l3:"L3 only"})[t.sv]}) | ${t.src}${t.lvl!=="l1"?`, counted at ${t.lvl.toUpperCase()}`:""} | ${fmt(t.tickets,0)} | ${fmt(t.l2t,1)} | ${fmt(t.l3t,1)} | ${fmt(t.A,0)} | ${fmt(t.Bh,0)} | ${fmt(t.C,0)} | ${fmt(t.fte,2)} |`));
   L.push("","| Skill set | Tower | Share | FTE | Base has skill |","|---|---|---|---|---|");
   R.skills.forEach(k=>L.push(`| ${k.name} | ${k.tower} | ${fmt(k.norm*100,0)}% | ${fmt(k.fte,2)} | ${k.absorb?"Yes, every shift":"No"} |`));
   L.push("",`- Tower FTE (A + B) ÷ ${S.bench.hrsMonth}: ${fmt(R.demand,2)}`);
@@ -2696,12 +2881,14 @@ function summary(){
   L.push(`- **Stage 6 adds: ${fmt(R.s6,2)} FTE. Team ${fmt(R.total,2)} FTE**`);
   L.push(`- Pyramid Lead : Senior : Consultant = ${R.pyr.join(" : ")} (grade mix only, no FTE change)`);
   if(R.gradeRows){L.push("","| Grade | Share | FTE | People |","|---|---|---|---|");R.gradeRows.forEach(r=>L.push(`| ${r.g} | ${fmt(r.sh*100,0)}% | ${fmt(r.fte,2)} | ${S.rounding!=="none"?r.people:"–"} |`));}
+  {const C=R.conf||confidence();L.push("","### Estimate confidence ([F] Annexure 1)","","| Driver | Weight | Score | Points |","|---|---|---|---|");C.rows.forEach(r=>L.push(`| ${r.name} | ${r.w} | ${r.sc}${r.user?"":" (suggested)"} | ${fmt(r.pts,1)} |`));L.push(`| **Score** | 100 | | **${fmt(C.score,1)}** (${C.band}) |`,"",`- Range at ±${C.rangePct}% demand: ${fmt(C.lo,1)} – ${fmt(C.hi,1)} FTE`);if(C.weak.length)L.push(`- Due diligence items: ${C.weak.map(r=>r.name).join("; ")}`);}
   rows("s6");
   L.push("","## Stage 7 · Term and YoY savings");
   L.push(`- Savings ${R.savePct}% a year from Y2${S.protectFloor!==false?`, above the ${fmt(R.floor,2)} FTE coverage floor`:""}; contingency ${R.contPct}% in Y1, ${R.cont2}% from Y2`);
   L.push("","| Term | Y1 | Y2 | Y3 | Y4 | Y5 | FTE-years | Avg FTE/yr | vs 1-year |","|---|---|---|---|---|---|---|---|---|");
   R.termRows.forEach(t=>L.push(`| ${t.T} yr${t.T>1?"s":""}${t.T===R.term?" (selected)":""} | ${[0,1,2,3,4].map(i=>i<t.T?fmt(R.years[i].fte,1):"–").join(" | ")} | ${fmt(t.sum,1)} | ${fmt(t.avg,2)} | ${t.T===1?"–":"−"+fmt(t.vs1*100,1)+"%"} |`));
   L.push("",$("termVerdict").textContent);
+  if(R.trans.ktW+R.trans.parW){const T=R.trans;L.push("","### Transition (one-off, before service start)",`- Knowledge transfer ${T.ktW} weeks × ${fmt(T.ktP*100,0)}% of the Year 1 team: ${fmt(T.kt,1)} FTE-months`,`- Parallel run ${T.parW} weeks × full team: ${fmt(T.par,1)} FTE-months`,`- Transition management ${fmt(T.mgr,1)} FTE: ${fmt(T.mg,1)} FTE-months`,`- **Transition effort ${fmt(T.total,1)} FTE-months**, average ${fmt(T.avg,1)} FTE, peak ${fmt(T.peak,1)} FTE`);}
   rows("s7");
   {const ex=S.ex||{}, n=k=>Math.max(0,+ex[k]||0), exTot=EX_TIERS.reduce((x,[k])=>x+n(k),0);
   L.push("","## Stage 8 · Fact check against the existing team","","| Tier | Existing | Our Y1 FTE |","|---|---|---|",
@@ -2711,6 +2898,7 @@ function summary(){
   renderDeskViews();
   L.push("","## Year 1 team by role","","| Role | Tower | FTE |","|---|---|---|");R.roles.forEach(r=>L.push(`| ${r.role} | ${r.tower} | ${fmt(r.fte,2)} |`));
   {const A=R.allow;L.push("","## Allowances in the Year 1 team",`- Productive need ${fmt(A.core,2)}; productive-time allowance ${sgn(A.util,2)}; leave backfill ${sgn(A.leave,2)}; contingency ${sgn(A.cont,2)}; risk ${sgn(A.risk,2)} → ${fmt(A.total,2)} FTE`,`- Buffer above productive capacity: ${fmt(A.buffer,2)} FTE (${fmt(A.bufferPct,1)}%)`);}
+  L.push("","## Where the inputs came from");if(R.provRows.length){L.push("","| Input | Source | Evidence | Status |","|---|---|---|---|");R.provRows.forEach(r=>L.push(`| ${r.label} | ${r.source} | ${r.evidence||"–"} | ${r.edited?"edited after import":"as imported"} |`))}else L.push("- Every input was entered by the deal team.");
   L.push("","## Deviations from the framework");if(R.devs.length){L.push("","| Setting | Framework | Used |","|---|---|---|");R.devs.forEach(d=>L.push(`| ${d[0]} | ${d[1]} | ${d[2]} |`))}else L.push("- None");
   if(S.rounding!=="none")L.push("",`## Rounding`,`- ${fmt(R.total,2)} FTE rounded to ${fmt(R.people,0)} people (${sgn(R.roundAdd,2)}). By location: ${R.locs.filter(l=>l.fte>0).map(l=>`${l.name} ${S.rounding==="total"?fmt(l.fte,2):fmt(l.people,0)}`).join(", ")}`);
   return L.join("\n");
@@ -2893,13 +3081,16 @@ function towerLine(t){
   else parts.push("demand not stated");
   if(t.estate)parts.push(t.estate==="legacy"?(t.kind==="AI"?"self-hosted":"complex legacy"):(t.kind==="AI"?"managed AI services":"modern"));
   if(typeof t.aiopsInScope==="boolean")parts.push(t.aiopsInScope?"AIOps in scope":"no AIOps");
+  if(t.serviceLevels)parts.push(`service: ${t.serviceLevels}`);
+  if(t.ticketLevel&&t.volumetrics&&t.ticketLevel!=="L1")parts.push(`counts at ${t.ticketLevel}`);
+  if(t.enhancementHoursPerMonth)parts.push(`${t.enhancementHoursPerMonth}h enhancements a month`);
   if(t.skills&&t.skills.length)parts.push("skills: "+t.skills.map(k=>(SKILL_CATALOG.find(c=>c.id===k)||{}).name||k).join(", "));
   return parts.join(" · ");
 }
 function showProposals(j){
   XRESULT=j;const rows=[];const add=(stage,key,label,value,o)=>rows.push({stage,key,label,value,o});
   if(j.clientName)add(0,"client","Deal name",j.clientName);
-  if(j.coverage){const c=j.coverage;const parts=[];if(c.hoursPerDay||c.daysPerWeek)parts.push(`${c.hoursPerDay??S.hours} hours a day × ${c.daysPerWeek??S.days} days`);if(c.outOfHours)parts.push(`out of hours: ${c.outOfHours==="oncall"?"on-call for P1":"active"}`);if(c.weekends)parts.push(`weekends: ${c.weekends}`);add(1,"coverage","Coverage window",parts.join(" · "),c)}
+  if(j.coverage){const c=j.coverage;const parts=[];if(c.hoursPerDay||c.daysPerWeek)parts.push(`${c.hoursPerDay??S.hours} hours a day × ${c.daysPerWeek??S.days} days`);if(c.outOfHours)parts.push(`out of hours: ${c.outOfHours==="oncall"?"on-call for P1":"active"}`);if(c.weekends)parts.push(`weekends: ${c.weekends}`);if(c.p1PerMonth!=null)parts.push(`${c.p1PerMonth} P1 incidents a month (on-call allowance from P1 volume)`);add(1,"coverage","Coverage window",parts.join(" · "),c)}
   (j.towers||[]).forEach((t,i)=>add(2,"tower:"+i,`${KIND_NAME[t.kind]} tower${t.name?`: ${t.name}`:""}`,towerLine(t),t));
   if(j.aiAdoption)add(4,"ai","Client AI adoption",j.aiAdoption.value,j.aiAdoption);
   if(j.complexity)add(6,"cplx","Engagement complexity",j.complexity.value,j.complexity);
@@ -2923,19 +3114,25 @@ function applyProposals(){
   const j=XRESULT;if(!j)return;
   const on=k=>{const el=document.querySelector(`[data-xkey="${k}"]`);return el&&el.checked};
   const src=o=>o&&o.source?o.source:"documents";
-  let n=0;
-  if(j.clientName&&on("client")){S.deal=j.clientName;n++}
+  let n=0;const P=[];
+  const mark=(key,label,o)=>P.push([key,label,o||{}]);
+  if(j.clientName&&on("client")){S.deal=j.clientName;mark("client","Deal name",{source:"documents"});n++}
   if(j.coverage&&on("coverage")){
     const c=j.coverage;
     if(c.daysPerWeek)S.days=c.daysPerWeek;
     if(c.hoursPerDay){S.hours=c.hoursPerDay;setSpd(Math.max(1,Math.ceil(c.hoursPerDay/8)))}
     if(c.outOfHours){S.shiftMode=S.assign.map((_,i)=>i===0?"active":c.outOfHours)}
     if(c.weekends==="oncall")S.weekendMode="oncall";else if(c.weekends==="active")S.weekendMode="active";
+    mark("coverage","Coverage window",c);
+    if(c.p1PerMonth!=null){S.p1PerMonth=c.p1PerMonth;S.ocMode="p1";mark("p1","P1 incidents a month",{source:c.p1Source||c.source,evidence:c.p1Evidence||""})}
     n++;
   }
   (j.towers||[]).forEach((t,i)=>{
     if(!on("tower:"+i))return;
     const tw=mkTower(t.kind);tw.name=t.name||"";tw.estate=t.estate||null;
+    if(t.serviceLevels)tw.levels={"L2+L3":"both","L2":"l2","L3":"l3"}[t.serviceLevels]||null;
+    if(t.ticketLevel&&t.volumetrics)tw.tktLevel=t.ticketLevel.toLowerCase();
+    if(t.enhancementHoursPerMonth!=null)tw.enh=t.enhancementHoursPerMonth;
     if(t.volumetrics){tw.vol=true;tw.inc=t.volumetrics.incidentsPerMonth??null;tw.sr=t.volumetrics.serviceRequestsPerMonth??null}
     else if(t.structural){
       tw.vol=false;tw.cpx=true;const st=t.structural;
@@ -2946,12 +3143,13 @@ function applyProposals(){
     }else if(t.mau){tw.vol=false;tw.cpx=false;tw.mau=t.mau}
     if(typeof t.aiopsInScope==="boolean")tw.aiops=t.aiopsInScope;
     (t.skills||[]).forEach(k=>{if(SKILL_CATALOG.some(c=>c.id===k))tw.skills.push(mkSkill(k,0))});
-    S.towers.push(tw);n++;
+    S.towers.push(tw);mark("tower:"+tw.id,`${t.kind} tower${t.name?`: ${t.name}`:""}`,t);n++;
   });
-  if(j.aiAdoption&&on("ai")){S.aiMaturity=j.aiAdoption.value;n++}
-  if(j.complexity&&on("cplx")){S.cplx=j.complexity.value;n++}
-  if(j.termYears&&on("term")){S.term=j.termYears.value;n++}
-  if(j.existingTeam&&on("ex")){const e=j.existingTeam;S.ex={L2:e.L2??null,L3:e.L3??null,trans:e.sreAutomation??null,gov:e.managers??null,other:e.other??null};const s0=(e.source||"").toLowerCase();S.exSource=/rfp|handover/.test(s0)?"rfp":/note|call|meeting/.test(s0)?"verbal":S.exSource;n++}
+  if(j.aiAdoption&&on("ai")){S.aiMaturity=j.aiAdoption.value;mark("ai","Client AI adoption",j.aiAdoption);n++}
+  if(j.complexity&&on("cplx")){S.cplx=j.complexity.value;mark("cplx","Engagement complexity",j.complexity);n++}
+  if(j.termYears&&on("term")){S.term=j.termYears.value;mark("term","Contract term",j.termYears);n++}
+  if(j.existingTeam&&on("ex")){const e=j.existingTeam;S.ex={L2:e.L2??null,L3:e.L3??null,trans:e.sreAutomation??null,gov:e.managers??null,other:e.other??null};const s0=(e.source||"").toLowerCase();S.exSource=/rfp|handover/.test(s0)?"rfp":/note|call|meeting/.test(s0)?"verbal":S.exSource;mark("ex","Existing team",e);n++}
+  S.prov=S.prov||{};P.forEach(([k,label,o])=>{S.prov[k]={label,source:o.source||"documents",evidence:o.evidence||"",snap:provVal(k),at:new Date().toISOString().slice(0,10)}});
   (j.assumptions||[]).forEach((a,i)=>{if(on("as:"+i)){S.assumptions["s"+a.stage].push(`${a.text} (from ${src(a)})`);n++}});
   (j.risks||[]).forEach((r,i)=>{if(on("rk:"+i)){S.risks["s"+r.stage].push({id:uid(),on:false,pct:0,title:r.title,note:`${r.note||""} (from ${src(r)})`.trim()});n++}});
   (j.openQuestions||[]).forEach(q=>S.assumptions.s1.push(`To confirm with the client: ${q}`));

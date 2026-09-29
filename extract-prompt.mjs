@@ -23,11 +23,12 @@ export const SKILL_IDS = {
 const SCHEMA_EXAMPLE = {
   docSummary: "3-5 sentences in your own words: client, scope, service window, what is being asked for.",
   clientName: "Acme Bank",
-  coverage: { daysPerWeek: 5, hoursPerDay: 24, outOfHours: "oncall", weekends: "none",
+  coverage: { daysPerWeek: 5, hoursPerDay: 24, outOfHours: "oncall", weekends: "none", p1PerMonth: 6,
     evidence: "short quote", source: "RFP" },
   towers: [{
     kind: "AMS", name: "Retail banking apps",
-    volumetrics: { incidentsPerMonth: 120, serviceRequestsPerMonth: 40 },
+    serviceLevels: "L2+L3",
+    volumetrics: { incidentsPerMonth: 120, serviceRequestsPerMonth: 40 }, ticketLevel: "L1", enhancementHoursPerMonth: 80,
     structural: { apps: { S: 0, M: 3, L: 2, XL: 1, XXL: 0 } },
     mau: 50000, estate: "legacy", aiopsInScope: true, skills: ["be", "fe"],
     evidence: "short quote", source: "Incident dump",
@@ -48,6 +49,10 @@ const RULES = `Rules:
 - coverage.daysPerWeek: 5, 6 or 7. coverage.hoursPerDay: 1-24 (business hours only = 8 or 9, "16x5" = 16, "24x7" = 24).
 - coverage.outOfHours: "active" if people must be working outside business hours, "oncall" if only reachable for P1/critical incidents. Omit if coverage is business hours only.
 - coverage.weekends: "active", "oncall" or "none".
+- coverage.p1PerMonth: P1 / critical incidents a month across all hours. Use the incident dump summary's priority counts divided by its months. Omit if unknown.
+- towers[].serviceLevels: "L2+L3", "L2" or "L3": the support levels the client wants us to provide for that estate. Omit if not stated.
+- towers[].ticketLevel: where the volumetric counts are measured: "L1" (all tickets raised, e.g. a whole ITSM export), "L2" (tickets reaching L2 / an incumbent's L2 queue) or "L3". Omit if unclear.
+- towers[].enhancementHoursPerMonth: hours a month of enhancements / minor change in the run scope, only if stated or derivable (convert yearly or per-release figures).
 - towers[].kind: "AMS" (applications), "IMS" (infrastructure/cloud), "DMS" (data platforms), or "AI" (AI platforms / agentic solutions). One entry per distinct estate the documents describe.
 - towers[].volumetrics: monthly averages. Use the incident dump summary when given; convert yearly or weekly counts to monthly. Omit if no ticket counts exist for that tower.
 - towers[].structural, only when volumetrics are missing, by kind:
@@ -102,6 +107,7 @@ export function sanitizeExtraction(raw) {
       hoursPerDay: num(c.hoursPerDay, 1, 24) !== undefined ? Math.round(num(c.hoursPerDay, 1, 24)) : undefined,
       outOfHours: oneOf(c.outOfHours, ["active", "oncall"]),
       weekends: oneOf(c.weekends, ["active", "oncall", "none"]),
+      p1PerMonth: num(c.p1PerMonth, 0, 100000),
       ...ev(c),
     });
   }
@@ -124,6 +130,9 @@ export function sanitizeExtraction(raw) {
         mau: num(t.mau, 0, 1e9),
         estate: oneOf(t.estate, ["modern", "legacy"]),
         aiopsInScope: typeof t.aiopsInScope === "boolean" ? t.aiopsInScope : undefined,
+        serviceLevels: oneOf(t.serviceLevels, ["L2+L3", "L2", "L3"]),
+        ticketLevel: oneOf(t.ticketLevel, ["L1", "L2", "L3"]),
+        enhancementHoursPerMonth: num(t.enhancementHoursPerMonth, 0, 1e6),
         skills: Array.isArray(t.skills) ? [...new Set(t.skills.filter((k) => k in SKILL_IDS))] : undefined,
         ...ev(t),
       });
