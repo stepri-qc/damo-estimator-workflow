@@ -598,7 +598,7 @@ tr.sel td{background:var(--accent-soft)}
     <div class="stage-head">
       <span class="eyebrow">Stage 2 of 8</span>
       <h2 id="s2h">Service towers and complexity</h2>
-      <p>Add the AMS, IMS, DMS and AI platform towers in scope. For each tower, answer up to three questions: ticket volumes if the client has them, otherwise the estate's structural complexity (T-shirt sizing), and if that isn't known either, monthly active users. Tickets become effort through the framework's L2/L3 cascade, and each tower's FTE is then split across the skill sets it needs.</p>
+      <p>Add the AMS, IMS, DMS and AI platform towers in scope. For each tower, answer up to three questions: ticket volumes if the client has them, otherwise the estate's structural complexity (T-shirt sizing), and if that isn't known either, monthly active users. Tickets become effort through the framework's L2/L3 cascade, and each tower's FTE is then split across the skill sets it needs. If AIOps is in scope for a tower, AI engineers are added at the framework ratio.</p>
     </div>
 
     <div class="cols">
@@ -618,6 +618,20 @@ tr.sel td{background:var(--accent-soft)}
         <div class="field">
           <div class="lbl">Towers in scope</div>
           <div class="towers" id="towerList"></div>
+        </div>
+
+        <div class="field" id="aiopsField" hidden>
+          <div class="lbl">AIOps engineer ratio <span class="tag">[F] Part 3 · Sc.4 Step 3</span></div>
+          <div class="hint" style="margin:0 0 8px">For towers with AIOps in scope, one AI engineer is embedded per N support FTE to build the automation that prevents or auto-resolves tickets. N follows the client's AI adoption.</div>
+          <div class="seg" id="aiSeg2" role="group" aria-label="Client AI adoption"></div>
+          <label class="inline" for="aiRatio" style="margin-top:8px">Ratio
+          <select id="aiRatio">
+            <option value="auto">Framework default</option>
+            <option value="4">1 : 4</option>
+            <option value="6">1 : 6</option>
+            <option value="8">1 : 8</option>
+          </select></label>
+          <div class="hint" id="ratioHint"></div>
         </div>
 
         <div class="divider"></div>
@@ -735,7 +749,7 @@ tr.sel td{background:var(--accent-soft)}
     <div class="stage-head">
       <span class="eyebrow">Stage 4 of 8</span>
       <h2 id="s4h">Transformation capacity</h2>
-      <p>The framework scenario is worked out from the client's AI maturity and whether Stage 2 demand came from real volumetrics. The scenario sets two things: a Transformation POD share and an AIOps engineer ratio. AIOps engineers sit inside the Transformation POD, so this stage adds whichever of the two is larger.</p>
+      <p>The framework scenario is worked out from the client's AI maturity and whether Stage 2 demand came from real volumetrics. The scenario sets the Transformation POD share. The AI engineers (AIOps) added in Stage 2 for towers with AIOps in scope sit inside the POD, so this stage adds only the rest of the POD.</p>
     </div>
 
     <div class="cols">
@@ -762,19 +776,13 @@ tr.sel td{background:var(--accent-soft)}
           <div class="hint" id="transHint"></div>
         </div>
         <div class="field">
-          <div class="lbl">AIOps engineer ratio</div>
-          <select id="aiRatio">
-            <option value="auto">Scenario default</option>
-            <option value="4">1 : 4</option>
-            <option value="6">1 : 6</option>
-            <option value="8">1 : 8</option>
-          </select>
-          <div class="hint" id="ratioHint"></div>
+          <div class="lbl">AI engineers (AIOps) <span class="tag">from Stage 2</span></div>
+          <div class="derived" id="aiopsDerived"></div>
         </div>
       </div>
 
       <div class="panel">
-        <header><h3>How the number is built</h3><span class="sub">POD share against AIOps ratio</span></header>
+        <header><h3>How the number is built</h3><span class="sub">POD share less AI engineers already added</span></header>
         <div class="working" id="steps4"></div>
         <div class="facts" id="scFacts"></div>
       </div>
@@ -1252,7 +1260,7 @@ function mkTower(kind){
     env:null,host:null,db:null,sec:false,
     dp:null,pipe:null,integ:null,up:null,down:null,
     agents:null,models:null,tools:null,ksrc:null,hiRisk:false,
-    skills:[]};
+    aiops:null,skills:[]};
 }
 function defaults(){
   return {
@@ -1387,11 +1395,23 @@ function compute(){
   const added=demand-absorbed;
   const add2=skills.reduce((s2,k)=>s2+k.a2,0), add3=skills.reduce((s2,k)=>s2+k.a3,0);
   const rp2=riskPctOf("s2");
-  const s2=added*(1+rp2);
+  const s2run=added*(1+rp2);
+  /* AIOps per tower ([F] Part 3, Sc.4 Step 3): where AIOps is in scope, 1 AI engineer per N of the tower's
+     support FTE. N follows client AI adoption: 1:4 low, 1:8 moderate (flexes to 1:6 over 20 FTE). */
+  towers.forEach(t=>{t.run=(t.fte-t.skills.reduce((x,k)=>x+k.absorbed,0))*(1+rp2)});
+  const aiTowers=towers.filter(t=>t.aiops===true);
+  const aiBase=aiTowers.reduce((x,t)=>x+t.run,0);
+  const scRatio=S.aiMaturity==="moderate"?8:4;
+  const autoRatio=scRatio===8&&aiBase>20?6:scRatio;
+  const aiRatioN=S.aiRatio==="auto"?autoRatio:+S.aiRatio;
+  towers.forEach(t=>{t.ai=t.aiops===true?t.run/aiRatioN:0});
+  const ai2=aiBase/aiRatioN;
+  const s2=s2run+ai2;
   const shareBase=roster>0?roster:1;
   locs.forEach(l=>{
     const sh=roster>0?l.roster/shareBase:1/locs.length;
-    l.t2=add2*(1+rp2)*sh; l.t3=add3*(1+rp2)*sh;
+    l.ai=ai2*sh;
+    l.t2=add2*(1+rp2)*sh; l.t3=add3*(1+rp2)*sh+l.ai;
     l.u2=0; l.u3=0;
   });
 
@@ -1415,7 +1435,8 @@ function compute(){
   const topUp=covSkills.reduce((s3,k)=>s3+k.top,0);
   const s3=topUp*(1+rp3);
   covSkills.forEach(k=>{if(!(k.top>0))return;k.byLoc.forEach(x=>{const l=locs.find(y=>y.id===x.id);const sh=k.floor>0?x.floor/k.floor:0;const v=k.top*(1+rp3)*sh;l.u2+=v*(1-k.l3s);l.u3+=v*k.l3s})});
-  const sub3=s2+s3; /* run team from the work (Stages 2–3) */
+  const sub3=s2+s3; /* team from the work (Stages 2–3), AI engineers included */
+  const runTeam=sub3-ai2; /* support team that staffs the shifts */
 
   /* Stage 4: scenario from AI maturity × volumetric availability; Transformation POD % vs AIOps ratio, AIOps inside the POD */
   const volFte=towers.filter(t=>t.vol===true).reduce((x,t)=>x+t.fte,0);
@@ -1425,12 +1446,11 @@ function compute(){
   const sc=volAvail?(mod?4:3):(mod?2:1);
   const SC=SCENARIOS[sc];
   const transPct=S.transPct==null?SC.pct:+S.transPct;
-  const pod=sub3*transPct/100;
-  const autoRatio=SC.ratio===8&&sub3>20?6:SC.ratio;
-  const aiRatioN=S.aiRatio==="auto"?autoRatio:+S.aiRatio;
-  const aiops=sub3/aiRatioN;
-  const stage4raw=Math.max(pod,aiops);
-  const otherTrans=stage4raw-aiops;
+  const pod=runTeam*transPct/100;
+  /* AI engineers (AIOps) were added per tower in Stage 2 and sit inside the POD: add only the rest of the POD */
+  const aiops=ai2;
+  const stage4raw=Math.max(0,pod-aiops);
+  const otherTrans=stage4raw;
   const rp4=riskPctOf("s4");
   const s4=stage4raw*(1+rp4);
   locs.forEach(l=>{
@@ -1441,15 +1461,18 @@ function compute(){
   /* Reconcile: team from the work (Stages 2–4) vs base team from coverage (Stage 1). Keep the larger;
      if the work team is smaller, lift it to the base team using the base team's location/tier layout. */
   const workTeam=sub3+s4;
-  const lift=Math.max(0,s1-workTeam);
+  /* AI engineers build automation and don't staff shifts, so the base team can't stand in for them:
+     compare the rest of the work team with the base team, then keep the AI engineers on top */
+  const runWork=workTeam-ai2;
+  const lift=Math.max(0,s1-runWork);
   locs.forEach(l=>{
     const f2=l.t2+l.u2, f3=l.t3+l.u3+l.v3;
-    /* smaller work team: the base team (its locations and tiers) is the delivery team */
-    if(lift>0){l.c2=l.k2; l.c3=l.k3} else {l.c2=f2; l.c3=f3}
+    /* smaller work team: the base team (its locations and tiers) is the delivery team, plus the AI engineers */
+    if(lift>0){l.c2=l.k2; l.c3=l.k3+l.ai} else {l.c2=f2; l.c3=f3}
   });
 
   /* Stage 5: SDM at 1:N of the delivery team (Stages 1–4), governance tier, in one location */
-  const sub4=workTeam+lift; /* delivery team = max(work team, base team) */
+  const sub4=workTeam+lift; /* delivery team = max(work team excl. AI engineers, base team) + AI engineers */
   const sdmRatio=Math.max(1,+S.sdmRatio||8);
   const sdmRaw=sub4/sdmRatio;
   const rp5=riskPctOf("s5");
@@ -1515,8 +1538,8 @@ function compute(){
       return {id:l.id,name:l.name,a2:l.c2,a3:l.c3,g:l.g};
     });
     if(n===1)fte=s1;
-    else if(n<=4){work=s2+(n>=3?s3:0)+(n>=4?s4:0);lf=Math.max(0,s1-work);
-      if(lf>0)cells.forEach((c,i)=>{c.a2=locs[i].k2;c.a3=locs[i].k3});fte=work+lf}
+    else if(n<=4){work=s2+(n>=3?s3:0)+(n>=4?s4:0);lf=Math.max(0,s1-(work-ai2));
+      if(lf>0)cells.forEach((c,i)=>{c.a2=locs[i].k2;c.a3=locs[i].k3+locs[i].ai});fte=work+lf}
     else if(n===5)fte=sub5; else fte=total;
     let P2=0,P3=0,PG=0,pp=0;
     cells.forEach(c=>{
@@ -1530,8 +1553,9 @@ function compute(){
   }
   return {days,spd,shiftLen,a,b,c,framework,actDays,oncDays,oc1,aEff,rp1,locs,roster,buffered,s1,warnings,
     u1,utilised,utilAdd:utilised-roster,leaveAdd:buffered-utilised,risk1Add:s1-buffered,
-    towers,skills,demand,demAbs,capacity,absorbed,added,add2,add3,rp2,s2,risk2Add:s2-added,warnings2,
-    covSkills,topUp,rp3,s3,risk3Add:s3-topUp,sub2:s2,sub3,workTeam,lift,
+    towers,skills,demand,demAbs,capacity,absorbed,added,add2,add3,rp2,s2,s2run,risk2Add:s2run-added,warnings2,
+    aiTowers,aiBase,scRatio,ai2,
+    covSkills,topUp,rp3,s3,risk3Add:s3-topUp,sub2:s2,sub3,runTeam,workTeam,runWork,lift,
     volShare,volAvail,sc,SC,transPct,pod,autoRatio,ratio:aiRatioN,aiops,stage4raw,otherTrans,rp4,s4,risk4Add:s4-stage4raw,
     sub4,sdmRatio,sdmRaw,rp5,s5,risk5Add:s5-sdmRaw,sdmLoc,
     sub5,CX,contPct,contRaw,rp6,s6,risk6Add:s6-contRaw,pyr,shares,
@@ -1632,6 +1656,10 @@ function renderS2(){
         <div class="seg" role="group" aria-label="Estate">${(t.kind==="AI"?[["modern","Managed AI services (APIs)"],["legacy","Self-hosted models / custom agents"]]:[["modern","Modern / SaaS"],["legacy","Complex legacy"]]).map(([k,l])=>`<button type="button" data-testate="${k}" aria-pressed="${t.estate===k}">${l}</button>`).join("")}</div>${t.estate?"":`<div class="hint">Choose one. Modern is used until you do.</div>`}
       </div>
       <div class="derived" id="td-${t.id}"></div>
+      <div class="tsec"><span class="h">AIOps</span>
+        <div class="q ${t.aiops==null?"on":""}" style="margin:0"><span class="qh">Is AIOps in scope for this tower?</span>${yn("data-taiops",t.aiops,"Yes, AIOps in scope","No")}</div>
+        <div class="hint" id="tai-${t.id}">${t.aiops==null?"Intelligent alerting, automated RCA, ticket auto-classification, self-healing. If yes, AI engineers are added at the framework ratio.":""}</div>
+      </div>
       <div class="skills"><span class="tsec"><span class="h">Skill sets in this tower</span></span>
         ${t.skills.map(k=>`<div class="skrow" data-skill="${k.id}">
           <span class="nm">${k.skill==="spec"?`<input type="text" id="kn-${k.id}" data-kn="1" value="${esc(k.name)}" placeholder="Name the niche skill, e.g. Mainframe COBOL" aria-label="Niche skill name" style="width:100%">`:esc(k.name)}</span>
@@ -1643,6 +1671,8 @@ function renderS2(){
         <div class="skfoot"><div class="addrow"><select id="sk-add-${t.id}" aria-label="Add a skill set">${opts}</select><button type="button" class="btn sm" data-addskill="${t.id}">Add skill set</button></div><span class="delta add" id="tadd-${t.id}"></span></div>
       </div>
     </div>`}).join(""):`<div class="empty">No towers yet. Add AMS, IMS, DMS or AI platforms.</div>`;
+  $("aiSeg2").innerHTML=[["low","Low AI adoption · 1:4"],["moderate","Moderate AI adoption · 1:8"]].map(([k,l])=>`<button type="button" data-ai="${k}" aria-pressed="${S.aiMaturity===k}">${l}</button>`).join("");
+  $("aiRatio").value=S.aiRatio;
   const B=S.bench;
   const bi=(path,label,val,step=1,max=1000)=>`<label for="bn-${path}">${label}<input type="number" id="bn-${path}" data-bn="${path}" min="0" max="${max}" step="${step}" value="${val}"></label>`;
   $("benchBox").innerHTML=`<h4>Ticket cascade and effort · [F] 1.1, 1.4, 1.5</h4><div class="tgrid">
@@ -1737,7 +1767,13 @@ function updateS2(){
       d.innerHTML=`${esc(how)} ≈ <b>${fmt(t.tickets,0)}</b> tickets/mo → L2 ${fmt(t.l2t,1)}, L3 ${fmt(t.l3t,1)} → <b>${fmt(t.fte,2)} FTE</b> (L2 ${fmt(t.fte2,2)} · L3 ${fmt(t.fte3,2)})`+(d.dataset.impl?`<br>${esc(d.dataset.impl)}`:"");
     }
     const a=$("tadd-"+t.id); if(a)a.textContent=`${fmt(t.fte,2)} FTE from the work`;
+    const ai=$("tai-"+t.id);
+    if(ai&&t.aiops===true)ai.innerHTML=`<b>AI Engineer (AIOps): ${fmt(t.ai,2)} FTE</b> = ${fmt(t.run,2)} support FTE ÷ ${R.ratio}. Builds the automation; does not staff shifts.`;
+    else if(ai&&t.aiops===false)ai.textContent="No AI engineers for this tower.";
   });
+  document.querySelectorAll("[data-ai]").forEach(b=>b.setAttribute("aria-pressed",String(S.aiMaturity===b.dataset.ai)));
+  $("aiopsField").hidden=!R.aiTowers.length;
+  $("ratioHint").innerHTML=`${S.aiMaturity==null?"AI adoption not chosen, so Low (1:4) is used. ":""}Framework default 1:${R.scRatio}${R.scRatio===8?"; flexes to 1:6 when the AIOps towers carry over 20 support FTE":""}. Using <b>1:${R.ratio}</b> on ${fmt(R.aiBase,2)} support FTE → ${fmt(R.ai2,2)} AI engineers.`;
   const nR=S.risks.s2.filter(r=>r.on&&+r.pct).length;
   const tk=R.towers.reduce((s2,t)=>s2+t.tickets,0), l2=R.towers.reduce((s2,t)=>s2+t.l2t,0), l3=R.towers.reduce((s2,t)=>s2+t.l3t,0);
   const A=R.towers.reduce((s2,t)=>s2+t.A,0), Bh=R.towers.reduce((s2,t)=>s2+t.Bh,0);
@@ -1750,13 +1786,15 @@ function updateS2(){
   h+=wstep("4","B · Non-ticketing effort",`${fmt(Bh,0)} h`,`A × ${B.bModern}% modern or ${B.bLegacy}% legacy estate, per tower`);
   h+=wstep("5","Tower FTE",fmt(R.demand,2),`(A + B) ÷ ${B.hrsMonth} hours a month`);
   h+=wstep("6","Risk modifiers",`<span class="delta risk">${sgn(R.risk2Add,2)}</span>`,`${fmt(R.added,2)} × ${fmt(R.rp2*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
-  h+=wstep("=","Tower team",`${fmt(R.s2,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Built from the work, separately from the ${fmt(R.s1,2)} FTE base team · L2 ${fmt(R.add2,2)} · L3 ${fmt(R.add3,2)} before risk. The two are compared at Stage 5.`,"total");
+  h+=wstep("7","AI engineers (AIOps)",`<span class="delta add">${sgn(R.ai2,2)}</span>`,R.aiTowers.length?`${listNames(R.aiTowers)}: ${fmt(R.aiBase,2)} support FTE ÷ ${R.ratio} (1 AI engineer per ${R.ratio} support FTE)`:`No tower has AIOps in scope`);
+  h+=wstep("=","Tower team",`${fmt(R.s2,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Built from the work, separately from the ${fmt(R.s1,2)} FTE base team · L2 ${fmt(R.add2,2)} · L3 ${fmt(R.add3,2)} before risk${R.ai2>0?` · AI engineers ${fmt(R.ai2,2)}`:""}. The two are compared at Stage 5.`,"total");
   $("steps2").innerHTML=h;
   $("towerCalc").innerHTML=R.towers.length?R.towers.map(t=>`<tr><td class="loc-name">${esc(t.name)}<small>${t.kind}${t.estate==="legacy"?(t.kind==="AI"?" · self-hosted":" · legacy"):""}</small></td><td>${esc(t.src)}</td><td class="r num">${fmt(t.tickets,0)}</td><td class="r num">${fmt(t.l2t,1)}</td><td class="r num">${fmt(t.l3t,1)}</td><td class="r num">${fmt(t.A,0)}</td><td class="r num">${fmt(t.Bh,0)}</td><td class="r num"><b>${fmt(t.fte,2)}</b></td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td></td><td class="r num">${fmt(tk,0)}</td><td class="r num">${fmt(l2,1)}</td><td class="r num">${fmt(l3,1)}</td><td class="r num">${fmt(A,0)}</td><td class="r num">${fmt(Bh,0)}</td><td class="r num"><b>${fmt(R.demand,2)}</b></td></tr>`
     :`<tr><td colspan="8" class="hint">Add a tower to see its effect.</td></tr>`;
   $("skillCalc").innerHTML=R.skills.length?R.skills.map(k=>`<tr><td class="loc-name">${esc(k.name)}<small>${esc(k.tower)}</small></td><td class="r num">${fmt(k.norm*100,0)}%</td><td class="r num">${fmt(k.fte,2)}</td><td>${k.absorb?'<span class="yes">Yes, every shift</span>':'<span class="no">No, set shifts in Stage 3</span>'}</td></tr>`).join("")
-    +`<tr><td><b>Total</b></td><td></td><td class="r num"><b>${fmt(R.demand,2)}</b></td><td></td></tr>`
+    +R.aiTowers.map(t=>`<tr><td class="loc-name">AI Engineer (AIOps)<small>${esc(t.name)}</small></td><td class="r num">1:${R.ratio}</td><td class="r num">${fmt(t.ai,2)}</td><td><span class="no">No, builds automation</span></td></tr>`).join("")
+    +`<tr><td><b>Total</b></td><td></td><td class="r num"><b>${fmt(R.demand+R.ai2,2)}</b></td><td></td></tr>`
     :`<tr><td colspan="4" class="hint">No skill sets yet.</td></tr>`;
   updateRiskDeltas("s2",R.added,R.risk2Add,R.rp2);
   const proxy=R.towers.filter(t=>!t.vol), vol=R.towers.filter(t=>t.vol);
@@ -1772,7 +1810,8 @@ function updateS2(){
       return parts.join(" ")||"No towers.";})(),"[F] Sc.1 Steps 1–2"],
     ["B5",`IMS, DMS and AI platform proxies use complexity points × tickets per point (IMS ${B.ims.tpp}, DMS ${B.dms.tpp}, AI ${B.ai.tpp}). These are calibration targets.`,"proposed"],
     ["B6",`Skill sets the base team already has (${abs.length?abs.map(kn).join(", "):"none"}) are covered on every shift by the base roster. Other skill sets get their own shift cover in Stage 3.`,"proposed"],
-    ["B7","Tower FTE keeps its effort-based L2/L3 split and is spread across locations like the Stage 1 roster. Stage 3 sets which shifts each skill covers.","proposed"]
+    ["B7","Tower FTE keeps its effort-based L2/L3 split and is spread across locations like the Stage 1 roster. Stage 3 sets which shifts each skill covers.","proposed"],
+    ["B8",R.aiTowers.length?`AIOps is in scope for ${listNames(R.aiTowers)}: one AI engineer per ${R.ratio} support FTE of those towers (after Stage 2 risk), counted as L3 engineering. They build intelligent alerting, RCA automation and self-healing, own prompt engineering and model evaluation, and do not staff shifts.`:"AIOps is not in scope for any tower, so no AI engineers are added.","[F] Sc.4 Step 3"]
   ]);
 }
 const n0v=v=>Math.max(0,+v||0);
@@ -1801,7 +1840,7 @@ function updateS3(){
   h+=wstep("3","Already staffed from Stage 2",fmt(hv,2),"Each skill set's Stage 2 FTE after absorption and risk");
   h+=wstep("4","Top-up for coverage",`<span class="delta add">${sgn(R.topUp,2)}</span>`,"Sum over skill sets of max(0, floor − Stage 2 FTE)");
   h+=wstep("5","Risk modifiers",`<span class="delta risk">${sgn(R.risk3Add,2)}</span>`,`${fmt(R.topUp,2)} × ${fmt(R.rp3*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
-  h+=wstep("=","Stage 3 adds",`${sgn(R.s3,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Run team from the work: ${fmt(R.s2,2)} + ${fmt(R.s3,2)} = ${fmt(R.sub3,2)} FTE`,"total");
+  h+=wstep("=","Stage 3 adds",`${sgn(R.s3,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team from the work: ${fmt(R.s2,2)} + ${fmt(R.s3,2)} = ${fmt(R.sub3,2)} FTE`,"total");
   $("steps3").innerHTML=h;
   $("covCalc").innerHTML=R.covSkills.length?R.covSkills.map(k=>`<tr><td class="loc-name">${esc(k.name)}<small>${esc(k.tower)}</small></td><td class="r num">${k.live.length}</td><td class="r num">${k.onCall}</td><td class="r num">${fmt(k.floor,2)}</td><td class="r num">${fmt(k.have,2)}</td><td class="r num"><b>${fmt(k.top,2)}</b></td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td></td><td></td><td class="r num">${fmt(fl,2)}</td><td class="r num">${fmt(hv,2)}</td><td class="r num"><b>${fmt(R.topUp,2)}</b></td></tr>`
@@ -1819,7 +1858,6 @@ function updateS3(){
 function renderS4(){
   $("aiSeg").innerHTML=[["low","Low"],["moderate","Moderate"]].map(([k,l])=>`<button type="button" data-ai="${k}" aria-pressed="${S.aiMaturity===k}">${l}</button>`).join("");
   $("transPct").value=S.transPct==null?"":S.transPct;
-  $("aiRatio").value=S.aiRatio;
 }
 function updateS4(){
   const SC=R.SC;
@@ -1829,14 +1867,14 @@ function updateS4(){
   $("scGrid").innerHTML=order.map(n=>`<div class="sc-cell ${R.sc===n?"on":""}"><b>Scenario ${n}</b><span>${n<=2?(n===1?"Low AI":"Moderate AI"):(n===3?"Low AI":"Moderate AI")} · POD ${SCENARIOS[n].range} · AIOps 1:${SCENARIOS[n].ratio}</span></div>`).join("");
   $("transPct").placeholder=`${SC.pct} (scenario default)`;
   $("transHint").textContent=`Scenario ${R.sc} guidance: ${SC.range}. Leave blank to use ${SC.pct}%.`;
-  $("ratioHint").textContent=`Scenario ${R.sc} default 1:${SC.ratio}${SC.ratio===8?"; flexes to 1:6 when the team is over 20 FTE":""}. Using 1:${R.ratio}.`;
+  $("aiopsDerived").innerHTML=R.aiTowers.length?`<b>${fmt(R.ai2,2)} FTE</b> at 1:${R.ratio} for ${esc(listNames(R.aiTowers))}. Change which towers have AIOps, or the ratio, in Stage 2.`:"No tower has AIOps in scope, so the POD is added in full. Set AIOps per tower in Stage 2.";
   const nR=S.risks.s4.filter(r=>r.on&&+r.pct).length;
   let h="";
-  h+=wstep("1","Run team from the work",fmt(R.sub3,2),`Stages 2–3: ${fmt(R.s2,2)} + ${fmt(R.s3,2)}`);
+  h+=wstep("1","Support team from the work",fmt(R.runTeam,2),`Stages 2–3 without AI engineers: ${fmt(R.sub3,2)} − ${fmt(R.ai2,2)}`);
   h+=wstep("2","Scenario",String(R.sc),`${esc(SC.name)}`);
-  h+=wstep("3","Transformation POD",fmt(R.pod,2),`${fmt(R.sub3,2)} × ${R.transPct}%`);
-  h+=wstep("4","AIOps engineers",fmt(R.aiops,2),`${fmt(R.sub3,2)} ÷ ${R.ratio} (1 AIOps engineer per ${R.ratio} delivery FTE)`);
-  h+=wstep("5","Transformation added",`<span class="delta add">${sgn(R.stage4raw,2)}</span>`,`Larger of the two: AIOps ${fmt(R.aiops,2)} + other transformation (SRE, automation, CI/CD) ${fmt(R.otherTrans,2)}`);
+  h+=wstep("3","Transformation POD",fmt(R.pod,2),`${fmt(R.runTeam,2)} × ${R.transPct}%`);
+  h+=wstep("4","AI engineers already in the POD",fmt(R.aiops,2),R.aiTowers.length?`Added in Stage 2 at 1:${R.ratio} for ${esc(listNames(R.aiTowers))}`:"AIOps not in scope for any tower");
+  h+=wstep("5","Transformation added",`<span class="delta add">${sgn(R.stage4raw,2)}</span>`,`POD ${fmt(R.pod,2)} − AI engineers ${fmt(R.aiops,2)}: other transformation (SRE, automation, CI/CD)${R.pod<R.aiops?". The AI engineers already exceed the POD, so nothing more is added":""}`);
   h+=wstep("6","Risk modifiers",`<span class="delta risk">${sgn(R.risk4Add,2)}</span>`,`${fmt(R.stage4raw,2)} × ${fmt(R.rp4*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
   h+=wstep("=","Stage 4 adds",`${sgn(R.s4,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team from the work: ${fmt(R.sub3,2)} + ${fmt(R.s4,2)} = ${fmt(R.workTeam,2)} FTE, compared with the ${fmt(R.s1,2)} FTE base team at Stage 5`,"total");
   if(S.aiMaturity==null)h=`<div class="alert" style="margin-bottom:10px">Choose the client's AI adoption. Low is used until you do.</div>`+h;
@@ -1845,8 +1883,8 @@ function updateS4(){
   updateRiskDeltas("s4",R.stage4raw,R.risk4Add,R.rp4);
   renderAuto("s4",[
     ["D1",`Scenario ${R.sc} (${SC.name}). Volumetrics count as available when towers with ticket history carry at least half of the tower FTE.`,"[F] Part 2–3"],
-    ["D2",`Transformation POD is ${R.transPct}% of the run team from the work (Stages 2–3) (scenario guidance ${SC.range}). It covers SRE, automation, CI/CD and AI adoption.`,"[F] 1.7"],
-    ["D3",`AIOps engineers are sized at 1:${R.ratio} of the run team from the work and sit inside the Transformation POD, so the larger of the two is added.`,"[F] Sc.4 Step 3"],
+    ["D2",`Transformation POD is ${R.transPct}% of the support team from the work (Stages 2–3, without AI engineers) (scenario guidance ${SC.range}). It covers SRE, automation, CI/CD and AI adoption.`,"[F] 1.7"],
+    ["D3",R.aiTowers.length?`AI engineers (AIOps) are sized per tower in Stage 2 at 1:${R.ratio} and sit inside the Transformation POD, so the POD adds only what they don't already cover.`:"AIOps is not in scope for any tower, so the whole POD is other transformation capacity.","[F] Sc.4 Step 3"],
     ["D4",`AIOps timeline for this scenario: ${SC.aiops}. This stage sizes steady-state capacity; the year-by-year ramp is set in Stage 7.`,"[F] Part 3"],
     ["D5","AI tools, licences, tokens and hyperscaler AI API costs are paid by the client.","[F] G5"],
     ["D6","Transformation FTE is engineering capacity (L3) and is spread across locations like the Stage 1 roster.","proposed"]
@@ -1862,20 +1900,20 @@ function updateS5(){
   const loc=S.locations.find(l=>l.id===R.sdmLoc);
   const nR=S.risks.s5.filter(r=>r.on&&+r.pct).length;
   let h="";
-  h+=wstep("1","Team from the work",fmt(R.workTeam,2),`Stages 2–4: ${fmt(R.s2,2)} + ${fmt(R.s3,2)} + ${fmt(R.s4,2)}`);
+  h+=wstep("1","Team from the work",fmt(R.workTeam,2),`Stages 2–4: ${fmt(R.s2,2)} + ${fmt(R.s3,2)} + ${fmt(R.s4,2)}${R.ai2>0?`; ${fmt(R.runWork,2)} without the ${fmt(R.ai2,2)} AI engineers, who don't staff shifts`:""}`);
   h+=wstep("2","Base team from coverage",fmt(R.s1,2),"Stage 1, the floor");
-  h+=wstep("3","Delivery team",R.lift>0?`<span class="delta round">${sgn(R.lift,2)}</span> ${fmt(R.sub4,2)}`:fmt(R.sub4,2),R.lift>0?`Work team is smaller, so the base team is used (+${fmt(R.lift,2)}); it already staffs every shift`:`Work team is larger than the base team, so it is kept`);
+  h+=wstep("3","Delivery team",R.lift>0?`<span class="delta round">${sgn(R.lift,2)}</span> ${fmt(R.sub4,2)}`:fmt(R.sub4,2),R.lift>0?`Work team is smaller, so the base team is used (+${fmt(R.lift,2)}); it already staffs every shift${R.ai2>0?`. The ${fmt(R.ai2,2)} AI engineers are kept on top`:""}`:`Work team is larger than the base team, so it is kept`);
   h+=wstep("4","SDM",`<span class="delta add">${sgn(R.sdmRaw,2)}</span>`,`${fmt(R.sub4,2)} ÷ ${R.sdmRatio}, based in ${esc(loc?loc.name:"")}`);
   h+=wstep("5","Risk modifiers",`<span class="delta risk">${sgn(R.risk5Add,2)}</span>`,`${fmt(R.sdmRaw,2)} × ${fmt(R.rp5*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
   h+=wstep("=","Stage 5 adds",`${sgn(R.s5,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team so far: ${fmt(R.sub4,2)} + ${fmt(R.s5,2)} = ${fmt(R.sub5,2)} FTE${S.rounding==="cell"?`; SDMs round to the nearest whole person: ${fmt(R.Gp,0)}`:""}`,"total");
   $("steps5").innerHTML=h;
 
   /* reconciliation */
-  const cov=R.s1, wk=R.workTeam, used=R.sub4;
+  const cov=R.s1, wk=R.runWork, used=R.sub4;
   const rows=[
     ["Base team","Support window and shifts",`Stage 1: roster ${fmt(R.roster,2)} ÷ ${S.util1}% ÷ leave availability, with risk`,cov,"var(--accent)"],
-    ["Team from the work","Towers, specialist cover, transformation",`Stages 2–4: ${fmt(R.s2,2)} + ${fmt(R.s3,2)} + ${fmt(R.s4,2)}, with risk`,wk,"#6B7C93"],
-    ["Delivery team used","Larger of the two",R.lift>0?`Work team lifted to the base team (+${fmt(R.lift,2)})`:"Work team kept",used,"var(--add)"]
+    ["Team from the work","Towers, specialist cover, transformation",`Stages 2–4: ${fmt(R.s2,2)} + ${fmt(R.s3,2)} + ${fmt(R.s4,2)}, with risk${R.ai2>0?`, less ${fmt(R.ai2,2)} AI engineers`:""}`,wk,"#6B7C93"],
+    ["Delivery team used",R.ai2>0?"Larger of the two + AI engineers":"Larger of the two",(R.lift>0?`Work team lifted to the base team (+${fmt(R.lift,2)})`:"Work team kept")+(R.ai2>0?`, plus ${fmt(R.ai2,2)} AI engineers`:""),used,"var(--add)"]
   ];
   const mx=Math.max(...rows.map(r=>r[3]),0.0001);
   $("recon").innerHTML=rows.map(r=>`<div class="rbar"><span class="t"><b>${r[0]}</b><span>${r[1]}</span></span><span class="track"><i style="width:${r[3]/mx*100}%;background:${r[4]}"></i></span><span class="v">${fmt(r[3],2)}</span></div>`).join("");
@@ -2039,6 +2077,7 @@ function renderBar(){
   let h=chip("base","Roster",fmt(R.roster,1),1)+chip("add","+ Util",sgn(R.utilAdd),1)+chip("add","+ Leave",sgn(R.leaveAdd),1)+chip("risk","+ Risk",sgn(R.risk1Add),1)+chip("base","1 · Base team",fmt(R.s1,1),1);
   if(n>=2){
     h+=sep("vs")+chip("add","2 · Towers",fmt(R.added,1),2)+chip("risk","+ Risk",sgn(R.risk2Add),2);
+    if(R.ai2>0)h+=chip("add","+ AIOps",sgn(R.ai2),2);
     if(n>=3)h+=chip("add","3 · Skill cover",sgn(R.topUp),3)+chip("risk","+ Risk",sgn(R.risk3Add),3);
     if(n>=4)h+=chip("add","4 · Transform",sgn(R.stage4raw),4)+chip("risk","+ Risk",sgn(R.risk4Add),4);
     const s4=R.snaps[Math.min(k,4)];
@@ -2058,7 +2097,7 @@ function renderBar(){
   if(k===1)st=seg(R.roster,"var(--accent)","Roster")+seg(R.utilAdd,"var(--accent-soft)","Utilisation")+seg(R.leaveAdd,"var(--add)","Leave backfill")+seg(R.risk1Add,"var(--risk)","Stage 1 risk");
   else{
     const s4=R.snaps[Math.min(k,4)];
-    st=seg(R.added,"#6B7C93","Towers")+seg(R.risk2Add,"var(--risk)","Stage 2 risk");
+    st=seg(R.added,"#6B7C93","Towers")+seg(R.risk2Add,"var(--risk)","Stage 2 risk")+seg(R.ai2,"#5B6BC0","AI engineers (AIOps)");
     if(k>=3)st+=seg(R.topUp,"#3F8C9B","Skill cover")+seg(R.risk3Add,"var(--risk)","Stage 3 risk");
     if(k>=4)st+=seg(R.stage4raw,"#8C5FA8","Transformation")+seg(R.risk4Add,"var(--risk)","Stage 4 risk");
     st+=seg(s4.lift,"var(--accent)","Lift to base team");
@@ -2079,10 +2118,10 @@ function buildRows(){
   const ppl=x=>whole?` · ${fmt(x.people,0)} people`:"";
   return [
     ["1 · Base team",`Coverage ${covLabel()}, ${S.spd} shifts, ${S.perShift.L2} L2 + ${S.perShift.L3} L3 per shift. Roster ${fmt(R.roster,2)} ÷ ${S.util1}% utilisation, leave backfill, ${fmt(R.rp1*100,1)}% risk`,R.s1,sn[1]],
-    ["2 · Service towers",`${R.towers.length} tower${R.towers.length===1?"":"s"}, ${fmt(R.towers.reduce((x,t)=>x+t.tickets,0),0)} tickets a month → ${fmt(R.demand,2)} FTE of effort, ${fmt(R.rp2*100,1)}% risk. Team is the larger of base ${fmt(R.s1,2)} and work ${fmt(sn[2].work,2)}`,R.s2,sn[2]],
+    ["2 · Service towers",`${R.towers.length} tower${R.towers.length===1?"":"s"}, ${fmt(R.towers.reduce((x,t)=>x+t.tickets,0),0)} tickets a month → ${fmt(R.demand,2)} FTE of effort, ${fmt(R.rp2*100,1)}% risk${R.ai2>0?`, AI engineers (AIOps) ${fmt(R.ai2,2)} at 1:${R.ratio}`:""}. Team is the larger of base ${fmt(R.s1,2)} and work ${fmt(sn[2].work,2)}`,R.s2,sn[2]],
     ["3 · Skill coverage",`Specialist shift cover for ${R.covSkills.length} skill set${R.covSkills.length===1?"":"s"} (on call ${S.onCallPct}%), ${fmt(R.rp3*100,1)}% risk. Work team ${fmt(sn[3].work,2)}`,R.s3,sn[3]],
-    ["4 · Transformation",`Scenario ${R.sc}: POD ${R.transPct}% vs AIOps 1:${R.ratio}, larger added, ${fmt(R.rp4*100,1)}% risk. Work team ${fmt(R.workTeam,2)}`,R.s4,sn[4]],
-    ["5 · Reconcile & SDM",`${R.lift>0?`Work team ${fmt(R.workTeam,2)} lifted to base ${fmt(R.s1,2)} (+${fmt(R.lift,2)})`:`Work team ${fmt(R.workTeam,2)} kept over base ${fmt(R.s1,2)}`}; SDM ${fmt(R.sub4,2)} ÷ ${R.sdmRatio}`,R.s5,sn[5]],
+    ["4 · Transformation",`Scenario ${R.sc}: POD ${R.transPct}% of ${fmt(R.runTeam,2)}${R.ai2>0?` less ${fmt(R.ai2,2)} AI engineers already added`:""}, ${fmt(R.rp4*100,1)}% risk. Work team ${fmt(R.workTeam,2)}`,R.s4,sn[4]],
+    ["5 · Reconcile & SDM",`${R.lift>0?`Work team ${fmt(R.runWork,2)} lifted to base ${fmt(R.s1,2)} (+${fmt(R.lift,2)})`:`Work team ${fmt(R.runWork,2)} kept over base ${fmt(R.s1,2)}`}${R.ai2>0?` + ${fmt(R.ai2,2)} AI engineers`:""}; SDM ${fmt(R.sub4,2)} ÷ ${R.sdmRatio}`,R.s5,sn[5]],
     ["6 · Contingency",`${R.CX.name} complexity: ${R.contPct}% contingency; pyramid ${R.pyr.join(" : ")} (grade mix only)`,R.s6,sn[6]]
   ].map(r=>({stage:r[0],what:r[1],add:r[2],snap:r[3],ppl:ppl(r[3])}));
 }
@@ -2093,9 +2132,9 @@ function updateResults(){
   const ppl=x=>whole?`<small>FTE · ${fmt(x.people,0)} people</small>`:"<small>FTE</small>";
   const msg={
     1:`Base team from coverage. This is the floor: later stages build a team from the work and the larger one is used.`,
-    2:sn[2].lift>0?`The tower team (${fmt(R.s2,2)}) is below the base team, so the base team still sets the size.`:`The tower team (${fmt(R.s2,2)}) is above the base team (${fmt(R.s1,2)}), so the work now sets the size.`,
-    3:`Specialist shift cover adds ${fmt(R.s3,2)}. Work team ${fmt(sn[3].work,2)} vs base ${fmt(R.s1,2)}.`,
-    4:`Transformation adds ${fmt(R.s4,2)}. Work team ${fmt(R.workTeam,2)} vs base ${fmt(R.s1,2)}: ${R.lift>0?"lifted to the base team":"work team kept"}.`,
+    2:(sn[2].lift>0?`The tower support team (${fmt(R.s2run,2)}) is below the base team, so the base team still sets the size.`:`The tower support team (${fmt(R.s2run,2)}) is above the base team (${fmt(R.s1,2)}), so the work now sets the size.`)+(R.ai2>0?` ${fmt(R.ai2,2)} AI engineers (AIOps) are added on top.`:""),
+    3:`Specialist shift cover adds ${fmt(R.s3,2)}. Work team ${fmt(sn[3].work-R.ai2,2)}${R.ai2>0?" (without AI engineers)":""} vs base ${fmt(R.s1,2)}.`,
+    4:`Transformation adds ${fmt(R.s4,2)}. Work team ${fmt(R.runWork,2)}${R.ai2>0?" (without AI engineers)":""} vs base ${fmt(R.s1,2)}: ${R.lift>0?"lifted to the base team":"work team kept"}.`,
     5:`Delivery team ${fmt(R.sub4,2)} plus ${fmt(R.s5,2)} SDM.`,
     6:`Contingency adds ${fmt(R.s6,2)}. This is the Year 1 team.`
   };
@@ -2262,6 +2301,7 @@ document.addEventListener("click",e=>{
   else if(t.id==="locAddBtn"){const id=$("locAdd").value;if(id){S.locations.push(pickLoc(id));renderS1();update();}}
   else if(d.addkind){S.towers.push(mkTower(d.addkind));renderS2();update();}
   else if(d.tvol){twr(t).vol=d.tvol==="1";renderS2();update();}
+  else if(d.taiops){twr(t).aiops=d.taiops==="1";renderS2();update();}
   else if(d.tcpx){twr(t).cpx=d.tcpx==="1";renderS2();update();}
   else if(d.testate){twr(t).estate=d.testate;renderS2();update();}
   else if(d.addskill){const tw=S.towers.find(x=>x.id===d.addskill);const id=$("sk-add-"+tw.id).value;if(id){tw.skills.push(mkSkill(id,0,id==="spec"?"":null));renderS2();update();}}
@@ -2366,27 +2406,28 @@ function summary(){
   R.skills.forEach(k=>L.push(`| ${k.name} | ${k.tower} | ${fmt(k.norm*100,0)}% | ${fmt(k.fte,2)} | ${k.absorb?"Yes, every shift":"No"} |`));
   L.push("",`- Tower FTE (A + B) ÷ ${S.bench.hrsMonth}: ${fmt(R.demand,2)}`);
   L.push(`- Risk modifiers (${fmt(R.rp2*100,1)}%): ${sgn(R.risk2Add,2)}`);
+  L.push(R.aiTowers.length?`- AI engineers (AIOps) for ${listNames(R.aiTowers)}: ${fmt(R.aiBase,2)} ÷ ${R.ratio} = ${fmt(R.ai2,2)}`:"- AIOps not in scope for any tower");
   L.push(`- **Tower team: ${fmt(R.s2,2)} FTE** (built from the work, compared with the base team at Stage 5)`);
   rows("s2");
   L.push("","## Stage 3 · Skill coverage by shift","","| Skill set | Tower | Live shifts | On-call shifts | Floor | Stage 2 FTE | Added |","|---|---|---|---|---|---|---|");
   R.covSkills.forEach(k=>L.push(`| ${k.name} | ${k.tower} | ${k.live.map(i=>i+1).join(", ")||"none"} | ${k.onCall} | ${fmt(k.floor,2)} | ${fmt(k.have,2)} | ${fmt(k.top,2)} |`));
   L.push("",`- On-call allowance: ${S.onCallPct}% of a staffed shift`);
   L.push(`- Top-up for coverage: ${fmt(R.topUp,2)}; risk modifiers (${fmt(R.rp3*100,1)}%): ${sgn(R.risk3Add,2)}`);
-  L.push(`- **Stage 3 adds: ${fmt(R.s3,2)} FTE. Run team from the work ${fmt(R.sub3,2)} FTE**`);
+  L.push(`- **Stage 3 adds: ${fmt(R.s3,2)} FTE. Team from the work ${fmt(R.sub3,2)} FTE**`);
   rows("s3");
   L.push("","## Stage 4 · Transformation capacity");
   L.push(`- Scenario ${R.sc}: ${R.SC.name} (volumetrics ${R.volAvail?"available":"unavailable"}, ${fmt(R.volShare*100,0)}% of tower FTE from ticket history)`);
-  L.push(`- Transformation POD: ${fmt(R.sub3,2)} × ${R.transPct}% = ${fmt(R.pod,2)}`);
-  L.push(`- AIOps engineers: ${fmt(R.sub3,2)} ÷ ${R.ratio} = ${fmt(R.aiops,2)}`);
-  L.push(`- Added (larger of the two): ${fmt(R.stage4raw,2)}; risk modifiers (${fmt(R.rp4*100,1)}%): ${sgn(R.risk4Add,2)}`);
+  L.push(`- Transformation POD: ${fmt(R.runTeam,2)} support FTE × ${R.transPct}% = ${fmt(R.pod,2)}`);
+  L.push(`- AI engineers already added in Stage 2: ${fmt(R.aiops,2)}`);
+  L.push(`- Added (POD less AI engineers): ${fmt(R.stage4raw,2)}; risk modifiers (${fmt(R.rp4*100,1)}%): ${sgn(R.risk4Add,2)}`);
   L.push(`- **Stage 4 adds: ${fmt(R.s4,2)} FTE. Team from the work ${fmt(R.workTeam,2)} FTE**`);
   L.push(`- Scenario guidance: confidence ${R.SC.conf}, Y1 contingency ${R.SC.cont}, ${R.SC.shape}, ${R.SC.comm}`);
   rows("s4");
   L.push("","## Stage 5 · Reconciliation and governance");
-  L.push(`- Team from the work ${fmt(R.workTeam,2)} vs base team ${fmt(R.s1,2)} → delivery team ${fmt(R.sub4,2)}${R.lift>0?` (lifted +${fmt(R.lift,2)})`:" (work team kept)"}`);
+  L.push(`- Team from the work ${fmt(R.runWork,2)}${R.ai2>0?" (without AI engineers)":""} vs base team ${fmt(R.s1,2)} → delivery team ${fmt(R.sub4,2)}${R.lift>0?` (lifted +${fmt(R.lift,2)})`:" (work team kept)"}${R.ai2>0?`, including ${fmt(R.ai2,2)} AI engineers`:""}`);
   L.push(`- SDM: ${fmt(R.sub4,2)} ÷ ${R.sdmRatio} = ${fmt(R.sdmRaw,2)}; risk modifiers (${fmt(R.rp5*100,1)}%): ${sgn(R.risk5Add,2)}`);
   L.push(`- **Stage 5 adds: ${fmt(R.s5,2)} FTE. Team so far ${fmt(R.sub5,2)} FTE**`);
-  L.push("","| View | FTE |","|---|---|",`| Base team (Stage 1) | ${fmt(R.s1,2)} |`,`| Team from the work (Stages 2–4) | ${fmt(R.workTeam,2)} |`,`| Delivery team used | ${fmt(R.sub4,2)} |`);
+  L.push("","| View | FTE |","|---|---|",`| Base team (Stage 1) | ${fmt(R.s1,2)} |`,`| Team from the work (Stages 2–4${R.ai2>0?", without AI engineers":""}) | ${fmt(R.runWork,2)} |`,`| Delivery team used | ${fmt(R.sub4,2)} |`);
   L.push("",$("verdict").textContent);
   rows("s5");
   L.push("","## Stage 6 · Seniority and contingency");
@@ -2586,6 +2627,7 @@ function towerLine(t){
   else if(t.mau)parts.push(`${t.mau.toLocaleString()} monthly active users`);
   else parts.push("demand not stated");
   if(t.estate)parts.push(t.estate==="legacy"?(t.kind==="AI"?"self-hosted":"complex legacy"):(t.kind==="AI"?"managed AI services":"modern"));
+  if(typeof t.aiopsInScope==="boolean")parts.push(t.aiopsInScope?"AIOps in scope":"no AIOps");
   if(t.skills&&t.skills.length)parts.push("skills: "+t.skills.map(k=>(SKILL_CATALOG.find(c=>c.id===k)||{}).name||k).join(", "));
   return parts.join(" · ");
 }
@@ -2637,6 +2679,7 @@ function applyProposals(){
       if(t.kind==="DMS"){tw.dp=st.dataProducts??null;tw.pipe=st.pipelines??null;tw.integ=st.integrations??null;tw.up=st.upstream??null;tw.down=st.downstream??null}
       if(t.kind==="AI"){tw.agents=st.agents??null;tw.models=st.models??null;tw.tools=st.toolIntegrations??null;tw.ksrc=st.knowledgeSources??null;tw.hiRisk=!!st.highRisk}
     }else if(t.mau){tw.vol=false;tw.cpx=false;tw.mau=t.mau}
+    if(typeof t.aiopsInScope==="boolean")tw.aiops=t.aiopsInScope;
     (t.skills||[]).forEach(k=>{if(SKILL_CATALOG.some(c=>c.id===k))tw.skills.push(mkSkill(k,0))});
     S.towers.push(tw);n++;
   });

@@ -29,7 +29,7 @@ const SCHEMA_EXAMPLE = {
     kind: "AMS", name: "Retail banking apps",
     volumetrics: { incidentsPerMonth: 120, serviceRequestsPerMonth: 40 },
     structural: { apps: { S: 0, M: 3, L: 2, XL: 1, XXL: 0 } },
-    mau: 50000, estate: "legacy", skills: ["be", "fe"],
+    mau: 50000, estate: "legacy", aiopsInScope: true, skills: ["be", "fe"],
     evidence: "short quote", source: "Incident dump",
   }],
   aiAdoption: { value: "low", evidence: "short quote", source: "Meeting notes" },
@@ -57,6 +57,7 @@ const RULES = `Rules:
     AI:  {"agents", "models", "toolIntegrations", "knowledgeSources", "highRisk": true|false}
 - towers[].mau: monthly active users, only if stated.
 - towers[].estate: "modern" (modern/SaaS; for AI: managed AI services) or "legacy" (complex legacy; for AI: self-hosted models/custom agents).
+- towers[].aiopsInScope: true if the client wants AIOps for that estate (intelligent alerting, automated RCA, ticket auto-classification, anomaly detection, self-healing); false if AIOps is explicitly excluded. Omit if not mentioned.
 - towers[].skills: ids from this list only: ${Object.entries(SKILL_IDS).map(([k, v]) => `${k} = ${v}`).join("; ")}.
 - aiAdoption.value: "low" or "moderate" ("moderate" = AI in observability, automated runbooks or self-healing already in production).
 - complexity.value: "low", "medium" or "high" for the engagement overall.
@@ -122,6 +123,7 @@ export function sanitizeExtraction(raw) {
         structural,
         mau: num(t.mau, 0, 1e9),
         estate: oneOf(t.estate, ["modern", "legacy"]),
+        aiopsInScope: typeof t.aiopsInScope === "boolean" ? t.aiopsInScope : undefined,
         skills: Array.isArray(t.skills) ? [...new Set(t.skills.filter((k) => k in SKILL_IDS))] : undefined,
         ...ev(t),
       });

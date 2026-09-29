@@ -35,9 +35,9 @@ The "Default example" paragraphs below use sample inputs to show the maths. They
 |---|---|---|
 | 0 | Documents: upload RFP, incident dump, meeting notes, others; Claude proposes inputs | Built |
 | 1 | Base team: coverage, location, shifts | Built |
-| 2 | Service towers (AMS, IMS, DMS, AI platforms), demand and skill sets | Built |
+| 2 | Service towers (AMS, IMS, DMS, AI platforms), demand, skill sets and AIOps scope | Built |
 | 3 | Skill coverage by shift: live shifts, on call outside them | Built |
-| 4 | Transformation capacity: scenario, POD share, AIOps ratio | Built |
+| 4 | Transformation capacity: scenario, POD share less AI engineers already added | Built |
 | 5 | Reconciliation (work team vs base team, larger wins) and SDM 1:8 | Built |
 | 6 | Seniority pyramid and contingency by complexity | Built |
 | 7 | Term and YoY savings as reduced FTE; 1- to 5-year comparison | Built |
@@ -151,6 +151,18 @@ stage 2 tower team = tower FTE × (1 + Σ active stage 2 risk %)
 
 "Base has skill" (on by default for Full stack developer, Backend API dev, Front end dev and Infra support engineer) means the skill set is covered on every shift by the base roster. Other skill sets get their own shift cover in Stage 3. Tower FTE is spread across locations in the same proportion as the Stage 1 roster.
 
+**AIOps per tower** ([F] Part 3, Sc.4 Step 3). Each tower asks *Is AIOps in scope for this tower?* If yes, AI engineers are embedded at the framework ratio: one per N support FTE of that tower, to build intelligent alerting, RCA automation, ticket auto-classification and self-healing.
+
+```
+support FTE(tower) = tower FTE × (1 + Σ active stage 2 risk %)
+N                  = 4 for Low client AI adoption, 8 for Moderate (Scenarios 1/3 vs 2/4)
+                     8 flexes to 6 when the AIOps towers carry over 20 support FTE; overridable
+AI engineers       = Σ support FTE(towers with AIOps in scope) ÷ N
+stage 2 tower team = support FTE + AI engineers
+```
+
+The ratio panel appears once a tower has AIOps in scope. It sets client AI adoption, the same input Stage 4 uses for the scenario. AI engineers count as L3 engineering, are spread across locations like the Stage 1 roster, get no shift cover in Stage 3, and are kept on top of the base team at reconciliation (they build automation; they do not staff shifts). The Documents page proposes AIOps scope per tower when the documents mention it.
+
 Default example: AMS "Customer apps" (2 S, 3 M, 1 L apps), IMS "Cloud platform" (4 environments, 2 hosting platforms, 4 databases, security) and DMS "Analytics platform" (4 data products, 10 pipelines, 3 integrations, 3 upstream, 2 downstream). That is 172 tickets a month and 5.53 tower FTE, or 6.36 after 15% risk.
 
 ## Stage 3: skill coverage by shift
@@ -183,25 +195,27 @@ The framework scenario ([F] Part 2–3) is worked out, not picked:
 | **Moderate AI** | Scenario 2: POD 15–20% (17.5), AIOps 1:8 | Scenario 4: POD 20%+ (20), AIOps 1:8 |
 
 ```
-run team    = Stages 2–3 (the team from the work)
-POD         = run team × transformation %         (scenario midpoint, overridable)
-AIOps       = run team ÷ ratio                    (1:8 flexes to 1:6 over 20 FTE; overridable)
-added       = max(POD, AIOps)                     AIOps engineers sit inside the Transformation POD
-stage 4     = added × (1 + Σ active stage 4 risk %)
+support team = Stages 2–3 without the AI engineers
+POD          = support team × transformation %     (scenario midpoint, overridable)
+AI engineers = added in Stage 2 for towers with AIOps in scope
+added        = max(0, POD − AI engineers)          AI engineers sit inside the Transformation POD
+stage 4      = added × (1 + Σ active stage 4 risk %)
 ```
+
+With no tower in AIOps scope the whole POD is added. With AIOps in scope, the POD adds only what the AI engineers don't already cover, so AIOps is never counted twice.
 
 Transformation FTE is counted as L3 and spread across locations like the Stage 1 roster. The stage also shows the scenario's guidance from the comparison matrix (confidence, Y1 contingency, team shape, AIOps timeline, commercial model, volume band clause, YoY savings target) for the deal review.
 
-Default example: no tower has ticket history and AI adoption is Low, so this is Scenario 1. The run team is 7.68. The POD is 0.96 and AIOps at 1:4 is 1.92, so 1.92 is added, or 2.02 with a 5% risk. The team from the work is 9.70 FTE.
+Default example: no tower has ticket history and AI adoption is Low, so this is Scenario 1. The support team is 7.68 and the POD is 0.96. If AIOps is in scope for all three towers, Stage 2 already added 6.36 ÷ 4 = 1.59 AI engineers, which exceed the POD, so Stage 4 adds nothing. Without AIOps, Stage 4 adds the POD: 0.96, or 1.01 with a 5% risk. (Examples from Stage 5 on were worked before AIOps moved into the towers; they show the method, not these exact numbers.)
 
 ## Stage 5: reconciliation and governance
 
 **Reconciliation.** The team from the work is compared with the base team from coverage:
 
 ```
-work team     = Stages 2–4 (towers + specialist cover + transformation, with risk)
+work team     = Stages 2–4 (towers + specialist cover + transformation, with risk), without AI engineers
 base team     = Stage 1 (coverage, with utilisation, leave and risk)
-delivery team = max(work team, base team)
+delivery team = max(work team, base team) + AI engineers
 lift          = max(0, base team − work team)     spread over the base team's locations and tiers
 ```
 
