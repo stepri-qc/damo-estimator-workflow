@@ -11,6 +11,7 @@ export const DOC_TYPES = {
 
 /* Skill-set ids the tool knows. Claude must pick from these only. */
 export const SKILL_IDS = {
+  sse: "Systems Support Engineer (L2/L3 support)",
   fs: "Full stack developer", be: "Backend API dev", fe: "Front end dev",
   mob: "Mobile dev (Native / Android / iOS)", infra: "Infra support engineer",
   sre: "Service Reliability Engineer", qa: "QA", l1: "L1 support engineer",
@@ -65,6 +66,7 @@ const RULES = `Rules:
     AI:  {"agents", "models", "toolIntegrations", "knowledgeSources", "highRisk": true|false}
 - towers[].mau: monthly active users, only if stated.
 - towers[].estate: "modern" (modern/SaaS; for AI: managed AI services) or "legacy" (complex legacy; for AI: self-hosted models/custom agents).
+- towers[].sreInScope (IMS only): true if the client names site reliability engineering / SRE as a capability or objective (SLOs, error budgets, toil reduction); false if excluded. Omit if not mentioned.
 - towers[].aiopsInScope: true if the client wants AIOps for that estate (intelligent alerting, automated RCA, ticket auto-classification, anomaly detection, self-healing); false if AIOps is explicitly excluded. Omit if not mentioned.
 - towers[].skills: ids from this list only: ${Object.entries(SKILL_IDS).map(([k, v]) => `${k} = ${v}`).join("; ")}.
 - aiAdoption.value: "low" or "moderate" ("moderate" = AI in observability, automated runbooks or self-healing already in production).
@@ -133,6 +135,7 @@ export function sanitizeExtraction(raw) {
         mau: num(t.mau, 0, 1e9),
         estate: oneOf(t.estate, ["modern", "legacy"]),
         aiopsInScope: typeof t.aiopsInScope === "boolean" ? t.aiopsInScope : undefined,
+        sreInScope: kind === "IMS" && typeof t.sreInScope === "boolean" ? t.sreInScope : undefined,
         serviceLevels: oneOf(t.serviceLevels, ["L1+L2+L3", "L2+L3", "L2", "L3"]),
         sla: t.sla && typeof t.sla === "object" ? prune({ p1ResponseMin: num(t.sla.p1ResponseMin, 0, 100000), p1RestoreMin: num(t.sla.p1RestoreMin, 0, 100000), p2ResponseMin: num(t.sla.p2ResponseMin, 0, 100000), p2RestoreMin: num(t.sla.p2RestoreMin, 0, 100000), availabilityPct: num(t.sla.availabilityPct, 50, 100) }) : undefined,
         priorityMix: t.priorityMix && typeof t.priorityMix === "object" ? prune(Object.fromEntries(["P1", "P2", "P3", "P4"].map((k) => [k, num(t.priorityMix[k], 0, 1e6)]))) : undefined,

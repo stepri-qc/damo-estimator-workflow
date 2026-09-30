@@ -1294,6 +1294,7 @@ const LOC_COLORS=["var(--accent)","var(--round)","var(--add)","var(--risk)","#6B
 const WORK_DAYS=260;
 /* skill sets; absorb = base L2/L3 roster usually has this skill (proposed) */
 const SKILL_CATALOG=[
+  {id:"sse",name:"Systems Support Engineer (L2/L3)",absorb:true,g:"Application and infrastructure"},
   {id:"fs",name:"Full stack developer",absorb:true,g:"Application and infrastructure"},
   {id:"be",name:"Backend API dev",absorb:true,g:"Application and infrastructure"},
   {id:"fe",name:"Front end dev",absorb:true,g:"Application and infrastructure"},
@@ -1390,6 +1391,9 @@ const RISKS_S3=()=>[
 ];
 /* niche skills start unnamed; the deal team names them */
 function mkSkill(id,share,name){const c=SKILL_CATALOG.find(k=>k.id===id);return {id:uid(),skill:id,name:name!=null?name:c.name,share,absorb:c.absorb}}
+/* SRE as a named capability on IMS towers: SRE takes this share of the tower's L3 FTE, Infrastructure/other L3 skills the rest.
+   Role-mix change, not extra headcount; weights 1.8 : 0.5 from damo-estimator's role policy (proposed) */
+const SRE_SHARE=1.8/(1.8+0.5);
 function skillName(k){return k.name||(k.skill==="spec"?"Niche skill":"Skill set")}
 function mkTower(kind){
   /* everything starts unanswered: the deal team fills it in */
@@ -1398,7 +1402,7 @@ function mkTower(kind){
     env:null,host:null,db:null,sec:false,
     dp:null,pipe:null,integ:null,up:null,down:null,
     agents:null,models:null,tools:null,ksrc:null,hiRisk:false,
-    aiops:null,levels:null,tktLevel:null,enh:null,
+    aiops:null,sre:null,levels:null,tktLevel:null,enh:null,
     own:null,mix:null,sla:{P1r:null,P1x:null,P2r:null,P2x:null},avail:null,slaTier:"",
     skills:[]};
 }
@@ -1566,8 +1570,12 @@ function compute(){
     const fte1=A1*(1+bp)/B.hrsMonth;
     const fte2=fte1+(A2*(1+bp)+(ours("L3")?0:C))/B.hrsMonth, fte3=(A3*(1+bp)+(ours("L3")?C:0))/B.hrsMonth, fte=fte2+fte3;
     const shareSum=t.skills.reduce((s2,k)=>s2+n0(k.share),0);
-    const skills=t.skills.map(k=>{const sh=shareSum>0?n0(k.share)/shareSum:1/t.skills.length;return {...k,name:skillName(k),tower:t.name,towerId:t.id,norm:sh,fte:fte*sh,f2:fte2*sh,f3:fte3*sh}});
-    return {...t,tickets,src,score,lvl,sv,own,bnd,hand,sm,slaAdd,handAdd,entry:[e1,e2,e3],mixUsed:!!(mx&&lvl==="l1"),l1Unknown,l2Unknown,l1t,l2t,l3t,A,Bh,bp,enhH,C,fte1,fte,fte2,fte3,shareSum,skills};
+    const sreOn=t.kind==="IMS"&&t.sre===true&&fte3>0, sreF=sreOn?fte3*SRE_SHARE:0;
+    const rF2=fte2, rF3=fte3-sreF, rF=rF2+rF3;
+    const skills=t.skills.map(k=>{const sh=shareSum>0?n0(k.share)/shareSum:1/t.skills.length;return {...k,name:skillName(k),tower:t.name,towerId:t.id,norm:rF>0&&fte>0?rF*sh/fte:0,fte:rF*sh,f2:rF2*sh,f3:rF3*sh}});
+    if(sreOn)skills.unshift({id:"sre-"+t.id,skill:"sre",name:"Service Reliability Engineer (SRE)",share:0,absorb:true,synthetic:true,tower:t.name,towerId:t.id,norm:sreF/fte,fte:sreF,f2:0,f3:sreF});
+    const userSkills=t.skills.length, unassigned=userSkills?0:rF;
+    return {...t,sreOn,sreF,userSkills,unassigned,tickets,src,score,lvl,sv,own,bnd,hand,sm,slaAdd,handAdd,entry:[e1,e2,e3],mixUsed:!!(mx&&lvl==="l1"),l1Unknown,l2Unknown,l1t,l2t,l3t,A,Bh,bp,enhH,C,fte1,fte,fte2,fte3,shareSum,skills};
   });
   const skills=towers.flatMap(t=>t.skills);
   const demand=sum(towers,"fte");
@@ -1724,13 +1732,13 @@ function compute(){
   const termRows=[1,2,3,4,5].map(T=>{const ys=years.slice(0,T);const sumY=ys.reduce((x,y)=>x+y.fte,0);return {T,ys,sum:sumY,avg:sumY/T}});
   termRows.forEach(t=>t.vs1=1-t.avg/termRows[0].avg);
   const term=Math.min(5,Math.max(1,+S.term||1));
-  towers.filter(t=>t.skills.length&&t.shareSum>0&&t.shareSum!==100).forEach(t=>warnings2.push(`${t.name}: skill shares add up to ${fmt(t.shareSum,0)}%. They are scaled to 100%.`));
-  towers.filter(t=>t.skills.length&&t.shareSum===0).forEach(t=>warnings2.push(`${t.name}: enter a share for each skill set. Until then the FTE is split equally.`));
+  towers.filter(t=>t.userSkills&&t.shareSum>0&&t.shareSum!==100).forEach(t=>warnings2.push(`${t.name}: skill shares add up to ${fmt(t.shareSum,0)}%. They are scaled to 100%.`));
+  towers.filter(t=>t.userSkills&&t.shareSum===0).forEach(t=>warnings2.push(`${t.name}: enter a share for each skill set. Until then the FTE is split equally.`));
   towers.filter(t=>t.l1Unknown).forEach(t=>warnings2.push(`${t.name}: we provide L1 but the ticket counts are at ${t.lvl.toUpperCase()}, so L1 volume is unknown and no L1 effort is sized. Enter counts of all tickets (L1).`));
   towers.filter(t=>t.l2Unknown).forEach(t=>warnings2.push(`${t.name}: the ticket counts are at L3, so the L2 volume is unknown and no L2 effort is sized. Enter counts at L1 or L2, or choose L3 only.`));
   if(towers.length&&towers.every(t=>t.sv==="l2")&&S.perShift.L3>0)[warnings,warnings2].forEach(w=>w.push(`Every tower is L2 only, but the base team puts ${S.perShift.L3} L3 on every shift. Set L3 per shift to 0 in Stage 1 if no L3 cover is needed.`));
   if(towers.length&&towers.every(t=>t.sv==="l3")&&S.perShift.L2>0)[warnings,warnings2].forEach(w=>w.push(`Every tower is L3 only, but the base team puts ${S.perShift.L2} L2 on every shift. Set L2 per shift to 0 in Stage 1 if no L2 cover is needed.`));
-  towers.filter(t=>!t.skills.length&&t.fte>0).forEach(t=>warnings2.push(`${t.name} has no skill sets, so its ${fmt(t.fte,2)} FTE is not staffed. Add at least one skill set.`));
+  towers.filter(t=>t.unassigned>0).forEach(t=>warnings2.push(`${t.name} has no skill sets, so ${fmt(t.unassigned,2)} FTE${t.sreOn?" (besides SRE)":""} is not staffed. Add at least one skill set.`));
 
   /* rounding on the combined team */
   const up=x=>Math.ceil(x-1e-6);
@@ -1739,7 +1747,7 @@ function compute(){
      Contingency is spread over the delivery roles (as over the location cells); the SDM carries none. */
   const roles=[];
   towers.forEach(t=>{
-    if(!t.skills.length){if(t.fte>0)roles.push({role:"Not yet assigned to a skill set",tower:t.name,fte:t.fte*bf2*(1+rp2)});return}
+    if(t.unassigned>0)roles.push({role:"Not yet assigned to a skill set",tower:t.name,fte:t.unassigned*bf2*(1+rp2)});
     t.skills.forEach(k=>{const cs=covSkills.find(c=>c.id===k.id);roles.push({role:k.name,tower:t.name,fte:k.added*bf2*(1+rp2)+(cs&&cs.top>0?cs.top*(1+rp3):0)})});
     if(t.ai>0)roles.push({role:"AI Engineer (AIOps)",tower:t.name,fte:t.ai});
   });
@@ -1844,7 +1852,7 @@ function slaText(t){const q=t.sla||{},p=[];const m=v=>v>=60&&v%60===0?`${v/60} h
 function ownedText(t){const o=ownOf(t);const k=["L1","L2","L3"].filter(x=>o[x]==="us");return k.length?k.join(", ").replace(/, (L\d)$/," and $1"):"none"}
 
 /* ---------- provenance: inputs applied from documents ---------- */
-const TOWER_KEYS=["vol","inc","sr","tktLevel","levels","own","sla","avail","mix","cpx","apps","env","host","db","sec","dp","pipe","integ","up","down","agents","models","tools","ksrc","hiRisk","mau","estate","aiops","enh"];
+const TOWER_KEYS=["sre","vol","inc","sr","tktLevel","levels","own","sla","avail","mix","cpx","apps","env","host","db","sec","dp","pipe","integ","up","down","agents","models","tools","ksrc","hiRisk","mau","estate","aiops","enh"];
 function provVal(key){
   if(key==="client")return S.deal;
   if(key==="coverage")return `${S.hours}x${S.days}|${(S.shiftMode||[]).join(",")}|${S.weekendMode}`;
@@ -1949,6 +1957,8 @@ function runSelfTests(){
   withState(testState(st=>{st.towers=[amsTower(100,{sla:{P1r:10,P1x:600,P2r:null,P2x:null},avail:99.5})]}),R=>add("SLA: P1 response under 15 minutes","+20–30% on L2/L3",`+${fmt(R.towers[0].sm.l2*100,0)}% / +${fmt(R.towers[0].sm.l3*100,0)}%`,R.towers[0].sm.l2>=0.2&&R.towers[0].sm.l2<=0.3,"[F] Sc.3 Step 2"));
   withState(testState(st=>{st.towers=[amsTower(100,{sla:{P1r:10,P1x:60,P2r:null,P2x:null},avail:99.99})]}),R=>add("SLA uplift is capped","no more than 40%",`${fmt(R.towers[0].sm.l3*100,0)}%`,R.towers[0].sm.l3<=0.4+1e-9,"proposed cap"));
   withState(testState(st=>{st.towers=[amsTower(100,{own:{L1:"customer",L2:"us",L3:"vendor"}})]}),R=>add("Coordination uplift, us L2 only","2 interfaces × 4% = +8%",`+${fmt(R.towers[0].hand*100,0)}%`,near(R.towers[0].hand,0.08),"proposed"));
+  withState(testState(st=>{const t=Object.assign(mkTower("IMS"),{vol:true,inc:200,sr:0,estate:"modern",sre:true,skills:[mkSkill("infra",100)]});st.towers=[t]}),R=>{const t=R.towers[0], sum=t.skills.reduce((x,k)=>x+k.fte,0);
+    add("SRE takes 78% of IMS L3, no extra headcount",`SRE ${fmt(t.fte3*SRE_SHARE,2)}; skills sum ${fmt(t.fte,2)}`,`SRE ${fmt(t.sreF,2)}; skills sum ${fmt(sum,2)}`,near(t.sreF,t.fte3*SRE_SHARE)&&near(sum,t.fte),"damo-estimator role policy")});
   withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>add("AIOps ratio, low AI adoption","1 : 4",`1 : ${R.ratio}`,R.ratio===4,"[F] Part 3"));
   withState(testState(st=>{st.aiMaturity="moderate";st.towers=[amsTower(300,{aiops:true})]}),R=>add("AIOps ratio, moderate AI adoption","1 : 8 (≤ 20 FTE)",`1 : ${R.ratio} on ${fmt(R.aiBase,1)} FTE`,R.aiBase>20?R.ratio===6:R.ratio===8,"[F] Sc.4 Step 3"));
   withState(testState(st=>{st.aiMaturity="moderate";st.towers=[amsTower(2000,{aiops:true})]}),R=>add("AIOps ratio flexes for large estates","1 : 6 over 20 FTE",`1 : ${R.ratio} on ${fmt(R.aiBase,1)} FTE`,R.ratio===6,"[F] Sc.4 Step 3"));
@@ -2125,7 +2135,9 @@ function renderS2(){
     const groups=[...new Set(avail.map(k=>k.g))];
     /* AI platform towers list their own skills first */
     if(t.kind==="AI"&&groups.includes("AI platforms"))groups.sort((x,y)=>(y==="AI platforms")-(x==="AI platforms"));
-    const opts=groups.map(g=>`<optgroup label="${esc(g)}">${avail.filter(k=>k.g===g).map(k=>`<option value="${k.id}">${esc(k.name)}</option>`).join("")}</optgroup>`).join("");
+    /* Systems Support Engineer is the AMS L2/L3 role: first for AMS towers, last in its group elsewhere */
+    const ord=g=>{const a=avail.filter(k=>k.g===g);if(g!=="Application and infrastructure")return a;const sse=a.filter(k=>k.id==="sse"),rest=a.filter(k=>k.id!=="sse");return t.kind==="AMS"?sse.concat(rest):rest.concat(sse)};
+    const opts=groups.map(g=>`<optgroup label="${esc(g)}">${ord(g).map(k=>`<option value="${k.id}">${esc(k.name)}</option>`).join("")}</optgroup>`).join("");
     return `<div class="tower" data-tower="${t.id}">
       <div class="th"><span class="kbadge">${t.kind}</span><input class="tname" type="text" id="tn-${t.id}" data-tf="name" value="${esc(t.name)}" placeholder="Name this ${t.kind} tower" aria-label="Tower name"><button type="button" class="btn ghost sm" data-rmtower="${t.id}">Remove</button></div>
       <div id="pv-${t.id}"></div>
@@ -2157,6 +2169,10 @@ function renderS2(){
         <div class="seg" role="group" aria-label="Estate">${(t.kind==="AI"?[["modern","Managed AI services (APIs)"],["legacy","Self-hosted models / custom agents"]]:[["modern","Modern / SaaS"],["legacy","Complex legacy"]]).map(([k,l])=>`<button type="button" data-testate="${k}" aria-pressed="${t.estate===k}">${l}</button>`).join("")}</div>${t.estate?"":`<div class="hint">Choose one. Modern is used until you do.</div>`}
       </div>
       <div class="derived" id="td-${t.id}"></div>
+      ${t.kind==="IMS"?`<div class="tsec"><span class="h">SRE</span>
+        <div class="q ${t.sre==null?"on":""}" style="margin:0"><span class="qh">Is SRE (reliability engineering) a capability the client wants?</span>${yn("data-tsre",t.sre,"Yes, SRE in scope","No")}</div>
+        <div class="hint" id="tsr-${t.id}">${t.sre==null?"Choose Yes when the client names reliability as an objective (SLOs, error budgets, toil reduction). SRE then leads this tower's L3 work.":""}</div>
+      </div>`:""}
       <div class="tsec"><span class="h">AIOps</span>
         <div class="q ${t.aiops==null?"on":""}" style="margin:0"><span class="qh">Is AIOps in scope for this tower?</span>${yn("data-taiops",t.aiops,"Yes, AIOps in scope","No")}</div>
         <div class="hint" id="tai-${t.id}">${t.aiops==null?"Intelligent alerting, automated RCA, ticket auto-classification, self-healing. If yes, AI engineers are added at the framework ratio.":""}</div>
@@ -2280,6 +2296,9 @@ function updateS2(){
     const pv=$("pv-"+t.id); if(pv)pv.innerHTML=provLine("tower:"+t.id);
     const oh=$("toh-"+t.id); if(oh)oh.textContent=`${!(S.towers.find(x=>x.id===t.id)||{}).own?"Not chosen: the client keeps L1 and we provide L2 and L3 until you choose. ":""}We provide ${ownedText(t)}. ${t.bnd?`${t.bnd} interface${t.bnd>1?"s":""} with other owners: +${fmt(t.hand*100,0)}% coordination on our ticket effort (proposed, 4% each).`:"No interfaces with other owners."}`;
     const sh=$("tsh-"+t.id); if(sh)sh.textContent=t.sm.why.length?`SLA uplift: ${t.sm.why.join(", ")} → L2 +${fmt(t.sm.l2*100,0)}%, L3 +${fmt(t.sm.l3*100,0)}% (cap ${S.bench.sla.cap}%, [F] Sc.3 Step 2).`:(t.sla&&Object.values(t.sla).some(v=>v!=null)||t.avail!=null)?"These targets are within standard levels: no SLA uplift.":"No SLA entered: no uplift. Enter P1 targets and availability, or pick a preset.";
+    const sr=$("tsr-"+t.id);
+    if(sr&&t.sre===true)sr.innerHTML=t.fte3>0?`<b>SRE: ${fmt(t.sreF,2)} FTE</b> = ${fmt(SRE_SHARE*100,0)}% of this tower's ${fmt(t.fte3,2)} L3 FTE (proposed, as in the DAMO estimator). A role-mix change, not extra headcount; the tower's other skill sets share the rest.`:"No L3 effort on this tower yet, so no SRE is sized. SRE needs us to provide L3.";
+    else if(sr&&t.sre===false)sr.textContent="No SRE role for this tower; L3 work stays with its skill sets.";
     const ai=$("tai-"+t.id);
     if(ai&&t.aiops===true)ai.innerHTML=`<b>AI Engineer (AIOps): ${fmt(t.ai,2)} FTE</b> = ${fmt(t.run,2)} support FTE ÷ ${R.ratio}. Builds the automation; does not staff shifts.`;
     else if(ai&&t.aiops===false)ai.textContent="No AI engineers for this tower.";
@@ -2320,6 +2339,7 @@ function updateS2(){
   renderAuto("s2",[
     ["B1",`${R.towers.some(t=>t.own.L1==="us")?`We provide L1 for ${listNames(R.towers.filter(t=>t.own.L1==="us"))} (${B.are1}h per ticket resolved at L1); elsewhere the client runs L1.`:"The client runs the L1 service desk."} Unless a tower says otherwise, tickets are L1 inflow: ${B.p12}% pass to L2 and ${B.p23}% of those to L3 (Year 1 benchmark).${R.towers.filter(t=>t.lvl!=="l1").map(t=>` ${t.name}'s counts are already at ${t.lvl.toUpperCase()}.`).join("")}`,"[F] 1.4"],
     ["B1a",R.towers.length?R.towers.map(t=>`${t.name}: we provide ${ownedText(t)}${t.bnd?` (${t.bnd} interface${t.bnd>1?"s":""} with ${[...new Set(["L1","L2","L3"].map(k=>t.own[k]).filter(v=>v!=="us"))].map(v=>PARTIES[v].toLowerCase()).join(" and ")}, +${fmt(t.hand*100,0)}% coordination)`:""}.`).join(" "):"No towers yet.","input"],
+    ["B1c",R.towers.some(t=>t.sreOn)?`SRE is a named capability for ${listNames(R.towers.filter(t=>t.sreOn))}: a Service Reliability Engineer takes ${fmt(SRE_SHARE*100,0)}% of each of those towers' L3 FTE; the rest stays with their other skill sets. No extra headcount.`:"SRE is not a named capability on any IMS tower.","proposed · damo-estimator role policy"],
     ["B1b",R.towers.some(t=>t.sm.l2||t.sm.l3)?`SLA uplift on L2/L3 effort where targets are stringent: ${R.towers.filter(t=>t.sm.l2||t.sm.l3).map(t=>`${t.name} (${t.sm.why.join(", ")})`).join("; ")}. Capped at ${B.sla.cap}%.`:"No tower has stringent SLA targets entered, so no SLA uplift is applied.","[F] Sc.3 Step 2"],
     ["B2",`Average resolution effort is ${B.are2}h at L2 and ${B.are3}h at L3, at ${B.util}% utilisation and ${B.hrsMonth} hours per FTE a month.`,"[F] 1.5 · p.3"],
     ["B3",`Non-ticketing effort (automation, CFR, patching, governance) is ${B.bModern}% of A for a modern estate and ${B.bLegacy}% for complex legacy.`,"[F] 1.1 B"],
@@ -3012,6 +3032,7 @@ document.addEventListener("click",e=>{
   else if(d.town){const o=OWN_PRESETS.find(x=>x[0]===d.town);twr(t).own={...o[2]};renderS2();update();}
   else if(d.tsla){const x=SLA_TIERS.find(q=>q[0]===d.tsla), tw=twr(t);tw.sla={...x[2]};tw.avail=x[3];tw.slaTier=x[0];renderS2();update();}
   else if(d.taiops){twr(t).aiops=d.taiops==="1";renderS2();update();}
+  else if(d.tsre){twr(t).sre=d.tsre==="1";renderS2();update();}
   else if(d.tcpx){twr(t).cpx=d.tcpx==="1";renderS2();update();}
   else if(d.testate){twr(t).estate=d.testate;renderS2();update();}
   else if(d.addskill){const tw=S.towers.find(x=>x.id===d.addskill);const id=$("sk-add-"+tw.id).value;if(id){tw.skills.push(mkSkill(id,0,id==="spec"?"":null));renderS2();update();}}
@@ -3377,6 +3398,7 @@ function towerLine(t){
   else parts.push("demand not stated");
   if(t.estate)parts.push(t.estate==="legacy"?(t.kind==="AI"?"self-hosted":"complex legacy"):(t.kind==="AI"?"managed AI services":"modern"));
   if(typeof t.aiopsInScope==="boolean")parts.push(t.aiopsInScope?"AIOps in scope":"no AIOps");
+  if(t.kind==="IMS"&&typeof t.sreInScope==="boolean")parts.push(t.sreInScope?"SRE in scope":"no SRE");
   if(t.serviceLevels)parts.push(`we provide ${t.serviceLevels}`);
   if(t.sla)parts.push("SLA: "+[t.sla.p1ResponseMin!=null?`P1 respond ${t.sla.p1ResponseMin} min`:"",t.sla.p1RestoreMin!=null?`restore ${t.sla.p1RestoreMin} min`:"",t.sla.availabilityPct!=null?`${t.sla.availabilityPct}%`:""].filter(Boolean).join(", "));
   if(t.priorityMix)parts.push(`mix ${["P1","P2","P3","P4"].map(k=>t.priorityMix[k]??0).join("/")}`);
@@ -3442,6 +3464,7 @@ function applyProposals(){
       if(t.kind==="AI"){tw.agents=st.agents??null;tw.models=st.models??null;tw.tools=st.toolIntegrations??null;tw.ksrc=st.knowledgeSources??null;tw.hiRisk=!!st.highRisk}
     }else if(t.mau){tw.vol=false;tw.cpx=false;tw.mau=t.mau}
     if(typeof t.aiopsInScope==="boolean")tw.aiops=t.aiopsInScope;
+    if(t.kind==="IMS"&&typeof t.sreInScope==="boolean")tw.sre=t.sreInScope;
     (t.skills||[]).forEach(k=>{if(SKILL_CATALOG.some(c=>c.id===k))tw.skills.push(mkSkill(k,0))});
     S.towers.push(tw);mark("tower:"+tw.id,`${t.kind} tower${t.name?`: ${t.name}`:""}`,t);n++;
   });

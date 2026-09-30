@@ -170,7 +170,7 @@ B          = A × 25% (modern) or 35% (complex legacy)
 tower FTE  = (A + B) ÷ 160 hours a month, keeping the L2/L3 split from the effort
 ```
 
-**Skill sets** form the bottom layer. Each tower lists the skill sets it needs, picked from a grouped dropdown. **Application and infrastructure:** Full stack developer, Backend API dev, Front end dev, Mobile dev (Native / Android / iOS), Infra support engineer, Service Reliability Engineer, QA, L1 support engineer. **Data:** Data Support Engineer, Database, Data engineering. **AI platforms** (listed first on AI platform towers): AI Engineer, Prompt Engineer, MLOps Engineer, LLMOps / Agent Ops Engineer, AI Evaluation & Guardrails Engineer, Data Scientist. **Other:** Niche skill (name it) for a specific skill the deal team names (more than one can be added). Each has a share %, and the tower's FTE is split by those shares (scaled to 100% if they don't add up, split equally until entered). Towers start with no skill sets.
+**Skill sets** form the bottom layer. Each tower lists the skill sets it needs, picked from a grouped dropdown. **Application and infrastructure:** Systems Support Engineer (L2/L3; listed first on AMS towers), Full stack developer, Backend API dev, Front end dev, Mobile dev (Native / Android / iOS), Infra support engineer, Service Reliability Engineer, QA, L1 support engineer. **Data:** Data Support Engineer, Database, Data engineering. **AI platforms** (listed first on AI platform towers): AI Engineer, Prompt Engineer, MLOps Engineer, LLMOps / Agent Ops Engineer, AI Evaluation & Guardrails Engineer, Data Scientist. **Other:** Niche skill (name it) for a specific skill the deal team names (more than one can be added). Each has a share %, and the tower's FTE is split by those shares (scaled to 100% if they don't add up, split equally until entered). Towers start with no skill sets.
 
 The tower team is built from the work alone. It does **not** sit on top of the base team:
 
@@ -181,7 +181,11 @@ support FTE        = tower FTE × backfill factor × (1 + Σ active stage 2 risk
 
 Leave and holiday backfill is applied to the tower team the same way as to the base team, weighted by where the tower FTE sits, so the two teams are compared like for like at Stage 5. Stage 3 compares each specialist's floor with its backfilled FTE for the same reason.
 
-"Base has skill" (on by default for Full stack developer, Backend API dev, Front end dev and Infra support engineer) means the skill set is covered on every shift by the base roster. Other skill sets get their own shift cover in Stage 3. Tower FTE is spread across locations in the same proportion as the Stage 1 roster.
+"Base has skill" (on by default for Systems Support Engineer, Full stack developer, Backend API dev, Front end dev and Infra support engineer) means the skill set is covered on every shift by the base roster. Other skill sets get their own shift cover in Stage 3. Tower FTE is spread across locations in the same proportion as the Stage 1 roster.
+
+**SRE on IMS towers.** An IMS tower asks whether SRE (reliability engineering) is a capability the client wants. If yes, a Service Reliability Engineer takes 78% of that tower's L3 FTE (role weights 1.8 : 0.5 against the other L3 skills, from damo-estimator's role policy, `proposed`) and the tower's other skill sets share the rest. It changes the role mix, not the headcount. Extraction proposes it when the documents name SRE, SLOs or error budgets.
+
+**Governance.** The Service Delivery Manager is sized in Stage 5 at 1 per 8 delivery FTE and appears in the team by role under Governance.
 
 **AIOps per tower** ([F] Part 3, Sc.4 Step 3). Each tower asks *Is AIOps in scope for this tower?* If yes, AI engineers are embedded at the framework ratio: one per N support FTE of that tower, to build intelligent alerting, RCA automation, ticket auto-classification and self-healing.
 
