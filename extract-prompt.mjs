@@ -27,7 +27,8 @@ const SCHEMA_EXAMPLE = {
     evidence: "short quote", source: "RFP" },
   towers: [{
     kind: "AMS", name: "Retail banking apps",
-    serviceLevels: "L2+L3",
+    serviceLevels: "L2+L3", sla: { p1ResponseMin: 15, p1RestoreMin: 120, p2ResponseMin: 30, p2RestoreMin: 480, availabilityPct: 99.9 },
+    priorityMix: { P1: 4, P2: 16, P3: 50, P4: 30 },
     volumetrics: { incidentsPerMonth: 120, serviceRequestsPerMonth: 40 }, ticketLevel: "L1", enhancementHoursPerMonth: 80,
     structural: { apps: { S: 0, M: 3, L: 2, XL: 1, XXL: 0 } },
     mau: 50000, estate: "legacy", aiopsInScope: true, skills: ["be", "fe"],
@@ -50,7 +51,9 @@ const RULES = `Rules:
 - coverage.outOfHours: "active" if people must be working outside business hours, "oncall" if only reachable for P1/critical incidents. Omit if coverage is business hours only.
 - coverage.weekends: "active", "oncall" or "none".
 - coverage.p1PerMonth: P1 / critical incidents a month across all hours. Use the incident dump summary's priority counts divided by its months. Omit if unknown.
-- towers[].serviceLevels: "L2+L3", "L2" or "L3": the support levels the client wants us to provide for that estate. Omit if not stated.
+- towers[].serviceLevels: "L1+L2+L3", "L2+L3", "L2" or "L3": the support levels the client wants us to provide for that estate. Omit if not stated.
+- towers[].sla: response and restore targets in minutes for P1 and P2, and availabilityPct (e.g. 99.9). Convert hours to minutes. Include only the targets the documents state.
+- towers[].priorityMix: share of tickets by priority P1-P4 (counts or %), from the incident dump summary when given.
 - towers[].ticketLevel: where the volumetric counts are measured: "L1" (all tickets raised, e.g. a whole ITSM export), "L2" (tickets reaching L2 / an incumbent's L2 queue) or "L3". Omit if unclear.
 - towers[].enhancementHoursPerMonth: hours a month of enhancements / minor change in the run scope, only if stated or derivable (convert yearly or per-release figures).
 - towers[].kind: "AMS" (applications), "IMS" (infrastructure/cloud), "DMS" (data platforms), or "AI" (AI platforms / agentic solutions). One entry per distinct estate the documents describe.
@@ -130,7 +133,9 @@ export function sanitizeExtraction(raw) {
         mau: num(t.mau, 0, 1e9),
         estate: oneOf(t.estate, ["modern", "legacy"]),
         aiopsInScope: typeof t.aiopsInScope === "boolean" ? t.aiopsInScope : undefined,
-        serviceLevels: oneOf(t.serviceLevels, ["L2+L3", "L2", "L3"]),
+        serviceLevels: oneOf(t.serviceLevels, ["L1+L2+L3", "L2+L3", "L2", "L3"]),
+        sla: t.sla && typeof t.sla === "object" ? prune({ p1ResponseMin: num(t.sla.p1ResponseMin, 0, 100000), p1RestoreMin: num(t.sla.p1RestoreMin, 0, 100000), p2ResponseMin: num(t.sla.p2ResponseMin, 0, 100000), p2RestoreMin: num(t.sla.p2RestoreMin, 0, 100000), availabilityPct: num(t.sla.availabilityPct, 50, 100) }) : undefined,
+        priorityMix: t.priorityMix && typeof t.priorityMix === "object" ? prune(Object.fromEntries(["P1", "P2", "P3", "P4"].map((k) => [k, num(t.priorityMix[k], 0, 1e6)]))) : undefined,
         ticketLevel: oneOf(t.ticketLevel, ["L1", "L2", "L3"]),
         enhancementHoursPerMonth: num(t.enhancementHoursPerMonth, 0, 1e6),
         skills: Array.isArray(t.skills) ? [...new Set(t.skills.filter((k) => k in SKILL_IDS))] : undefined,

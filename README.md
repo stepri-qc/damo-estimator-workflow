@@ -197,19 +197,37 @@ The ratio panel appears once a tower has AIOps in scope. It sets client AI adopt
 
 Default example: AMS "Customer apps" (2 S, 3 M, 1 L apps), IMS "Cloud platform" (4 environments, 2 hosting platforms, 4 databases, security) and DMS "Analytics platform" (4 data products, 10 pipelines, 3 integrations, 3 upstream, 2 downstream). That is 172 tickets a month and 5.53 tower FTE, or 6.36 after 15% risk.
 
-### Service levels, where counts are measured, and enhancements
+### Who provides each level, SLA, and where counts are measured
 
-Each tower asks **which service levels we provide**: L2 + L3 (default), L2 only (L3 escalations go to the client or another supplier), or L3 only (someone else runs L2). With ticket history it also asks **where the counts are measured**:
+**Ownership.** Each tower sets who provides L1, L2 and L3: us, the client, another supplier or a product team. Presets: *Client L1 · us L2 + L3* (used until you choose), *Us L1–L3*, *Us L2 only*, *Us L3 only*. Only the levels we provide are sized. L1 effort is the tickets resolved at L1 (30% of inflow) at 0.25 h each ([F] p.3), counted in the support tier with L2.
 
-| Counts measured at | L2 tickets | L3 tickets |
-|---|---|---|
-| All tickets (service desk, L1) | tickets × 70% | L2 × 20% |
-| Tickets reaching L2 | tickets | tickets × 20% |
-| Tickets reaching L3 | unknown (warning) | tickets |
+**Coordination uplift** (`proposed`, from damo-estimator): every adjacent pair of levels with different owners is an interface, and each adds 4% to our ticketing effort. Client L1 with us on L2 + L3 is one interface (+4%); us on L2 only between client L1 and a supplier's L3 is two (+8%).
 
-Then L2 only sets L3 to 0, and L3 only sets L2 to 0. Proxy routes (T-shirt sizing, MAU) are L1-inflow benchmarks. If every tower is L2 only (or L3 only) while the base team still puts L3 (or L2) on every shift, Stages 1 and 2 warn.
+**SLA** (optional, per tower): P1 and P2 response and restore targets in minutes, an availability class (A 95% to E 99.95%), and Gold / Silver / Bronze presets. Stringent targets add effort on L2/L3 ([F] Sc.3 Step 2: "+20–30%"), graduated as in damo-estimator:
 
-**Enhancements and minor change** (optional, hours a month per tower) become effort C = hours ÷ 85% utilisation, added to the tower as L3 work (L2 when the tower is L2 only): `tower FTE = (A + B + C) ÷ 160`.
+| Condition | Uplift |
+|---|---|
+| P1 response ≤ 15 min | +25% on L2 and L3 |
+| P1 response ≤ 30 min | +12% on L2 and L3 |
+| Availability ≥ 99.9% | +10% on L2 and L3 |
+| P1 restore ≤ 2 h | +10% on L3 |
+| Cap | 40% |
+
+Blank targets mean "not stated" and add nothing.
+
+**Priority mix** (optional, P1–P4 counts or %): with counts at L1, each priority enters L1 / L2 / L3 by a routing matrix (`proposed`, from damo-estimator: P1 0/40/60, P2 10/60/30, P3 55/40/5, P4 85/15/0), then the L1 stream cascades as usual.
+
+**Where the counts are measured** (ticket history only):
+
+| Counts measured at | L1 tickets | L2 tickets | L3 tickets |
+|---|---|---|---|
+| All tickets (service desk, L1) | inflow × 30% | inflow × 70% | L2 × 20% |
+| Tickets reaching L2 | unknown | tickets | tickets × 20% |
+| Tickets reaching L3 | unknown | unknown | tickets |
+
+Unknown volumes at a level we provide raise a warning. Proxy routes (T-shirt sizing, MAU) are L1-inflow benchmarks. If no tower has us on L3 (or L2) while the base team still puts L3 (or L2) on every shift, Stages 1 and 2 warn.
+
+**Enhancements and minor change** (optional, hours a month per tower, only when we provide L2 or L3) become effort C = hours ÷ 85% utilisation, added as L3 work (L2 when we don't provide L3): `tower FTE = (A + B + C) ÷ 160`.
 
 ## Stage 3: skill coverage by shift
 
@@ -341,6 +359,20 @@ FTE(Yn)    = base(Yn) × (1 + contingency(Yn)) × (1 + Σ active stage 7 risk %,
 
 Default example (3-year term): 11.7 → 11.2 → 11.0, averaging 11.31 FTE a year. That is 4% below a 1-year contract; 5 years averages 11.03 (−6%). The savings are small here because the 8.65 FTE coverage floor is most of the team. Switch the floor off, or use a larger estate, to see the full effect.
 
+### Year 2+ savings from AIOps use cases
+
+Stage 7 offers two ways to work out Year 2+ savings: the **scenario YoY %** (as before) or the **AIOps use-case portfolio**. The portfolio is the damo-estimator catalogue (14 use cases, each with build person-weeks, deflection %, level, prerequisites; the seven core L2 ones on by default), with a start year (default: the scenario's AIOps timeline, Year 1 for Scenarios 2 and 4, Year 2 for 1 and 3) and a ramp in months:
+
+```
+tier FTE        = L2 (or L3) FTE of towers with AIOps in scope, after backfill and Stage 2 risk
+deflection(tier)= 1 − Π (1 − use-case deflection × adoption), capped at the automation ceiling
+                  (AMS 60%, IMS 70%, DMS 50% from damo-estimator; AI platforms 50% proposed)
+FTE freed(year n) = Σ tier FTE × deflection reached by the end of year n − 1
+team(year n)    = max(floor, Stage 5 team − freed × (reduce % + commit %))
+```
+
+Freed capacity splits into reduce / redeploy / commit (default 50 / 30 / 20; redeployed people stay on the team). The panel compares the result with the scenario YoY target, nets it against the AI engineers who build it, and flags when the build effort starting in a year exceeds the AI engineers' capacity (44 person-weeks each a year, `proposed`) or a prerequisite is missing. Token and inference cost is not modelled (FTE only).
+
 ### Transition (optional)
 
 A one-off panel in Stage 7, not part of the Year 1 team (`proposed` method):
@@ -408,6 +440,18 @@ Inputs applied from the Documents page keep their source and quote: shown under 
 The panel also holds version, prepared by, status (Draft / Submitted for approval / Approved), approver and approval date. Approving stores a fingerprint of every input. If any input changes afterwards, the header badge, the panel and both summaries say **Changed since approval** until it is approved again or set back to Draft.
 
 **Save file** writes every input and the approval block to `<deal>-v<version>.damo.json`. **Open file** loads one back (it replaces the estimate on screen), so an estimate can be shared, archived with the deal and reopened exactly as approved. Browser storage is still used between visits.
+
+## Scenarios
+
+Stage 8 can save the estimate on screen as a named scenario, then compare up to four scenarios side by side with it: Year 1 team and people, coverage, towers, tickets, base and work team, AI engineers, SDM, contingency, framework scenario, term and savings, final-year and average team, confidence and range, transition. **Load** replaces the estimate on screen. Scenarios are kept in the browser and travel inside saved estimate files.
+
+## Excel export
+
+**Export Excel** writes a workbook with sheets for Summary, Build, Towers, Team by role, Team by location, Years (with AIOps savings when used), Allowances, Deviations, Confidence, Sources, Assumptions & risks, Scenarios (when compared) and Checks. Numbers are plain values for the pricing sheet.
+
+## Verify against the framework
+
+**Run checks** in Stage 8 runs the engine on the framework's worked examples and checks the estimate on screen adds up: the p.3 coverage roster (6 FTE for 24×5 at 2 per shift), the 100-ticket cascade (30 / 70 / 14, 420.6 h, 3.29 FTE), the SLA uplift range and cap, coordination uplift, AIOps ratios (1:4, 1:8, 1:6 over 20 FTE), the scenario matrix, contingency by complexity, the Annexure 1 illustration (64.8, High), SDM 1:8, and invariants (roles, locations and allowances each add up to the Year 1 team; Year 1 of the term and the Stage 6 bar equal it). The result is included in the summary and the Excel workbook.
 
 ## Customer summary
 
