@@ -420,6 +420,7 @@ tr.sel td{background:var(--accent-soft)}
       <input id="dealName" type="text" placeholder="Client / opportunity name">
     </div>
     <span class="mbadge" id="mBadge"></span>
+    <a class="btn ghost" href="https://damo-estimation-workflow.netlify.app/guide.html" target="_blank" rel="noopener" style="text-decoration:none">Guide</a>
     <button class="btn ghost" id="openBtn" type="button" title="Open a saved estimate file. Replaces the estimate on screen.">Open file</button>
     <button class="btn ghost" id="saveBtn" type="button" title="Save every input to a file you can reopen or share">Save file</button>
     <input type="file" id="openFile" accept=".json,application/json" hidden>
@@ -3481,6 +3482,8 @@ function applyProposals(){
 
 /* ---------- boot ---------- */
 function renderAll(){renderMeta();renderRail();renderS0();renderS1();renderS2();renderS3();renderS4();renderS5();renderS6();renderS7();renderS8();["s1","s2","s3","s4","s5","s6","s7","s8"].forEach(k=>{renderAssume(k);renderRisks(k)});update();}
+/* deep link from the user guide: index.html#stage=3 opens that stage */
+{const m=/stage=(\d)/.exec(location.hash);if(m&&+m[1]>=0&&+m[1]<=8)S.active=+m[1];}
 renderAll();
 detectRoute();
 })();

@@ -12,6 +12,7 @@ It is a companion to [`stepri-qc/damo-estimator`](https://github.com/stepri-qc/d
 Values not taken from either source are marked `proposed`.
 
 - **Source:** `index.html`. It is one self-contained file with no build step. State is saved in the browser's localStorage.
+- **User guide:** `guide.html` (https://damo-estimation-workflow.netlify.app/guide.html): an interactive walk-through of every stage with calculators that use the tool's formulas, short quizzes, a worked example (`docs/example-acme-retail.damo.json`, open it with Open file), FAQ and glossary. Progress is kept in the reader's browser. The tool's header links to it, and the guide's "Open Stage N" buttons deep-link into the tool with `index.html#stage=N`.
 - **Deploy:** Netlify project `damo-estimation-workflow` (https://damo-estimation-workflow.netlify.app), linked to this repository: every push to `claude/estimation-workflow-tool-fpuoqu` redeploys it. Netlify serves the repo root and the extraction functions (`netlify.toml`); `ANTHROPIC_API_KEY` and `INTAKE_PASSPHRASE` are set as secrets on the project, so the site is open to view but Extract with AI needs the passphrase (ask the project owner). See [Documents and AI extraction](#stage-0-documents-and-ai-extraction).
 
 ## Inputs start blank from Stage 2
