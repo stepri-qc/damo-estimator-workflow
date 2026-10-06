@@ -405,6 +405,13 @@ tr.sel td{background:var(--accent-soft)}
 .prow .pe{font-size:12.5px;color:var(--muted);margin-top:3px}
 .prow .pe q{font-style:italic}
 .summary-box{border-left:3px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:0 8px 8px 0;font-size:14.5px}
+/* Reset arm/confirm: both labels share one grid cell, so the button keeps its width when armed and never wraps the header */
+#resetBtn{display:inline-grid;white-space:nowrap}
+#resetBtn span{grid-area:1/1;text-align:center}
+#resetBtn .r2{visibility:hidden}
+#resetBtn[data-armed] .r1{visibility:hidden}
+#resetBtn[data-armed] .r2{visibility:visible}
+#resetBtn[data-armed]{color:var(--warn);background:var(--warn-soft);border-color:var(--warn)}
 </style>
 </head>
 <body>
@@ -426,7 +433,7 @@ tr.sel td{background:var(--accent-soft)}
     <input type="file" id="openFile" accept=".json,application/json" hidden>
     <button class="btn" id="copyBtn" type="button">Copy summary</button>
     <button class="btn primary" id="dlBtn" type="button">Download summary</button>
-    <button class="btn ghost" id="resetBtn" type="button">Reset</button>
+    <button class="btn ghost" id="resetBtn" type="button"><span class="r1">Reset</span><span class="r2" aria-hidden="true">Confirm reset</span></button>
   </div>
 </header>
 
@@ -3046,7 +3053,7 @@ document.addEventListener("click",e=>{
   else if(d.rmtower){S.towers=S.towers.filter(x=>x.id!==d.rmtower);renderS2();update();}
   else if(d.rmassume){const [k,i]=pair(d.rmassume);S.assumptions[k].splice(+i,1);renderAssume(k);update();}
   else if(d.rmrisk){const [k,id]=pair(d.rmrisk);S.risks[k]=S.risks[k].filter(r=>r.id!==id);renderRisks(k);update();}
-  else if(t.id==="resetBtn"){if(d.armed){S=defaults();renderAll();t.textContent="Reset";delete d.armed;}else{d.armed="1";t.textContent="Click again to reset";setTimeout(()=>{t.textContent="Reset";delete t.dataset.armed},3000);}}
+  else if(t.id==="resetBtn"){clearTimeout(t._rt);if(d.armed){delete d.armed;t.setAttribute("aria-label","Reset the estimate");S=defaults();renderAll();}else{d.armed="1";t.setAttribute("aria-label","Confirm reset: click again to clear the estimate");t._rt=setTimeout(()=>{delete t.dataset.armed;t.setAttribute("aria-label","Reset the estimate")},3000);}}
   else if(t.id==="copyBtn"||t.id==="copyBtn2"){copySummary();}
   else if(t.id==="dlBtn"||t.id==="dlBtn2"){downloadReport();}
   else if(t.id==="saveBtn"){saveEstimate();}
