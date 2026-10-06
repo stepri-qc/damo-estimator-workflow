@@ -191,49 +191,53 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(P))}catch(e){}};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt=(x,d=2)=>(Math.round(x*10**d)/10**d).toFixed(d);
-const tryTool=(n,text)=>`<div class="try"><a class="btn sm primary" href="index.html#stage=${n}" target="_blank" rel="noopener">Open ${n===0?"Documents":"Stage "+n} in the tool ↗</a><span>${text}</span></div>`;
+const tryTool=(n,text)=>`<div class="try"><a class="btn sm primary" href="index.html#stage=${n}" target="_blank" rel="noopener">Open ${n===0?"Documents":"step "+({1:1,2:2,3:5,4:6,5:3,6:7,7:8,8:9,9:4})[n]} in the tool ↗</a><span>${text}</span></div>`;
 
 /* ================= chapters ================= */
 const CH=[
 {id:"welcome",grp:"Start here",t:"What the tool does",html:()=>`
 <span class="eyebrow">Start here · 5 min</span>
 <h1>What the Estimation Workflow does</h1>
-<p class="lead">It sizes a DAMO managed-service team in FTE, one stage at a time, so a deal review can see exactly how the number was built: every input, formula, assumption and risk.</p>
+<p class="lead">It sizes a DAMO managed-service team in FTE, one step at a time, so a deal review can see exactly how the number was built: every input, formula, assumption and risk. The nine steps run in two parts: <b>Part 1</b> works out the Year 1 number and triangulates it; <b>Part 2</b> tests whether that team is enough and finishes the estimate.</p>
 <h2>The one idea to understand first</h2>
-<p>The tool builds the team twice, from two different questions, and keeps the larger. They are compared, not added.</p>
+<p>Part 1 builds the team twice, from two different questions, and keeps the larger. They are compared, not added. A third view, the team running the estate today, checks the answer.</p>
 <div class="teams">
-  <div class="box"><b>Base team · Stage 1</b>How many people keep someone on every shift?<br><span style="color:var(--muted);font-size:14px">Support window, shifts, people per shift, locations. Ignores ticket volume.</span></div>
+  <div class="box"><b>Base team · Step 1</b>How many people keep someone on duty in every hour?<br><span style="color:var(--muted);font-size:14px">Support window, each location's working and on-call hours, people on duty. Ignores ticket volume.</span></div>
   <div class="vs">vs</div>
-  <div class="box"><b>Work team · Stages 2–4</b>How many people does the work take?<br><span style="color:var(--muted);font-size:14px">Tickets, service levels, SLAs, enhancements, skill sets, specialist cover, transformation.</span></div>
-  <div class="res">Stage 5: delivery team = the larger of the two (AI engineers always kept on top) → then SDM, contingency, term</div>
+  <div class="box"><b>Work team · Step 2</b>How many people does the work take?<br><span style="color:var(--muted);font-size:14px">Tickets, service levels, SLAs, enhancements, skill sets, leave and risk.</span></div>
+  <div class="res">Step 3: delivery team = the larger of the two (AI engineers always kept on top) + SDM = the Part 1 team → Step 4 checks it against the existing team → Part 2 tests skill cover, adds transformation, grade mix and contingency</div>
 </div>
-<p>If the work team is bigger, the people doing the work also staff the shifts. If the base team is bigger, the shifts need more people than the work, so the team is lifted to the base team and the spare time is shown.</p>
-<h2>The stages</h2>
+<p>If the work team is bigger, the people doing the work also staff the windows. If the base team is bigger, the windows need more people than the work, so the team is lifted to the base team and the spare time is shown. Part 2 uses that spare time first.</p>
+<h2>The steps</h2>
 <div class="tbl"><table>
-<thead><tr><th>#</th><th>Stage</th><th>What you decide</th></tr></thead>
+<thead><tr><th>#</th><th>Step</th><th>What you decide</th></tr></thead>
 <tbody>
 <tr><td>0</td><td>Documents</td><td>Upload RFP, incident dump, notes; Claude proposes inputs (optional)</td></tr>
-<tr><td>1</td><td>Base team</td><td>Support window, shifts, locations, active vs on-call</td></tr>
+<tr><td colspan="3"><b>Part 1 · The Year 1 number</b></td></tr>
+<tr><td>1</td><td>Base team</td><td>Support window, customer time zone, each location's working and on-call windows, people on duty</td></tr>
 <tr><td>2</td><td>Service towers</td><td>Towers, who provides L1/L2/L3, SLAs, demand, SRE, AIOps, skill sets</td></tr>
-<tr><td>3</td><td>Skill coverage</td><td>Which shifts each specialist must be live on</td></tr>
-<tr><td>4</td><td>Transformation</td><td>Client AI adoption → framework scenario and POD share</td></tr>
-<tr><td>5</td><td>Reconcile &amp; SDM</td><td>Base vs work team; Service Delivery Managers at 1:8</td></tr>
-<tr><td>6</td><td>Seniority &amp; contingency</td><td>Complexity, grade pyramid, contingency, confidence score</td></tr>
-<tr><td>7</td><td>Term &amp; savings</td><td>Contract term, Year 2+ savings, optional transition</td></tr>
-<tr><td>8</td><td>Fact check &amp; approval</td><td>Existing team comparison, roles, allowances, approval, exports</td></tr>
+<tr><td>3</td><td>Reconcile &amp; SDM</td><td>Base vs work team; Service Delivery Managers at 1:8. Result: the Part 1 team</td></tr>
+<tr><td>4</td><td>Triangulation</td><td>Ticket volume, base team and existing team side by side</td></tr>
+<tr><td colspan="3"><b>Part 2 · Validate and finalise</b></td></tr>
+<tr><td>5</td><td>Skill coverage</td><td>Which windows each specialist must be live in: is the Part 1 team enough, or is headcount added?</td></tr>
+<tr><td>6</td><td>Transformation</td><td>Client AI adoption → framework scenario and POD share</td></tr>
+<tr><td>7</td><td>Seniority &amp; contingency</td><td>Complexity, grade pyramid (mix only), contingency, confidence score</td></tr>
+<tr><td>8</td><td>Term &amp; savings</td><td>Contract term, Year 2+ savings, optional transition</td></tr>
+<tr><td>9</td><td>Final fact check &amp; approval</td><td>The final team against the existing team, assumptions register, roles, allowances, approval, exports</td></tr>
 </tbody></table></div>
 <h2>What stays true everywhere</h2>
 <ul>
 <li><b>FTE only.</b> No rates, cost or price. The pricing sheet takes the FTE by grade and location.</li>
-<li><b>After every stage:</b> assumptions and risks. Risks carry an FTE modifier %; suggested ones start switched off.</li>
-<li><b>The bar at the bottom</b> shows the team after the stage you're on, not the final answer, until Stage 6.</li>
+<li><b>After every step:</b> assumptions and risks. Assumptions are grouped by category (coverage, demand, scope, SLA, effort, skills, transformation, governance, seniority, term, client responsibilities) and gathered in one register at step 9. Risks carry an FTE modifier %; suggested ones start switched off.</li>
+<li><b>The bar at the bottom</b> shows the team after the step you're on: the Part 1 team at steps 3 and 4, then what each Part 2 step adds, and the Year 1 team from step 7.</li>
 <li><b>Sources are tagged</b> <code>[F]</code> framework, <code>[P]</code> pricing sheet, or <code>proposed</code> where the framework is silent.</li>
-<li><b>Your work is saved in your browser</b> automatically. Use <span class="ui">Save file</span> to keep or share it.</li>
+<li><b>Your work is saved in your browser</b> automatically. The <span class="ui">File</span> menu has Open file, Save file and Reset; the <span class="ui">Export</span> menu has the deal-review summary, the customer summary, the Excel workbook and Copy summary.</li>
+<li><b>The two tabs at the top</b> are the two parts, each showing its team: Part 1 the Part 1 team, Part 2 the Year 1 team. Under them are the steps of the part you are in. A green dot means a step is ready, an amber dot means it still needs a choice (hover for what), a hollow dot means optional. The bar stays on screen as you scroll, with Previous and Next arrows at its right.</li>
 </ul>
 <div class="quiz" data-quiz="welcome"></div>`,
 quiz:[
  {q:"The base team is 8 FTE and the work team (without AI engineers) is 12 FTE. What is the delivery team before SDM?",o:["20 FTE: they are added","12 FTE: the larger one","8 FTE: the base team is the floor"],a:1,why:"The two are compared, not added. The work team's people staff the shifts as part of doing the work."},
- {q:"Where do rates and price come in?",o:["Stage 7","Stage 8","Not in this tool: it sizes FTE only"],a:2,why:"The tool produces FTE by role, grade and location. Pricing happens in the pricing sheet."}
+ {q:"Where do rates and price come in?",o:["Step 8","Step 9","Not in this tool: it sizes FTE only"],a:2,why:"The tool produces FTE by role, grade and location. Pricing happens in the pricing sheet."}
 ]},
 
 {id:"prep",grp:"Start here",t:"Before you start",html:()=>`
@@ -241,24 +245,24 @@ quiz:[
 <h1>What to gather before you start</h1>
 <p class="lead">You can start with nothing and fill in as you learn, but these inputs move the number most. Tick what you have; your list is remembered in this browser.</p>
 <ul class="check" id="prepList"></ul>
-<div class="tip"><b>No ticket history?</b> That's normal early on. Stage 2 falls back to estate size (T-shirt sizing) and then to monthly active users. The confidence score in Stage 6 will say how much that weakens the estimate.</div>
+<div class="tip"><b>No ticket history?</b> That's normal early on. Step 2 falls back to estate size (T-shirt sizing) and then to monthly active users. The confidence score in Step 7 will say how much that weakens the estimate.</div>
 <h2>How long it takes</h2>
-<p>About 20–30 minutes for a first pass with two or three towers, less if you start from documents on Stage 0. A deal review walk-through of a finished estimate takes 10 minutes using the stage results and the summary document.</p>`},
+<p>About 20–30 minutes for a first pass with two or three towers, less if you start from documents on step 0. A deal review walk-through of a finished estimate takes 10 minutes using the stage results and the summary document.</p>`},
 
-{id:"docs",grp:"Build the estimate",t:"Stage 0 · Documents",html:()=>`
-<span class="eyebrow">Stage 0 · optional</span>
+{id:"docs",grp:"Start here",t:"Step 0 · Documents",html:()=>`
+<span class="eyebrow">Step 0 · optional</span>
 <h1>Start from documents with Extract with AI</h1>
 <p class="lead">Upload what you have and Claude proposes inputs for every stage, each with the quote it came from. Nothing changes until you choose what to apply.</p>
 <ol class="steps">
 <li><div>Add files to the four cards: <span class="ui">RFP</span>, <span class="ui">Incident dump</span>, <span class="ui">Meeting notes</span>, <span class="ui">Others</span>. PDF, Word, text, Excel and CSV work; you can also paste text.</div></li>
 <li><div>An incident dump (ITSM export) is <b>summarised in your browser</b>: tickets a month, priority mix, top groups. Only the summary is sent to Claude, not the raw export.</div></li>
 <li><div>Enter the <b>passphrase</b> (ask the tool owner) and click <span class="ui">Extract with AI</span>. It takes 30–90 seconds for a typical RFP.</div></li>
-<li><div>Review <span class="ui">Proposed inputs</span>, grouped by stage. Untick anything you don't agree with, then <span class="ui">Apply selected and go to Stage 1</span>.</div></li>
+<li><div>Review <span class="ui">Proposed inputs</span>, grouped by stage. Untick anything you don't agree with, then <span class="ui">Apply selected and go to Step 1</span>.</div></li>
 </ol>
 <h2>What Claude can propose</h2>
 <p>Deal name; coverage window and P1s a month; towers with who provides L1/L2/L3, SLAs, priority mix, ticket volumes (and where they're counted) or estate size, enhancements, SRE and AIOps scope, skill sets; AI adoption; complexity; term; existing team; assumptions, risks and open questions for the client.</p>
-<div class="note"><b>Where the inputs came from</b> Every applied input keeps its source and quote. It shows under the coverage window, on each tower card, and in Stage 8's <span class="ui">Where the inputs came from</span> table. If someone edits it later it's flagged <i>edited since</i>.</div>
-<div class="warn"><b>Always check the proposals</b> Claude only proposes what the documents support, but it can misread a table. Applied risks arrive switched off at 0%, and open questions become Stage 1 assumptions to confirm with the client.</div>
+<div class="note"><b>Where the inputs came from</b> Every applied input keeps its source and quote. It shows under the coverage window, on each tower card, and in Step 9's <span class="ui">Where the inputs came from</span> table. If someone edits it later it's flagged <i>edited since</i>.</div>
+<div class="warn"><b>Always check the proposals</b> Claude only proposes what the documents support, but it can misread a table. Applied risks arrive switched off at 0%, and open questions become Step 1 assumptions to confirm with the client.</div>
 ${tryTool(0,"Drop in an RFP and see what it proposes.")}
 <div class="quiz" data-quiz="docs"></div>`,
 quiz:[
@@ -266,39 +270,43 @@ quiz:[
  {q:"You apply a proposed risk from the documents. What FTE effect does it have?",o:["Its suggested % immediately","None until you switch it on and set a %","It doubles the contingency"],a:1,why:"Imported risks arrive switched off at 0%, so the deal team decides the modifier."}
 ]},
 
-{id:"s1",grp:"Build the estimate",t:"Stage 1 · Base team",html:()=>`
-<span class="eyebrow">Stage 1</span>
-<h1>Base team from coverage, location and shifts</h1>
-<p class="lead">How many people it takes to keep someone on every shift in the support window, whatever the ticket volume.</p>
+{id:"s1",grp:"Part 1 · The Year 1 number",t:"Step 1 · Base team",html:()=>`
+<span class="eyebrow">Part 1 · Step 1</span>
+<h1>Base team from coverage windows and locations</h1>
+<p class="lead">How many people it takes to keep someone on duty in every hour of the support window, whatever the ticket volume, given when each delivery location actually works.</p>
 <ol class="steps">
-<li><div>Pick the <b>coverage window</b> (<span class="ui">24x5</span>, <span class="ui">16x7</span> …). Shifts are sized so none is longer than 12 hours.</div></li>
-<li><div>Set <b>people per shift</b> (L2 and L3). The framework minimum is one each.</div></li>
-<li><div>Choose the <b>location</b> for each shift (follow-the-sun) and whether each shift is <span class="ui">Active</span> (people working) or <span class="ui">On-call (P1)</span> (reachable for critical incidents only).</div></li>
+<li><div>Pick the <b>support window</b> (<span class="ui">24x5</span>, <span class="ui">16x7</span> …), the time it <b>starts</b> and the <b>customer's time zone</b> as a UTC offset. The window is on the customer's clock.</div></li>
+<li><div>Set <b>people on duty</b> (L2 and L3). The framework minimum is one each.</div></li>
+<li><div>Add the <b>delivery locations</b> with their UTC offset, leave and public holidays.</div></li>
+<li><div>Give each location its <b>working windows in its own local time</b>. A window is <span class="ui">Active</span> (people working) or <span class="ui">On-call (P1)</span> (reachable for critical incidents only). <span class="ui">Lay out evenly</span> splits the support window across your locations as a starting point.</div></li>
+<li><div>Read the <b>coverage timeline</b>: one row per location, local clock times in every cell, green for active, orange for on call. It shows how many window hours are active, how many are on call only, any hours nobody covers, and where two locations overlap.</div></li>
 <li><div>Choose the <b>on-call allowance</b>: a flat % (default 15%), or <span class="ui">From P1 volume</span>: 10% standby plus P1s a month × hours per call-out ÷ 728 hours.</div></li>
 <li><div>The tool divides by 85% utilisation and adds leave and holiday backfill per location.</div></li>
 </ol>
+<div class="note"><b>Example</b> Customer in Minneapolis (UTC−5), 24×5. Ecuador works 09:00–19:00 local. India works 09:30–19:30 and is on call 05:30–09:30 local. On the customer's clock India is active 23:00–09:00 and on call 19:00–23:00, so 20 hours are active, 4 are on call only, nothing is uncovered and nothing overlaps.</div>
 <div class="calc" id="calcCov">
   <h3>Try it: coverage roster</h3>
-  <div class="sub">Same formula as the tool, before utilisation and leave: roster = (a′ × c) ÷ b, [F] p.3.</div>
+  <div class="sub">Same formula as the tool, before utilisation and leave: roster = (staffed hours a week × people on duty) ÷ contracted hours, [F] p.3 worked in hours.</div>
   <div class="grid">
     <label>Hours a day<select id="cvH"><option>8</option><option>16</option><option selected>24</option></select></label>
     <label>Days a week<select id="cvD"><option selected>5</option><option>7</option></select></label>
-    <label>People per shift (L2 + L3)<input id="cvC" type="number" min="1" max="10" value="2"></label>
-    <label>Shifts on call (P1 only)<select id="cvK"></select></label>
+    <label>People on duty (L2 + L3)<input id="cvC" type="number" min="1" max="10" value="2"></label>
+    <label>Hours a day on call only<select id="cvK"></select></label>
     <label>On-call allowance %<input id="cvO" type="number" min="0" max="100" value="15"></label>
   </div>
   <div class="out" id="cvOut"></div>
 </div>
-<div class="tip"><b>Check yourself against the framework</b> 24×5 with 2 people per shift and no on-call gives 6.0 FTE: the framework's own p.3 example.</div>
-${tryTool(1,"Set the coverage and watch the bar at the bottom.")}
+<div class="tip"><b>Check yourself against the framework</b> 24×5 with 2 people on duty and no on-call gives (120 h × 2) ÷ 40 = 6.0 FTE: the framework's own p.3 example.</div>
+<div class="note"><b>Overlap is paid for</b> Hours where two locations are both active (a handover cushion) are staffed twice and counted in the roster. The timeline shows them so you can decide whether the cushion is worth it. Hours worked outside the support window are counted too.</div>
+${tryTool(1,"Set the coverage windows and watch the timeline and the bar at the bottom.")}
 <div class="quiz" data-quiz="s1"></div>`,
 quiz:[
- {q:"A shift switched from Active to On-call (P1) counts as…",o:["A full shift","Nothing","The on-call allowance % of a staffed shift"],a:2,why:"On-call shifts count at the allowance, 15% by default, or standby plus P1 workload if you size it from P1 volume."},
- {q:"Does ticket volume change the base team?",o:["Yes","No"],a:1,why:"The base team only answers 'is every shift covered?'. Volume drives the work team in Stage 2."}
+ {q:"A window switched from Active to On-call (P1) counts as…",o:["A fully staffed window","Nothing","The on-call allowance % of a staffed window"],a:2,why:"On-call windows count at the allowance, 15% by default, or standby plus P1 workload if you size it from P1 volume."},
+ {q:"Does ticket volume change the base team?",o:["Yes","No"],a:1,why:"The base team only answers 'is every hour covered?'. Volume drives the work team in step 2."},
+ {q:"India and Ecuador are both active from 14:00 to 16:00 on the customer's clock. How is that counted?",o:["Once","Twice: both teams are staffed","Not at all"],a:1,why:"Overlap is a handover cushion. Both locations are staffed, so both are counted; the timeline shows the overlap hours."}
 ]},
-
-{id:"s2",grp:"Build the estimate",t:"Stage 2 · Service towers",html:()=>`
-<span class="eyebrow">Stage 2 · the heart of the estimate</span>
+{id:"s2",grp:"Part 1 · The Year 1 number",t:"Step 2 · Service towers",html:()=>`
+<span class="eyebrow">Step 2 · the heart of the estimate</span>
 <h1>Service towers: demand, service levels and skill sets</h1>
 <p class="lead">Add an <b>AMS</b>, <b>IMS</b>, <b>DMS</b> or <b>AI platforms</b> tower for each estate in scope. Each tower turns demand into effort and FTE, then splits it across skill sets.</p>
 <h2>For each tower, top to bottom</h2>
@@ -309,7 +317,7 @@ quiz:[
 <li><div><b>Enhancements</b> (optional hours a month) and <b>estate</b> (modern or complex legacy: 25% or 35% non-ticketing effort).</div></li>
 <li><div><b>SRE</b> (IMS only): if the client names reliability as an objective, an SRE takes 78% of that tower's L3 FTE. A role-mix change, not extra headcount.</div></li>
 <li><div><b>AIOps</b>: if in scope, AI engineers are added at 1 per 4 support FTE (low AI adoption) or 1 per 8 (moderate; 1:6 above 20 FTE).</div></li>
-<li><div><b>Skill sets</b> with a share % each, e.g. <span class="ui">Systems Support Engineer (L2/L3)</span> 70%, <span class="ui">Front end dev</span> 30%. <span class="ui">Base has skill</span> means the base roster covers it on every shift; others get their own cover in Stage 3.</div></li>
+<li><div><b>Skill sets</b> with a share % each, e.g. <span class="ui">Systems Support Engineer (L2/L3)</span> 70%, <span class="ui">Front end dev</span> 30%. <span class="ui">Base has skill</span> means the base roster covers it on every shift; others get their own cover in Step 5.</div></li>
 </ol>
 <div class="flow"><span>Tickets a month</span><i>→</i><span>L1 30% resolved · L2 70% · L3 = L2 × 20%</span><i>→</i><span>hours: L1 0.25 · L2 3 · L3 10, + SLA, + coordination</span><i>→</i><span>÷ 85% utilisation</span><i>→</i><span>+ B non-ticketing 25/35%</span><i>→</i><span>÷ 160 h = FTE</span></div>
 <div class="calc" id="calcTw">
@@ -333,48 +341,14 @@ quiz:[
  {q:"SRE is set to Yes on an IMS tower. What happens to headcount?",o:["It adds SREs on top","It doesn't change; SRE takes 78% of that tower's L3 FTE","It removes L2"],a:1,why:"SRE changes who does the L3 work, not how much work there is."}
 ]},
 
-{id:"s3",grp:"Build the estimate",t:"Stage 3 · Skill coverage",html:()=>`
-<span class="eyebrow">Stage 3</span>
-<h1>Skill coverage by shift</h1>
-<p class="lead">Specialist skill sets (anything not marked <span class="ui">Base has skill</span>) need their own cover. You choose where they must be live; elsewhere they're on call.</p>
-<ol class="steps">
-<li><div>For each specialist skill set, tick the shifts where someone must be <b>live</b> and set people per live shift.</div></li>
-<li><div>On the other shifts it's <b>on call</b>, counted at 15% of a staffed shift (editable).</div></li>
-<li><div>The tool compares that <b>coverage floor</b> with the FTE the skill already has from Stage 2 and tops up only the gap.</div></li>
-</ol>
-<div class="note"><b>Example</b> Database is live on shift 1 only: floor ≈ 1.7 FTE. If Stage 2 gave it 0.5 FTE of work, Stage 3 adds 1.2. If it already had 2.0, it adds nothing.</div>
-${tryTool(3,"Set live shifts for a specialist skill.")}`},
-
-{id:"s4",grp:"Build the estimate",t:"Stage 4 · Transformation",html:()=>`
-<span class="eyebrow">Stage 4</span>
-<h1>Transformation capacity</h1>
-<p class="lead">The framework scenario is worked out, not picked: client AI adoption × whether volumetrics are available (towers sized from ticket history carry at least half the tower FTE).</p>
-<div class="calc" id="calcSc">
-  <h3>Try it: which scenario?</h3>
-  <div class="grid">
-    <label>Client AI adoption<select id="scA"><option value="low">Low</option><option value="moderate">Moderate</option></select></label>
-    <label>Tower FTE from ticket history<select id="scV"><option value="0">Under 50%</option><option value="1">50% or more</option></select></label>
-    <label>Support team from the work (FTE)<input id="scR" type="number" min="0" value="20"></label>
-    <label>AI engineers already added in Stage 2<input id="scAi" type="number" min="0" step="0.1" value="0"></label>
-  </div>
-  <div class="out" id="scOut"></div>
-</div>
-<p>The Transformation POD covers SRE, automation, CI/CD and AI adoption. AI engineers from Stage 2 sit inside the POD, so Stage 4 adds only the part they don't already cover. AIOps is never counted twice.</p>
-${tryTool(4,"Choose the client's AI adoption.")}
-<div class="quiz" data-quiz="s4"></div>`,
-quiz:[
- {q:"Moderate AI adoption, and 70% of tower FTE is from ticket history. Scenario?",o:["1","2","3","4"],a:3,why:"Moderate AI + volumetrics available = Scenario 4 (POD 20%+, AIOps 1:8)."},
- {q:"POD is 2.5 FTE and Stage 2 already added 4 AI engineers. What does Stage 4 add?",o:["2.5","6.5","0"],a:2,why:"AI engineers sit inside the POD; they already exceed it, so nothing more is added."}
-]},
-
-{id:"s5",grp:"Build the estimate",t:"Stage 5 · Reconcile & SDM",html:()=>`
-<span class="eyebrow">Stage 5</span>
-<h1>Reconciliation and governance</h1>
-<p class="lead">This is where the two teams meet. The larger one is kept, AI engineers stay on top, and Service Delivery Managers are added at 1 per 8 delivery FTE.</p>
+{id:"s5",grp:"Part 1 · The Year 1 number",t:"Step 3 · Reconcile & SDM",html:()=>`
+<span class="eyebrow">Part 1 · Step 3</span>
+<h1>Reconcile and SDM</h1>
+<p class="lead">This is where the two teams meet. The larger one is kept, AI engineers stay on top, and Service Delivery Managers are added at 1 per 8 delivery FTE. The result is the <b>Part 1 team</b>: the number Part 2 tests.</p>
 <div class="calc" id="calcRe">
   <h3>Try it: base vs work</h3>
   <div class="grid">
-    <label>Base team (Stage 1)<input id="reB" type="number" min="0" step="0.1" value="8.65"></label>
+    <label>Base team (Step 1)<input id="reB" type="number" min="0" step="0.1" value="8.65"></label>
     <label>Work team without AI engineers<input id="reW" type="number" min="0" step="0.1" value="5.5"></label>
     <label>AI engineers<input id="reA" type="number" min="0" step="0.1" value="1"></label>
     <label>SDM ratio (1 per)<input id="reS" type="number" min="1" value="8"></label>
@@ -384,12 +358,66 @@ quiz:[
 <div class="note"><b>Why AI engineers stay on top</b> They build automation; they don't staff shifts. So the base team can't stand in for them when it's the larger team.</div>
 ${tryTool(5,"See the comparison bars and the verdict sentence.")}`},
 
-{id:"s6",grp:"Build the estimate",t:"Stage 6 · Seniority, contingency, confidence",html:()=>`
-<span class="eyebrow">Stage 6</span>
+{id:"s9",grp:"Part 1 · The Year 1 number",t:"Step 4 · Triangulation",html:()=>`
+<span class="eyebrow">Part 1 · Step 4</span>
+<h1>Triangulate the Part 1 number</h1>
+<p class="lead">Three independent views of the same team: what the ticket volume needs, what the support window needs, and what the client runs today. The Part 1 number is still the larger of the first two. The existing team is the cross-check that tells you whether to trust it.</p>
+<ol class="steps">
+<li><div>Enter the <b>existing team</b> by tier (L2, L3, SRE / automation, managers, other), where the numbers came from, and the <b>tolerance</b> that counts as consistent (default ±10%).</div></li>
+<li><div>Read the <b>three bars</b>: ticket volume (step 2, without AI engineers), base team (step 1) and existing team (L2 + L3 + SRE / automation), next to our Part 1 support team.</div></li>
+<li><div>Read the <b>verdict</b>: it says which of ticket volume and coverage sets the number, whether the existing team agrees, and how far apart the three views are.</div></li>
+</ol>
+<div class="note"><b>The existing team never changes the number</b> It is evidence, not an input to the calculation. If it is far above ours, check scope, the window it covers and hidden capacity. If it is far below, check for out-of-scope work in today's team before presenting a saving.</div>
+<div class="tip"><b>Two places for the fact check</b> This step checks the Part 1 team against today. Step 9 checks the final Year 1 team, and each year of the term, against the same numbers.</div>
+${tryTool(9,"Enter the existing team and read the verdict.")}
+<div class="quiz" data-quiz="s9"></div>`,
+quiz:[
+ {q:"The existing team is 30% below our Part 1 support team. What does the tool do to the number?",o:["Lowers it to match","Nothing: it flags the gap for you to explain","Raises the contingency"],a:1,why:"The existing team is a cross-check. The Part 1 number stays the larger of the ticket-volume and base teams."},
+ {q:"Which three views are triangulated?",o:["Ticket volume, base team, existing team","Base team, SDM, contingency","Incidents, requests, changes"],a:0,why:"Ticket volume (work team), the support window (base team) and the team the client runs today."}
+]},
+{id:"s3",grp:"Part 2 · Validate and finalise",t:"Step 5 · Skill coverage",html:()=>`
+<span class="eyebrow">Part 2 · Step 5</span>
+<h1>Skill coverage: is the Part 1 team enough?</h1>
+<p class="lead">Specialist skill sets (anything not marked <span class="ui">Base has skill</span>) need their own cover. You choose where they must be live; elsewhere they're on call. The step then says whether the Part 1 team can carry that or needs more headcount.</p>
+<ol class="steps">
+<li><div>For each specialist skill set, tick the windows (a location's active or on-call window) where someone must be <b>live</b> and set people per live window.</div></li>
+<li><div>In the other windows it's <b>on call</b>, counted at 15% of a staffed window (editable).</div></li>
+<li><div>The tool compares that <b>coverage floor</b> with the FTE the skill already has from step 2 and tops up only the gap.</div></li>
+<li><div>The verdict card then compares the top-up with the <b>spare capacity</b> in the Part 1 team (the base team above the work team). Spare capacity is used first; <b>additional headcount</b> is added only for what is still missing.</div></li>
+</ol>
+<div class="note"><b>Example</b> Database is live in one window only: floor ≈ 1.7 FTE. If step 2 gave it 0.5 FTE of work, the top-up is 1.2. If the Part 1 team has 0.8 FTE spare, 0.4 FTE of headcount is added. If it already had 2.0 FTE of work, nothing is added.</div>
+${tryTool(3,"Set live windows for a specialist skill and read the verdict.")}`},
+
+{id:"s4",grp:"Part 2 · Validate and finalise",t:"Step 6 · Transformation",html:()=>`
+<span class="eyebrow">Part 2 · Step 6</span>
+<h1>Transformation capacity</h1>
+<p class="lead">The framework scenario is worked out, not picked: client AI adoption × whether volumetrics are available (towers sized from ticket history carry at least half the tower FTE).</p>
+<div class="calc" id="calcSc">
+  <h3>Try it: which scenario?</h3>
+  <div class="grid">
+    <label>Client AI adoption<select id="scA"><option value="low">Low</option><option value="moderate">Moderate</option></select></label>
+    <label>Tower FTE from ticket history<select id="scV"><option value="0">Under 50%</option><option value="1">50% or more</option></select></label>
+    <label>Support team from the work (FTE)<input id="scR" type="number" min="0" value="20"></label>
+    <label>AI engineers already added in Step 2<input id="scAi" type="number" min="0" step="0.1" value="0"></label>
+  </div>
+  <div class="out" id="scOut"></div>
+</div>
+<p>The Transformation POD covers SRE, automation, CI/CD and AI adoption. AI engineers from Step 2 sit inside the POD, so Step 6 adds only the part they don't already cover. AIOps is never counted twice.</p>
+${tryTool(4,"Choose the client's AI adoption.")}
+<div class="quiz" data-quiz="s4"></div>`,
+quiz:[
+ {q:"Moderate AI adoption, and 70% of tower FTE is from ticket history. Scenario?",o:["1","2","3","4"],a:3,why:"Moderate AI + volumetrics available = Scenario 4 (POD 20%+, AIOps 1:8)."},
+ {q:"POD is 2.5 FTE and Step 2 already added 4 AI engineers. What does Step 6 add?",o:["2.5","6.5","0"],a:2,why:"AI engineers sit inside the POD; they already exceed it, so nothing more is added."}
+]},
+
+{id:"s6",grp:"Part 2 · Validate and finalise",t:"Step 7 · Seniority, contingency, confidence",html:()=>`
+<span class="eyebrow">Part 2 · Step 7</span>
 <h1>Seniority, contingency and confidence</h1>
 <p class="lead">Complexity sets the grade pyramid (mix only, no headcount change) and the contingency: Low 5%, Medium 7.5%, High 10%.</p>
+<h2>Does the grade mix fit the windows?</h2>
+<p>Seniority never changes headcount. A <b>low-complexity</b> estate leans on juniors (1:2:4, more Consultants); <b>medium</b> is 1:2:3; a <b>high-complexity</b> estate leans on seniors (1:2:2). The check card then asks for a minimum number of Leads or Seniors on duty in every staffed hour (default 1) and tells you whether the pyramid gives enough of them. If it is short, the tool flags it and does not add people: move the pyramid up, name seniors as on-call cover, or lower the requirement.</p>
 <h2>Estimate confidence (Annexure 1)</h2>
-<p>Nine drivers scored 1–5, weighted to a score out of 100. The tool suggests each score from what earlier stages know; override any with what the deal team has actually seen.</p>
+<p>Nine drivers scored 1–5, weighted to a score out of 100. The tool suggests each score from what earlier steps know; override any with what the deal team has actually seen.</p>
 <div class="tbl"><table><thead><tr><th>Driver</th><th class="r">Weight</th></tr></thead><tbody>
 <tr><td>Ticket volumetrics and demand</td><td class="r">22</td></tr><tr><td>SLA/SLO tier</td><td class="r">15</td></tr><tr><td>Coverage model</td><td class="r">13</td></tr>
 <tr><td>Portfolio complexity</td><td class="r">12</td></tr><tr><td>Transition and handoff</td><td class="r">10</td></tr><tr><td>Domain criticality</td><td class="r">10</td></tr>
@@ -403,10 +431,10 @@ quiz:[
  {q:"A driver scored 2. What should happen?",o:["Nothing","It becomes a due diligence item or a commercial caveat","Contingency doubles"],a:1,why:"Annexure 1 Step 4: drivers scored 1–2 become explicit assessment items."}
 ]},
 
-{id:"s7",grp:"Build the estimate",t:"Stage 7 · Term, savings, transition",html:()=>`
-<span class="eyebrow">Stage 7</span>
+{id:"s7",grp:"Part 2 · Validate and finalise",t:"Step 8 · Term, savings, transition",html:()=>`
+<span class="eyebrow">Part 2 · Step 8</span>
 <h1>Term, Year 2+ savings and transition</h1>
-<p class="lead">Year 1 is the Stage 6 team. From Year 2 the team shrinks; a longer term captures more of those years, so the average team per year falls.</p>
+<p class="lead">Year 1 is the Step 7 team. From Year 2 the team shrinks; a longer term captures more of those years, so the average team per year falls.</p>
 <h2>Two ways to work out savings</h2>
 <div class="cols2">
   <div class="card"><h3>Scenario YoY %</h3>A flat % a year from Year 2 (Scenario 1/3: 13.5%, 2: 11%, 4: 17.5%), applied above the coverage floor. Simple and framework-aligned.</div>
@@ -417,15 +445,16 @@ quiz:[
 <p>Knowledge-transfer weeks (team 50% present), parallel-run weeks (full team) and a transition manager, in FTE-months. It's a one-off before service start and is <b>not</b> added to the Year 1 team.</p>
 ${tryTool(7,"Choose the term and compare the 1–5 year table.")}`},
 
-{id:"s8",grp:"Review & share",t:"Stage 8 · Fact check & approval",html:()=>`
-<span class="eyebrow">Stage 8</span>
-<h1>Fact check, overall estimate and approval</h1>
-<p class="lead">Compare with the team running the estate today, then read the Overall estimate the way a deal desk will.</p>
+{id:"s8",grp:"Part 2 · Validate and finalise",t:"Step 9 · Final fact check & approval",html:()=>`
+<span class="eyebrow">Part 2 · Step 9</span>
+<h1>Final fact check, overall estimate and approval</h1>
+<p class="lead">Compare the final team with the team running the estate today (entered at step 4), then read the Overall estimate the way a deal desk will.</p>
 <h2>In the Overall estimate panel</h2>
 <div class="tbl"><table><thead><tr><th>View</th><th>What to look for</th></tr></thead><tbody>
-<tr><td>How each stage built the team</td><td>The build-up from base team to Year 1, with rounding and transition</td></tr>
-<tr><td>Year 1 team by role</td><td>Every FTE traced to a skill set, tower or stage; rows add up to the total</td></tr>
+<tr><td>How each step built the team</td><td>The build-up from the base team to the Part 1 team, then what skill cover, transformation, the SDM re-base and contingency added, with rounding and transition</td></tr>
+<tr><td>Year 1 team by role</td><td>Every FTE traced to a skill set, tower or step; rows add up to the total</td></tr>
 <tr><td>Allowances</td><td>Productive need → utilisation, leave, contingency, risk. The buffer % is what a deal desk asks about</td></tr>
+<tr><td>Assumptions register</td><td>Every assumption from every step, grouped by category. Edit them in the step they belong to</td></tr>
 <tr><td>Where the inputs came from</td><td>Document sources and quotes; anything edited after import</td></tr>
 <tr><td>Deviations from the framework</td><td>Every benchmark you changed, with the framework value</td></tr>
 </tbody></table></div>
@@ -457,15 +486,15 @@ ${tryTool(8,"Read the allowances and run the checks.")}`},
 <p class="lead">Build this estimate yourself, then check your numbers against ours. Or <a href="docs/example-acme-retail.damo.json" download>download the finished estimate</a> and open it with <span class="ui">Open file</span>.</p>
 <h2>The brief</h2>
 <ul>
-<li>24×5 support, three 8-hour shifts: India, India, Romania. The Romania night shift is <b>on call for P1s only</b>.</li>
+<li>24×5 support, customer clock UTC+0, starting 00:00. Use <span class="ui">Lay out evenly</span>: India gets two 8-hour windows and Romania the third. Romania's window is <b>on call for P1s only</b>: switch it to <span class="ui">On-call (P1)</span>.</li>
 <li><b>AMS</b>: 400 incidents a month from the client's ITSM export. Client keeps L1; we provide L2 + L3. <b>Silver</b> SLA, modern estate, <b>AIOps in scope</b>. Skill sets: Systems Support Engineer 70%, Front end dev 30%.</li>
 <li><b>IMS</b>: no ticket history. 4 environments, 2 hosting platforms, 3 databases, security operations in scope. Client L1, us L2 + L3, complex legacy, <b>SRE in scope</b>, no AIOps. Skill set: Infra support engineer 100%.</li>
 <li>Client AI adoption <b>Low</b>; complexity <b>Medium</b>; <b>3-year</b> term; scenario YoY savings.</li>
 </ul>
 <h2>Check your numbers</h2>
 <div class="tbl"><table id="exTbl"><thead><tr><th>Checkpoint</th><th class="r">Expected</th><th>Why</th><th>Got it?</th></tr></thead><tbody></tbody></table></div>
-<div class="tip"><b>If a number is off</b> The usual suspects: the counts level on AMS (should be all tickets, L1), the ownership preset (click it even if it looks selected), share % on skill sets, and shift 3 set to On-call (P1).</div>
-${tryTool(1,"Start at Stage 1 with a fresh estimate (Reset in the header).")}`},
+<div class="tip"><b>If a number is off</b> The usual suspects: the counts level on AMS (should be all tickets, L1), the ownership preset (click it even if it looks selected), share % on skill sets, and Romania's window set to On-call (P1).</div>
+${tryTool(1,"Start at step 1 with a fresh estimate (Reset in the header).")}`},
 
 {id:"faq",grp:"Reference",t:"FAQ",html:()=>`
 <span class="eyebrow">Reference</span>
@@ -483,36 +512,36 @@ ${tryTool(1,"Start at Stage 1 with a fresh estimate (Reset in the header).")}`},
 const PREP=["The RFP or scope document","Support window: hours, days, and which hours are on call only","Delivery locations (onshore, nearshore, offshore) and who covers which shift","Ticket history per estate: incidents and service requests a month, ideally 3–6 months with priority","Where the tickets are counted: all tickets at the service desk, or an incumbent's L2 queue","Who provides L1, L2 and L3 today and after we take over","SLA targets: P1/P2 response and restore, availability","Estate size if no tickets: apps by complexity, environments and databases, pipelines, AI agents and models","Enhancement or change-request hours a month in the run scope","Whether SRE and AIOps are in scope","Client AI maturity (AI in observability, automated runbooks in production?)","Contract term","Today's team: L2, L3, SRE/automation, managers"];
 
 const EXAMPLE=[
- ["Stage 1 base team","6.14 FTE · 8 people","24×5, 1 L2 + 1 L3 per shift, shift 3 on call at 15%, ÷ 85%, leave backfill"],
+ ["Step 1 base team","6.14 FTE · 8 people","24×5, 1 L2 + 1 L3 on duty, Romania's window on call at 15%, ÷ 85%, leave backfill"],
  ["AMS tower FTE","15.52","400 tickets → L2 280, L3 56; Silver +12% L2 / +22% L3; +4% coordination"],
  ["IMS tower FTE","2.11","Score 13 × 4.5 = 59 tickets; legacy B 35%; +4% coordination"],
- ["Stage 2 team","24.18 FTE","19.82 support (incl. leave backfill) + 4.36 AI engineers at 1:4"],
- ["Stage 4 adds","0.00","POD 12.5% of 19.82 = 2.48 is less than the 4.36 AI engineers already in it"],
- ["Stage 5 team","27.20 FTE","Work team 19.82 beats base 6.14; + AI engineers; + 3.02 SDM (1:8)"],
- ["Year 1 team (Stage 6)","29.24 FTE · 30 people","+ 7.5% contingency (Medium)"],
+ ["Step 2 team","24.18 FTE","19.82 support (incl. leave backfill) + 4.36 AI engineers at 1:4"],
+ ["Step 6 adds","0.00","POD 12.5% of 19.82 = 2.48 is less than the 4.36 AI engineers already in it"],
+ ["Part 1 team (step 3)","27.20 FTE","Work team 19.82 beats base 6.14; + AI engineers; + 3.02 SDM (1:8)"],
+ ["Year 1 team (step 7)","29.24 FTE · 30 people","+ 7.5% contingency (Medium)"],
  ["SRE","0.81 FTE","78% of the IMS tower's L3 FTE (incl. contingency share)"],
  ["3-year average","26.09 FTE a year","29.2 → 25.8 → 23.2; 13.5% a year above the floor"],
  ["Confidence","51 · Medium","Range about 24.9 – 33.6 FTE"]
 ];
 
 const FAQ=[
- ["Why did my team jump when I added a tower?","Once the work team is larger than the base team, the work sets the size. Before that, extra work is absorbed by people who are already needed to cover shifts. Look at the Stage 5 verdict sentence."],
- ["The bar at the bottom shows a different number from the final estimate.","The bar shows the team after the stage you're on. It becomes the final Year 1 team from Stage 6."],
- ["Why is rounding adding so much?","People are rounded up in each location and tier (L2, L3, SDM). A small team spread over two locations can gain 2–3 people. Change rounding in Stage 1 to see the effect."],
+ ["Why did my team jump when I added a tower?","Once the work team is larger than the base team, the work sets the size. Before that, extra work is absorbed by people who are already needed to cover shifts. Look at the Step 3 verdict sentence."],
+ ["The bar at the bottom shows a different number from the final estimate.","The bar shows the team after the stage you're on. It becomes the final Year 1 team from Step 7."],
+ ["Why is rounding adding so much?","People are rounded up in each location and tier (L2, L3, SDM). A small team spread over two locations can gain 2–3 people. Change rounding in Step 1 to see the effect."],
  ["We don't have ticket data. Can we still estimate?","Yes: use structural complexity (T-shirt sizing) or monthly active users. The confidence score will be lower and the range wider; list 'ticket history' as a due diligence item."],
  ["Should I use flat YoY savings or AIOps use cases?","Flat YoY follows the framework's scenario targets and is the default. Use cases show what the AI engineers would actually build; use them to test whether the savings claim is backed."],
- ["Is transition in the Year 1 team?","No. It's a one-off effort before service start, shown in FTE-months in Stage 7, the Overall estimate and the customer summary."],
+ ["Is transition in the Year 1 team?","No. It's a one-off effort before service start, shown in FTE-months in Step 8, the Overall estimate and the customer summary."],
  ["How do I share an estimate with a colleague?","Save file, send the .damo.json, and they use Open file. Saved scenarios travel inside the file."],
  ["What does 'Changed since approval' mean?","Someone edited an input after the estimate was approved. Approve again or set the status back to Draft."],
  ["Extract with AI says the passphrase is wrong.","Ask the tool owner for the current passphrase; it's set on the Netlify project as INTAKE_PASSPHRASE."],
  ["Where are my estimates stored?","In your browser only, until you Save file. Clearing browser data or using another browser starts fresh."],
- ["Does the SDM count as part of a tower?","No. Service Delivery Managers are sized in Stage 5 at 1 per 8 delivery FTE and appear under Governance in the team by role."]
+ ["Does the SDM count as part of a tower?","No. Service Delivery Managers are sized in Step 3 at 1 per 8 delivery FTE and appear under Governance in the team by role."]
 ];
 
 const GLOSS=[
  ["FTE","Full-time equivalent: one person working full time (40 hours a week). Part-FTE roles are shared across towers."],
- ["Base team","Stage 1: the people needed to keep someone on every shift, whatever the volume."],
- ["Work team","Stages 2–4: the people the work takes (tickets, enhancements, specialist cover, transformation)."],
+ ["Base team","Step 1: the people needed to keep someone on every shift, whatever the volume."],
+ ["Work team","steps 2, 5 and 6: the people the work takes (tickets, enhancements, specialist cover, transformation)."],
  ["Delivery team","The larger of the base team and the work team (without AI engineers), plus AI engineers."],
  ["Pass-through","Share of tickets passed to the next level: L1→L2 70%, L2→L3 20% ([F] 1.4)."],
  ["ARE","Average resolution effort per ticket: L1 0.25 h, L2 3 h, L3 10 h."],
@@ -538,15 +567,14 @@ const GLOSS=[
 /* ================= calculators ================= */
 function calcCov(){
   const H=+$("cvH").value, D=+$("cvD").value, c=Math.max(1,+$("cvC").value||1);
-  const shifts=Math.max(1,Math.ceil(H/8)), len=H/shifts;
   const kSel=$("cvK"), prev=+kSel.value||0;
-  kSel.innerHTML=[...Array(shifts).keys()].map(i=>`<option value="${i}" ${i===Math.min(prev,shifts-1)?"selected":""}>${i}</option>`).join("");
-  const k=+kSel.value||0, oc=Math.max(0,Math.min(100,+$("cvO").value||0))/100;
-  const a=shifts*D, aE=(shifts-k)*D+k*D*oc, b=40/len, roster=aE*c/b;
-  $("cvOut").innerHTML=`<div class="row"><span>Shifts to cover a week (a)</span><span>${shifts} × ${D} = ${a}</span></div>
-   ${k?`<div class="row"><span>Staffed shift-equivalents (a′)</span><span>${fmt(aE,2)}</span><div class="f">${(shifts-k)*D} active + ${k*D} on-call × ${fmt(oc*100,0)}%</div></div>`:""}
-   <div class="row"><span>Shifts one FTE covers (b)</span><span>40 h ÷ ${fmt(len,1)} h = ${fmt(b,2)}</span></div>
-   <div class="row tot"><span>Roster FTE</span><span>${fmt(roster,2)}</span><div class="f">(a′ × ${c}) ÷ ${fmt(b,2)}</div></div>
+  kSel.innerHTML=[...Array(H+1).keys()].filter(i=>i%4===0||i===H).map(i=>`<option value="${i}" ${i===Math.min(prev,H)?"selected":""}>${i}</option>`).join("");
+  const k=Math.min(+kSel.value||0,H), oc=Math.max(0,Math.min(100,+$("cvO").value||0))/100;
+  const a=H*D, aE=(H-k)*D+k*D*oc, b=40, roster=aE*c/b;
+  $("cvOut").innerHTML=`<div class="row"><span>Window hours to cover a week (a)</span><span>${H} × ${D} = ${a}</span></div>
+   ${k?`<div class="row"><span>Staffed hours (a′)</span><span>${fmt(aE,1)}</span><div class="f">${(H-k)*D} active + ${k*D} on-call × ${fmt(oc*100,0)}%</div></div>`:""}
+   <div class="row"><span>Hours one FTE works (b)</span><span>${b}</span></div>
+   <div class="row tot"><span>Roster FTE</span><span>${fmt(roster,2)}</span><div class="f">(${k?"a′":"a"} × ${c}) ÷ ${b}</div></div>
    <div class="row"><span>After 85% utilisation</span><span>${fmt(roster/0.85,2)}</span><div class="f">The tool then adds leave and holiday backfill per location.</div></div>`;
 }
 const OWN={cl1:{L1:0,L2:1,L3:1,b:1},full:{L1:1,L2:1,L3:1,b:0},l2:{L1:0,L2:1,L3:0,b:2},l3:{L1:0,L2:0,L3:1,b:1}};
@@ -569,7 +597,7 @@ function calcSc(){
   $("scOut").innerHTML=`<div class="row tot"><span>Framework scenario</span><span>${sc}</span><div class="f">${mod?"Moderate":"Low"} AI · volumetrics ${vol?"available":"unavailable"}</div></div>
    <div class="row"><span>POD share · AIOps ratio</span><span>${pod}% · 1:${ratio}${ratio===8?" (1:6 over 20 FTE)":""}</span></div>
    <div class="row"><span>Transformation POD</span><span>${fmt(P,2)} FTE</span></div>
-   <div class="row tot"><span>Stage 4 adds</span><span>${fmt(add,2)} FTE</span><div class="f">POD ${fmt(P,2)} − AI engineers ${fmt(ai,2)}${ai>=P&&ai>0?": the AI engineers already cover the POD":""}</div></div>`;
+   <div class="row tot"><span>Step 6 adds</span><span>${fmt(add,2)} FTE</span><div class="f">POD ${fmt(P,2)} − AI engineers ${fmt(ai,2)}${ai>=P&&ai>0?": the AI engineers already cover the POD":""}</div></div>`;
 }
 function calcRe(){
   const B=Math.max(0,+$("reB").value||0), W=Math.max(0,+$("reW").value||0), A=Math.max(0,+$("reA").value||0), r=Math.max(1,+$("reS").value||8);
@@ -578,7 +606,7 @@ function calcRe(){
    <div class="row"><span>+ AI engineers</span><span>${fmt(A,2)}</span></div>
    <div class="row"><span>Delivery team</span><span>${fmt(del,2)}</span></div>
    <div class="row"><span>+ SDM (1 per ${r})</span><span>${fmt(sdm,2)}</span></div>
-   <div class="row tot"><span>Team after Stage 5</span><span>${fmt(del+sdm,2)} FTE</span></div>`;
+   <div class="row tot"><span>Team after Step 3</span><span>${fmt(del+sdm,2)} FTE</span></div>`;
 }
 
 /* ================= quiz ================= */
