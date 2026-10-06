@@ -523,7 +523,7 @@ Step 9 ends with an **Overall estimate** panel: headline figures (Year 1 team, r
 - the final team by location and tier
 - for every stage: its result line, the full working, its tables, assumptions and risks
 
-Open it in any browser and print to PDF if needed. In the claude.ai viewer the file is offered through the page's download prompt; on Netlify it downloads directly. A sample built from the example inputs is in [`docs/sample-estimate-summary.html`](docs/sample-estimate-summary.html).
+Open it in any browser and print to PDF if needed. In the claude.ai viewer the file is offered through the page's download prompt; on Netlify it downloads directly. A sample built from the Acme Retail worked example (`docs/example-acme-retail.damo.json`) is in [`docs/sample-estimate-summary.html`](docs/sample-estimate-summary.html).
 
 ### Copy summary
 **Copy summary** puts each stage's working, the location table, the assumptions and the risks on the clipboard as Markdown, ready for the deal-review deck or notes.

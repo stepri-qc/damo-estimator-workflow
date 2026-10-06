@@ -1350,7 +1350,7 @@ tr.sel td{background:var(--accent-soft)}
       <div class="kpis" id="finalKpis"></div>
       <div class="loc-table">
         <table>
-          <thead><tr><th>Stage</th><th>What it did</th><th class="r">Stage FTE</th><th class="r">Team after</th></tr></thead>
+          <thead><tr><th>Step</th><th>What it did</th><th class="r">Step FTE</th><th class="r">Team after</th></tr></thead>
           <tbody id="finalBuild"></tbody>
         </table>
       </div>
@@ -2289,7 +2289,7 @@ async function exportExcel(){
   const C=R.conf||confidence(), A=R.allow||allowances(), T=R.term, whole=S.rounding!=="none";
   sheet("Summary",[["Deal",S.deal||""],["Version",S.meta.version],["Status",approvalStale()?"Changed since approval":STATUS[S.meta.status]],["Prepared by",S.meta.preparedBy],["Approved by",S.meta.status==="approved"?S.meta.approvedBy:""],["Approval date",S.meta.status==="approved"?S.meta.approvedAt:""],["Exported",new Date().toISOString().slice(0,10)],[],
     ["Year 1 team (FTE)",R.total],["Rostered people",whole?R.people:""],[`${T}-year average (FTE a year)`,R.termRows[T-1].avg],["Confidence score",C.score],["Confidence band",C.band],["Range low (FTE)",C.lo],["Range high (FTE)",C.hi],["Coverage",covLabel()],["Framework scenario",`${R.sc}: ${R.SC.name}`],["Transition (FTE-months)",R.trans.total],[],["FTE only: no rates, cost or price."]],[34,40]);
-  sheet("Build",[["Stage","What it did","Stage FTE","Team after (FTE)","People"]].concat(buildRows().map(r=>[r.stage,r.what,r.add,r.snap.fte,whole?r.snap.people:""])).concat(whole?[["Rounding","",R.roundAdd,"",R.people]]:[]),[22,90,12,16,10]);
+  sheet("Build",[["Step","What it did","Step FTE","Team after (FTE)","People"]].concat(buildRows().map(r=>[r.stage,r.what,r.add,r.snap.fte,whole?r.snap.people:""])).concat(whole?[["Rounding","",R.roundAdd,"",R.people]]:[]),[22,90,12,16,10]);
   sheet("Towers",[["Tower","Kind","We provide","SLA","Demand from","Counts at","Tickets/mo","L1 tickets","L2 tickets","L3 tickets","SLA uplift L2 %","SLA uplift L3 %","Coordination %","A hrs","B hrs","C hrs","FTE","AIOps","AI engineers"]].concat(R.towers.map(t=>[t.name,t.kind,ownedText(t),slaText(t),t.src,t.lvl.toUpperCase(),t.tickets,t.l1t,t.l2t,t.l3t,t.sm.l2*100,t.sm.l3*100,t.hand*100,t.A,t.Bh,t.C,t.fte,t.aiops===true?"Yes":"No",t.ai])),[22,6,14,34,18,8]);
   sheet("Team by role",[["Role","Tower","FTE"]].concat(R.roles.map(r=>[r.role,r.tower,r.fte])).concat([["Total","",R.total]]),[44,22,10]);
   sheet("Team by location",[["Location","L2 (incl. L1) FTE","L3 FTE","SDM FTE","People"]].concat(R.snaps[6].cells.filter(c=>c.a2+c.a3+c.g>0).map(c=>[c.name,c.a2,c.a3,c.g,whole?c.people:""])),[18,16,10,10,10]);
@@ -3360,7 +3360,7 @@ function buildReport(){
     <div class="kpi"><span>Confidence</span><b>${fmt(R.conf.score,0)}</b><em>${R.conf.band} · range ${fmt(R.conf.lo,1)}–${fmt(R.conf.hi,1)} FTE</em></div>
   </div>
   <h3>How the team was built</h3>
-  <table><thead><tr><th>Stage</th><th>What it did</th><th class="r">Stage FTE</th><th class="r">Team after</th></tr></thead><tbody>${build}</tbody></table>
+  <table><thead><tr><th>Step</th><th>What it did</th><th class="r">Step FTE</th><th class="r">Team after</th></tr></thead><tbody>${build}</tbody></table>
   <h3>Final team by location</h3>
   <table><thead><tr><th>Location</th><th class="r">L2</th><th class="r">L3</th><th class="r">SDM</th><th class="r">${whole&&S.rounding!=="total"?"People":"FTE"}</th></tr></thead><tbody>${locRows}</tbody></table>
   <h3>Year 1 team by role</h3>${tableOf("finalRoles")}
