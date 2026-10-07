@@ -427,7 +427,9 @@ It appears in the Overall estimate, both summaries and the customer summary's Tr
 
 ## Part 2 · Step 9: final fact check against the existing team
 
-This step **does not change the estimate**. The team running the estate today (client or incumbent), the source and the tolerance are entered once, at step 4, and reused here, so the fact check happens in two places: step 4 checks the Part 1 team, and this step checks the **final** Year 1 team and the term.
+The fact check itself **does not change the estimate**, but the **Commercial position** panel below it can set a proposed final number (see the next section).
+
+This step **does not change the estimate** unless the commercial position is switched on. The team running the estate today (client or incumbent), the source and the tolerance are entered once, at step 4, and reused here, so the fact check happens in two places: step 4 checks the Part 1 team, and this step checks the **final** Year 1 team and the term.
 
 | Existing | Compared with |
 |---|---|
@@ -445,6 +447,12 @@ Each tier and the total is marked consistent, above or below. Bars compare today
 It always ends with where the team lands by the end of the term against today, and it flags verbal estimates as directional. Risks in this stage are tracked only.
 
 Default example: the existing team is 13 FTE (6 L2, 4 L3, 1 SRE, 1 manager, 1 other). Our Year 1 is 11.7 (−10%, consistent), and Year 3 is 11.0 (−15% against today).
+
+## Commercial position: an editable final number and commercial options
+
+Optional, in Step 9. `compute()` returns `R.fin`: the modelled Year 1 team and years, or the proposed ones once `S.adj` is on with a reason and a change (`S.adj.mode` is `pct` or `year`, `S.adj.pct`, `S.adj.y[]`). Steps 1 to 8 are never changed. The cut comes out of contingency first, then the delivery team with the SDM (capped at the team); the Year 1 location cells, roles and rounded people are rebuilt from it so they add up to the proposed total, and each year keeps `adj` (modelled total, cut, from contingency, from delivery). The fact check, the final panel, the Excel workbook, the summary document and the client summary read `R.fin`; the client summary shows the proposed number only. The risks (`adjRisks()`: implied utilisation amber 90% and red 100%, below the Step 1 base team, contingency used up, below the existing team, faster AI savings, scope unchanged, capped, above the model) and the mitigation library (`ADJ_MITS`, tickable, rewordable, with your own additions in `S.adj.extra`) go into the summary document and Excel.
+
+`commercialOptions()` rates fixed fee, outcome-based terms (an add-on), T&M with a cap and an assessment-led start from the framework's scenario recommendation (`SCENARIOS[n].comm`) plus proposed rules on months of ticket history, a measurable baseline, the confidence band, complexity or a legacy estate, a takeover, term, AIOps in scope, a Year 1 budget ceiling, an applied cut above 15% and price pressure (`S.cm`). Model level only: no price. Internal: in the summary document, Excel and copy summary, never in the client summary.
 
 ## Assumptions by category
 

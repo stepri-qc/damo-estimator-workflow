@@ -213,6 +213,20 @@ tr:last-child td{border-bottom:0}
 .tm-s{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
 .tm-bad{color:#C0392B}
 .tm-ok{color:var(--add)}
+.cprisk{margin:0 0 8px;font-size:13.5px;line-height:1.5}
+.cpsev{display:inline-block;font:600 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:3px;margin-right:6px}
+.cpsev.high{background:var(--warn-soft);color:var(--warn)}
+.cpsev.medium{background:var(--risk-soft);color:var(--risk)}
+.cpsev.low,.cpsev.not{background:var(--surface-2);color:var(--muted)}
+.cpsev.rec,.cpsev.add{background:var(--add-soft);color:var(--add)}
+.cpsev.pos{background:var(--accent-soft);color:var(--accent)}
+.cpmit{display:grid;grid-template-columns:18px minmax(0,1fr);gap:8px;align-items:start;margin:6px 0}
+.cpmit input[type=text]{width:100%}
+.cpmit small{display:block;color:var(--faint);font-size:11px;margin-top:2px}
+.cpopt{border:1px solid var(--line);border-radius:8px;margin:8px 0;padding:6px 10px;background:var(--surface)}
+.cpopt summary{cursor:pointer;font-size:14px}
+.cpopt ul{margin:2px 0 6px;padding-left:18px;font-size:13px}
+.cpoptb{padding:4px 0 6px}
 .tl td.c.gap{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
 .shiftslot{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px 10px;align-items:center}
 .shiftslot .seg button{padding:5px 9px;font-size:12px}
@@ -1313,7 +1327,7 @@ tr.sel td{background:var(--accent-soft)}
     <div class="stage-head">
       <span class="eyebrow">Part 2 · Step 9 of 9</span>
       <h2 id="s8h">Final fact check against the existing team</h2>
-      <p>Enter the team running the estate today. This stage does not change the estimate. It puts our numbers next to the existing team, tier by tier and across the term, so the review can see whether the estimate is credible and what explains any gap.</p>
+      <p>Enter the team running the estate today. The fact check does not change the estimate; the commercial position below can set a proposed final number. It puts our numbers next to the existing team, tier by tier and across the term, so the review can see whether the estimate is credible and what explains any gap.</p>
     </div>
 
     <div class="cols">
@@ -1338,6 +1352,32 @@ tr.sel td{background:var(--accent-soft)}
     <div class="panel" style="margin-top:20px">
       <header><h3>What the fact check says</h3><span class="sub">Generated from the numbers above</span></header>
       <div class="verdict" id="exVerdict"></div>
+    </div>
+
+    <div class="panel" style="margin-top:20px" id="cpPanel">
+      <header><h3>Commercial position</h3><span class="sub">Optional. Set a proposed final number and see what the data supports commercially. Effort only: no price.</span></header>
+      <div class="cols even" style="margin-top:0">
+        <div style="display:grid;gap:14px;align-content:start">
+          <div class="hint">What the commercial options use beyond the estimate. All optional.</div>
+          <label class="inline" for="cmHist">Months of ticket history available <input id="cmHist" type="number" min="0" step="1" placeholder="not set" style="width:96px"></label>
+          <label class="inline" for="cmBase">Measurable baseline (incident volume, MTTR) <select id="cmBase"><option value="unknown">Not confirmed</option><option value="yes">Yes, agreed</option><option value="no">No</option></select></label>
+          <label class="inline" for="cmCeil">Client budget ceiling, Year 1 FTE <input id="cmCeil" type="number" min="0" step="0.5" style="width:150px"></label>
+          <div class="field"><div class="lbl">Competitive pressure on price</div><div class="seg" role="group" aria-label="Competitive pressure on price"><button type="button" data-cmpress="low">Low</button><button type="button" data-cmpress="medium">Medium</button><button type="button" data-cmpress="high">High</button></div></div>
+          <div id="cmLive"></div>
+        </div>
+        <div style="display:grid;gap:14px;align-content:start">
+          <label class="switch" for="cpOn"><input type="checkbox" id="cpOn"><div><b>Adjust the final number</b><span>Keep the modelled team and set a proposed one for a client budget or price to win. A reason is required before it counts. The cut comes out of contingency first, then the delivery team.</span></div></label>
+          <div id="cpBody" hidden style="display:grid;gap:14px">
+            <div class="field"><div class="lbl">How to set it</div><div class="seg" role="group" aria-label="How to set the proposed number"><button type="button" data-cpmode="pct">% change</button><button type="button" data-cpmode="year">Per year</button></div></div>
+            <label class="inline" for="cpPct" id="cpPctRow">Reduce the final number by % (negative adds) <input id="cpPct" type="number" step="0.5" style="width:90px"></label>
+            <div class="field" id="cpYearRow"><div class="lbl">Proposed FTE a year (blank keeps the modelled number)</div><div class="tgrid"><label for="cpY1">Year 1<input id="cpY1" data-cpy="0" type="number" step="0.1" min="0"></label><label for="cpY2">Year 2<input id="cpY2" data-cpy="1" type="number" step="0.1" min="0"></label><label for="cpY3">Year 3<input id="cpY3" data-cpy="2" type="number" step="0.1" min="0"></label><label for="cpY4">Year 4<input id="cpY4" data-cpy="3" type="number" step="0.1" min="0"></label><label for="cpY5">Year 5<input id="cpY5" data-cpy="4" type="number" step="0.1" min="0"></label></div></div>
+            <label class="inline" for="cpReason">Reason (required) <select id="cpReason"><option value="">Choose a reason</option><option value="budget">Client budget constraint</option><option value="ptw">Price to win</option><option value="comp">Competitive position</option><option value="scope">Scope reduced</option><option value="ai">Stronger AI or automation commitment</option><option value="strat">Strategic investment in the account</option><option value="other">Other (explain in the note)</option></select></label>
+            <label class="inline" for="cpNote" style="align-items:flex-start">Note <textarea id="cpNote" rows="2" style="flex:1" placeholder="For example: client cap of 30 FTE in Year 1"></textarea></label>
+          </div>
+          <div id="cpLive"></div>
+        </div>
+      </div>
+      <div id="cpResults"></div>
     </div>
 
     <div class="cols even" data-stage="s8">
@@ -1635,6 +1675,7 @@ function defaultsRaw(){
     sdmRatio:8,sdmLoc:null,
     cplx:null,pyr:{},contPct:null,
     term:null,savePct:null,cont2:null,protectFloor:true,
+    adj:{on:false,mode:"pct",pct:0,y:[],reason:"",note:"",mit:{},extra:[]},cm:{histMonths:null,baseline:"unknown",ceiling:null,pressure:"medium"},
     ex:{},exSource:"",exTol:10,
     cov:{},
     conf:{},trans:{kt:null,par:null,ktPct:50,mgr:1},prov:{},
@@ -1731,6 +1772,8 @@ function migrate(p){
       st.towers=st.towers.map(t=>{const n=Object.assign(mkTower(t.kind),t);n.sla=Object.assign(mkTower(t.kind).sla,t.sla||{});
         if(!t.own&&t.levels)n.own={both:{L1:"customer",L2:"us",L3:"us"},l2:{L1:"customer",L2:"us",L3:"vendor"},l3:{L1:"customer",L2:"customer",L3:"us"}}[t.levels]||null;return n});
       st.meta=Object.assign(defaults().meta,p.meta||{});
+      st.adj=Object.assign(defaults().adj,(p.adj&&typeof p.adj==="object")?p.adj:{});if(!Array.isArray(st.adj.y))st.adj.y=[];if(!st.adj.mit||typeof st.adj.mit!=="object")st.adj.mit={};if(!Array.isArray(st.adj.extra))st.adj.extra=[];
+      st.cm=Object.assign(defaults().cm,(p.cm&&typeof p.cm==="object")?p.cm:{});["histMonths","ceiling"].forEach(k=>{if(st.cm[k]===""||st.cm[k]===undefined||isNaN(+st.cm[k]))st.cm[k]=null});if(["unknown","yes","no"].indexOf(st.cm.baseline)<0)st.cm.baseline="unknown";if(["low","medium","high"].indexOf(st.cm.pressure)<0)st.cm.pressure="medium";
       migrateCoverage(st,p);
       return st;
     }
@@ -2099,6 +2142,43 @@ function compute(){
     return {n:"p1",fte:p1total,work:s2,run:p1run,lift:p1lift,deliv:p1deliv,sdmRaw:p1sdmRaw,sdm:p1sdm,total:p1total,cells:p1cells,
       people:S.rounding==="total"?up(p1total):pp,L2:p1cells.reduce((x,c)=>x+c.a2,0),L3:p1cells.reduce((x,c)=>x+c.a3,0),G:p1cells.reduce((x,c)=>x+c.g,0),L2p:P2,L3p:P3,Gp:PG};
   })();
+  /* final number: the modelled team, or the proposed one once a reason is on record (editable final number).
+     The cut comes out of contingency first, then the delivery team (SDM included); steps 1 to 8 are never changed. */
+  const fin=(()=>{
+    const A=S.adj, mod=years.map(y=>y.fte);
+    const termOf=ys=>{const rows=[1,2,3,4,5].map(T=>{const z=ys.slice(0,T),sm=z.reduce((x,y)=>x+y.fte,0);return {T,ys:z,sum:sm,avg:sm/T}});rows.forEach(t=>t.vs1=1-t.avg/rows[0].avg);return rows};
+    const idem={on:false,total,people,roundAdd:people-total,roles,years,termRows,snap:snaps[6],s6,cut1:0,mod,adjYears:years.map(()=>null)};
+    if(!(A&&A.on&&A.reason))return idem;
+    const req=mod.map((v,i)=>{if(A.mode==="year"){const x=A.y&&A.y[i];return(x==null||x===""||isNaN(+x))?0:v-(+x)}return v*(+A.pct||0)/100});
+    if(!req.some(c=>Math.abs(c)>1e-9))return idem;
+    const adjYears=[], ys=years.map((y,i)=>{
+      const k=y.n>1?1+rp7:1, cE=y.cont*k, bE=y.base*k, cutReq=req[i];
+      if(Math.abs(cutReq)<=1e-9){adjYears.push(null);return y}
+      const cut=Math.min(cutReq,y.fte), fromCont=cut>0?Math.min(cE,cut):0, fromDel=cut-fromCont;
+      const base=Math.max(0,bE-fromDel)/k, cont=(cE-fromCont)/k;
+      adjYears.push({cut,fromCont,fromDel,cutReq,capped:cutReq>y.fte+1e-9,contModelled:cE,deliveryModelled:bE,delivery:base*k,cont:cont*k,fteM:y.fte});
+      return {...y,base,cont,fte:(base+cont)*k};
+    });
+    const a1=adjYears[0];
+    let fd=1,s6n=s6,totalN=total,snap=snaps[6],peopleN=people,rolesN=roles;
+    if(a1){
+      const dTot=locs.reduce((x,l)=>x+l.d2+l.d3,0), G=locs.reduce((x,l)=>x+l.g,0), dg=dTot+G;
+      fd=dg>0?Math.max(0,(dg-a1.fromDel)/dg):1; s6n=Math.max(0,s6-a1.fromCont);
+      const cells=locs.map(l=>{const d2=l.d2*fd,d3=l.d3*fd,dn=dTot*fd;return {id:l.id,name:l.name,a2:d2+(dn>0?s6n*d2/dn:0),a3:d3+(dn>0?s6n*d3/dn:0),g:l.g*fd}});
+      totalN=dg*fd+s6n;
+      let P2=0,P3=0,PG=0,pp=0;
+      cells.forEach(c=>{
+        if(S.rounding==="cell"){c.p2=up(c.a2);c.p3=up(c.a3);c.pg=c.g>0?Math.max(1,Math.round(c.g)):0;c.people=c.p2+c.p3+c.pg}
+        else if(S.rounding==="loc"){c.p2=c.a2;c.p3=c.a3;c.pg=c.g;c.people=up(c.a2+c.a3+c.g)}
+        else {c.p2=c.a2;c.p3=c.a3;c.pg=c.g;c.people=c.a2+c.a3+c.g}
+        P2+=c.p2;P3+=c.p3;PG+=c.pg;pp+=c.people;
+      });
+      peopleN=S.rounding==="total"?up(totalN):pp;
+      snap={n:6,fte:totalN,work:null,lift:0,cells,people:peopleN,L2:cells.reduce((x,c)=>x+c.a2,0),L3:cells.reduce((x,c)=>x+c.a3,0),G:cells.reduce((x,c)=>x+c.g,0),L2p:P2,L3p:P3,Gp:PG};
+      rolesN=roles.map(r=>r.role==="Service Delivery Manager"?{...r,fte:r.fte*fd}:{...r,fte:(r.fte/(delivRoles>0?1+s6/delivRoles:1))*(fd+(delivRoles>0?s6n/delivRoles:0))});
+    }
+    return {on:true,total:totalN,people:peopleN,roundAdd:peopleN-totalN,roles:rolesN,years:ys,termRows:termOf(ys),snap,s6:s6n,cut1:a1?a1.cut:0,mod,adjYears};
+  })();
   /* what Part 2 adds to the Part 1 team */
   const bridge={d3:snaps[3].fte-p1total,d4:snaps[4].fte-snaps[3].fte,d5:snaps[5].fte-snaps[4].fte,spare:p1lift};
   return {p1,bridge,days,fteH,reqH,c,framework,actH,oncH,blocks,cover,oc1,p1Busy,aEff,rp1,locs,roster,buffered,s1,warnings,
@@ -2110,7 +2190,7 @@ function compute(){
     sub4,sdmRatio,sdmRaw,rp5,s5,risk5Add:s5-sdmRaw,sdmLoc,
     sub5,CX,contPct,contRaw,rp6,s6,risk6Add:s6-contRaw,pyr,shares,
     savePct,cont2,floor,rp7,years,termRows,term,pf:{mode:PF.mode,items:pfItems,years:pfYears,tierFte,ceiling,aiFrom,capacity:ai2*BUILD_PW,realize:PF.realize},
-    total,people,roundAdd:people-total,roles,trans,
+    total,people,roundAdd:people-total,roles,trans,fin,
     snaps,L2:sum(locs,"c2"),L3:sum(locs,"c3"),G:sum(locs,"g"),L2p:sum(locs,"p2"),L3p:sum(locs,"p3"),Gp:sum(locs,"pg")};
 }
 
@@ -2228,14 +2308,215 @@ const clone=o=>JSON.parse(JSON.stringify(o));
 const SCN_KEY="damo-workflow-scenarios";
 function scnLoad(){try{const v=JSON.parse(localStorage.getItem(SCN_KEY)||"[]");return Array.isArray(v)?v:[]}catch(e){return []}}
 function scnSave(list){try{localStorage.setItem(SCN_KEY,JSON.stringify(list))}catch(e){toast("This browser won't store scenarios; save the estimate as a file instead.")}}
+/* ---------- commercial position: an editable final number, and commercial options ----------
+   Applied at the very end: steps 1 to 8 stay the modelled team. compute() returns R.fin, the modelled Year 1 team and years,
+   or the proposed ones once a reason is on record. The cut comes out of contingency first, then the delivery team (SDM
+   included); the proposed number is what the fact check, the final panel and the client summary use. Effort only: no price. */
+const ADJ_REASONS=[["budget","Client budget constraint"],["ptw","Price to win"],["comp","Competitive position"],["scope","Scope reduced"],["ai","Stronger AI or automation commitment"],["strat","Strategic investment in the account"],["other","Other (explain in the note)"]];
+const ADJ_MITS=[
+ {id:"vol",t:"Volume band and change-control clause: re-price or re-baseline if volumes move outside the band.",r:["util","cont","scope","exist","cap"]},
+ {id:"ramp",t:"Phase the reduction: hold the modelled team through the first months and step down once volumes are proven.",r:["util","floor","cont"]},
+ {id:"rev",t:"Agree a joint review after 90 days, with the right to re-baseline on real ticket data.",r:["util","scope","exist","cap","ai"]},
+ {id:"win",t:"Relax the support window or move cover to on call, so the base team the window needs falls.",r:["floor","util"]},
+ {id:"l1",t:"Client keeps L1, or a shared service desk, so the provider's team excludes it.",r:["floor","util"]},
+ {id:"cr",t:"Cap the enhancement and change-request pool; anything above the cap is a separate change request.",r:["util","scope"]},
+ {id:"sla",t:"Agree SLA relaxations, or service credits capped as a share of fees, until baselines are proven.",r:["floor","util"]},
+ {id:"res",t:"Hold a client-visible risk reserve outside the price, with agreed drawdown rules.",r:["cont","cap"]},
+ {id:"ai",t:"Commit AIOps savings only from the year the scenario supports, with credits at risk if they are missed; share the benefit through gain-share.",r:["ai"]},
+ {id:"shadow",t:"Extend shadowing with the existing team and agree a transition assurance plan.",r:["exist"]},
+ {id:"just",t:"Show the extra capacity as a named investment (for example transition or transformation), not as unexplained buffer.",r:["above"]}
+];
+const ADJ_AMBER=0.90, ADJ_RED=1.00, ADJ_CONT_WARN=0.5;   /* proposed thresholds: implied utilisation amber / red, share of contingency left */
+const adjReasonLabel=k=>{const r=ADJ_REASONS.find(x=>x[0]===k);return r?r[1]:""};
+const adjMitOn=id=>!(S.adj.mit&&S.adj.mit[id]&&S.adj.mit[id].on===false);
+const adjMitText=m=>(S.adj.mit&&S.adj.mit[m.id]&&S.adj.mit[m.id].text)||m.t;
+const exTotalOf=()=>EX_TIERS.reduce((x,[q])=>x+Math.max(0,+(S.ex||{})[q]||0),0);
+function adjRisks(){
+  const F=R.fin, out=[]; if(!F.on)return out;
+  const ys=F.adjYears.map((a,i)=>a?{a,y:F.years[i],n:i+1}:null).filter(Boolean), cutYs=ys.filter(o=>o.a.cut>1e-9), u0=(+S.bench.util||85)/100;
+  if(cutYs.length){
+    let wu=null;cutYs.forEach(o=>{const u=u0*o.a.deliveryModelled/Math.max(o.a.delivery,1e-9);if(!wu||u>wu.u)wu={u,n:o.n}});
+    if(wu&&wu.u>=ADJ_AMBER-1e-9)out.push({id:"util",sev:wu.u>=ADJ_RED?"high":"medium",title:"The team runs hotter than planned",detail:`Implied utilisation reaches ${Math.round(wu.u*100)}% in Year ${wu.n}, against the ${Math.round(u0*100)}% planning assumption. Above about ${Math.round(ADJ_AMBER*100)}% queues build up and SLAs slip.`});
+    let fl=null;if(R.floor>0)cutYs.forEach(o=>{if(o.y.base<R.floor-1e-9){const fr=o.y.base/R.floor;if(!fl||fr<fl.fr)fl={fr,n:o.n,have:o.y.base,need:R.floor}}});
+    if(fl)out.push({id:"floor",sev:"high",title:"Below the coverage floor",detail:`In Year ${fl.n} the proposed team (${fmt(fl.have,1)} FTE before contingency) is below the ${fmt(fl.need,1)} FTE base team from Step 1 that the support window needs, so about ${Math.round((1-fl.fr)*100)}% of the staffed hours cannot be covered without overtime or on-call.`});
+    let cu=null;cutYs.forEach(o=>{if(o.a.contModelled>1e-9){const left=o.a.cont/o.a.contModelled;if(left<ADJ_CONT_WARN-1e-9&&(!cu||left<cu.left))cu={left,n:o.n,c:o.a.cont,m:o.a.contModelled}}});
+    if(cu)out.push({id:"cont",sev:cu.left<=1e-9?"high":"medium",title:cu.left<=1e-9?"Contingency fully used":"Contingency largely used",detail:`Year ${cu.n} keeps ${fmt(cu.c,1)} of ${fmt(cu.m,1)} FTE of modelled contingency, so there is little room for volume or complexity surprises.`});
+    const inc=exTotalOf();
+    if(inc>0){const ex=ys.find(o=>o.n<=2&&o.y.fte<inc*0.85&&o.a.fteM>=inc*0.85);if(ex)out.push({id:"exist",sev:"medium",title:"Well below the existing team",detail:`Year ${ex.n} is ${fmt(ex.y.fte,1)} FTE against an existing team of ${fmt(inc,1)} (${Math.round((1-ex.y.fte/inc)*100)}% lower). The client will ask how the work is covered.`})}
+    out.push({id:"scope",sev:"medium",title:"Capacity falls but the scope does not",detail:"The contract scope, SLAs and volume assumptions stay as written while capacity falls, so any growth or extra work lands on the provider."});
+    if(S.adj.reason==="ai")out.push({id:"ai",sev:"medium",title:"Relies on faster AI or automation savings",detail:"The reduction assumes AI or automation delivers more, or earlier, than the scenario supports. If the savings arrive late the gap is unfunded."});
+  }
+  if(ys.some(o=>o.a.capped))out.push({id:"cap",sev:"high",title:"Requested cut is larger than the team it comes from",detail:"The reduction exceeds the team in at least one year, so it was capped there."});
+  if(ys.some(o=>o.a.cut<-1e-9))out.push({id:"above",sev:"low",title:"Proposed number is above the modelled team",detail:"The extra capacity is not driven by the inputs. Be ready to explain it, or the price may lose against leaner bids."});
+  return out;
+}
+const adjMitList=risks=>{const ids={};risks.forEach(r=>{ids[r.id]=1});return ADJ_MITS.filter(m=>m.r.some(x=>ids[x]))};
+
+/* commercial options: fixed fee, outcome-based terms (an add-on), time and materials with a cap, an assessment-led start */
+const CM_OPTS=[{id:"fixed",n:"Fixed fee"},{id:"outcome",n:"Outcome-based terms"},{id:"tm",n:"Time and materials, with a cap"},{id:"assess",n:"Assessment-led: T&M first, fixed fee once there is data"}];
+const CM_BASE={fixed:[20,30,80,85],outcome:[5,40,25,70],tm:[70,65,25,15],assess:[85,75,40,25]};
+const cmRatingLabel=r=>r==="rec"?"Recommended":r==="add"?"Recommended as an add-on":r==="pos"?"Possible":"Not yet";
+function commercialOptions(){
+  const cm=S.cm, n=R.sc, C=confidence(), band=C.band, e=S;
+  const histStated=cm.histMonths!=null&&!isNaN(+cm.histMonths), h=histStated?+cm.histMonths:(R.volAvail?6:0);
+  const y1=R.total, ceil=(cm.ceiling!=null&&+cm.ceiling>0)?+cm.ceiling:null, gap=ceil?(y1-ceil)/y1*100:null;
+  const a1=R.fin.adjYears[0], cut=a1?a1.cut/R.fin.mod[0]*100:0;
+  const sc_={},why={},f1=v=>fmt(v,1);CM_OPTS.forEach(o=>{sc_[o.id]=CM_BASE[o.id][n-1];why[o.id]=[]});
+  const rule=(id,pts,t)=>{sc_[id]+=pts;why[id].push({pts,t})};
+  const hs=h<=0?"no":Math.round(h);
+  if(h>=12){rule("fixed",10,`${hs} months of ticket history is enough to hold a volume band.`);rule("outcome",5,"A year of ticket history gives a credible baseline.")}
+  else if(h>=6){rule("fixed",5,`${hs} months of ticket history supports a volume band.`);rule("outcome",5,`${hs} months of history gives a usable baseline.`)}
+  else if(h<3){rule("fixed",-15,`With ${hs} months of ticket history there is too little to price a fixed volume.`);rule("outcome",-10,"Too little history to measure outcomes against.");rule("assess",10,"A short data-gathering phase fits when ticket history is thin.");rule("tm",5,"Time and materials carries the risk while data is gathered.")}
+  if(cm.baseline==="yes")rule("outcome",15,"A signed-off baseline (incident volume and MTTR) exists, which outcome-based terms need.");
+  else if(cm.baseline==="no")rule("outcome",-25,"There is no measurable baseline, so outcomes cannot be measured fairly.");
+  else rule("outcome",-10,"The baseline is not confirmed; outcome terms need one agreed before start.");
+  const cf=`Confidence is ${band} (${fmt(C.score,0)})`;
+  if(band==="Low"){rule("fixed",-10,`${cf}: avoid a firm fixed-fee commitment.`);rule("outcome",-10,`${cf}: too uncertain to share outcome risk.`);rule("tm",5,`${cf}: a capped T&M start limits exposure.`);rule("assess",5,`${cf}: an assessment-led start fits.`)}
+  else if(band==="Medium"){rule("fixed",-5,`${cf}: directional estimate, price with explicit caveats.`);rule("assess",5,`${cf}: assessment-led posture.`)}
+  else if(band==="High")rule("fixed",5,`${cf}: commercially usable with standard guardrails.`);
+  else{rule("fixed",10,`${cf}: the strongest basis for a fixed fee.`);rule("outcome",5,`${cf}: supports outcome-linked terms.`)}
+  const legacy=R.towers.some(t=>t.estate==="legacy");
+  if(S.cplx==="high"||legacy){const w=S.cplx==="high"?"High estate complexity":"A legacy estate";rule("fixed",-10,`${w} hides work that only shows after takeover.`);rule("outcome",-5,`${w} makes the baseline harder to trust.`);rule("tm",5,`${w} favours paying for effort at first.`);rule("assess",5,`${w} favours a discovery phase.`)}
+  else if(S.cplx==="low")rule("fixed",5,"Low complexity is easier to price firm.");
+  const takeover=exTotalOf()>0||(R.trans.ktW+R.trans.parW)>0;
+  if(takeover){rule("fixed",-5,"Taking over a running estate carries hidden-work and handoff risk in the first months.");rule("assess",5,"A takeover benefits from a settling-in period before fixing the price.")}
+  if(R.term>=3)rule("outcome",10,`A ${R.term}-year term gives outcome-based benefits time to materialise.`);
+  else rule("outcome",-15,`A ${R.term}-year term is too short for outcome-based benefits to show.`);
+  const aiops=R.aiTowers.length>0;
+  if(!aiops)rule("outcome",-20,"AIOps is not in scope for any tower, so there are no efficiency outcomes to share.");
+  if(ceil){
+    if(gap>10){rule("fixed",-10,`The budget ceiling (${f1(ceil)} FTE) is ${Math.round(gap)}% below the modelled Year 1 team (${f1(y1)}): a fixed fee would need descoping.`);rule("tm",10,"A not-to-exceed cap at the ceiling fits a budget limit.");rule("assess",5,"A capped start lets the gap be tested against real data.");rule("outcome",-5,"Outcome terms cannot close a gap in the base team.")}
+    else if(gap>0)rule("tm",5,`The ceiling (${f1(ceil)} FTE) is slightly below the modelled Year 1 team, so a cap needs managing.`);
+    else rule("fixed",5,`The modelled team (${f1(y1)} FTE) is within the client's ceiling (${f1(ceil)}).`);
+  }
+  if(cut>15&&(band==="Low"||band==="Medium")){rule("fixed",-10,`A ${Math.round(cut)}% cut on a ${band.toLowerCase()}-confidence estimate leaves no room for a fixed price.`);rule("tm",5,"A cut is safer on time and materials with a cap.");rule("assess",5,"A cut is safer with a data-gathering start.")}
+  if(cm.pressure==="high"){rule("fixed",5,"A firm price is a stronger answer to price competition.");rule("outcome",5,"Sharing risk differentiates the bid under price pressure.");rule("tm",-5,"Open-ended T&M is weak under price competition.")}
+  CM_OPTS.forEach(o=>{sc_[o.id]=Math.max(0,Math.min(100,sc_[o.id]))});
+  const order=["fixed","assess","tm"].slice().sort((a,b)=>sc_[b]-sc_[a]), top=order[0], topS=sc_[top], addOn=sc_.outcome>=60;
+  const rating=id=>id==="outcome"?(addOn?"add":sc_.outcome>=40?"pos":"not"):id===top?"rec":(sc_[id]>=topS-15&&sc_[id]>=45?"pos":"not");
+  const pf=R.pf, rz=pf.realize||{};
+  const guard={
+    fixed:["Volume band of ±15% around the modelled Year 1 demand, with a scope and capacity review after two months outside it.","Change control for new scope, and a cap on the enhancement and change-request pool.",`Keep the contingency (${R.contPct}% in Year 1) inside the price or as a visible reserve.`,"Service credits capped as a share of fees."],
+    outcome:["Agree and sign off the baseline (incident volume and MTTR) before start.","A credit floor below the committed reduction, a gain-share trigger above it, credits capped as a share of annual effort.",`Start outcome measurement from Year ${pf.aiFrom} when the AIOps roadmap begins`+(pf.mode==="portfolio"&&rz.commit!=null?`, and commit ${rz.commit}% of the freed capacity.`:".")],
+    tm:[`Not-to-exceed cap at ${f1(ceil||y1)} FTE for Year 1${ceil?" (the client's ceiling)":" (the modelled team)"}.`,"Monthly review of actual effort against the modelled team.","Name the trigger to convert to a fixed fee, for example three months of ticket data."],
+    assess:["Run the first months (or a rapid assessment of a few weeks) on time and materials with a cap.","Convert to a fixed fee once there are at least three months of ticket data and a volume band is agreed.","Re-baseline the Year 2 contingency at the conversion point."]
+  };
+  const up={
+    fixed:[].concat(h<6?[`Obtain at least 6 months of ticket data (now ${h<=0?"none":Math.round(h)}).`]:[],(band==="Low"||band==="Medium")?["Raise confidence: data availability and scope clarity are the biggest levers."]:[],(gap!=null&&gap>10)?["Agree scope or SLA reductions that close the gap to the budget ceiling."]:[],(S.cplx==="high"||legacy)?["Run a discovery of the legacy estate before fixing the price."]:[]),
+    outcome:[].concat(cm.baseline!=="yes"?["Agree and sign off a baseline of incident volume and MTTR."]:[],R.term<3?["Extend the term to at least 3 years."]:[],!aiops?["Bring AIOps into scope."]:[],h<3?["Gather ticket history to measure against."]:[]),
+    tm:[],assess:["Define the conversion trigger and the date it is reviewed."]
+  };
+  const k={rec:0,add:1,pos:2,not:3};
+  const opts=CM_OPTS.map(o=>({id:o.id,n:o.n,score:sc_[o.id],rating:rating(o.id),why:why[o.id],guard:guard[o.id],up:rating(o.id)==="rec"?[]:up[o.id]})).sort((a,b)=>(k[a.rating]-k[b.rating])||(b.score-a.score));
+  let head;
+  if(top==="fixed")head="Fixed fee"+(addOn?", with an outcome-based component":"")+", with a ±15% volume band and change control.";
+  else if(top==="assess")head="Start on time and materials with a cap, then convert to a fixed fee once there are at least three months of ticket data and a volume band is agreed."+(addOn?" Add outcome-based terms once the baseline is agreed.":"");
+  else head="Time and materials with a not-to-exceed cap, with a named point to review a fixed fee."+(addOn?" Add outcome-based terms once the baseline is agreed.":"");
+  const caution=(top==="fixed"&&((gap!=null&&gap>10)||cut>15))?"Caution: the budget ceiling or the cut is large for a firm price. Keep every guardrail below, and consider an assessment-led start instead.":"";
+  return {top,head,caution,opts,scenario:n,start:R.SC.comm,hist:h,histStated,gap,y1,ceil,cut,band};
+}
+const cmStartText=c=>`Scenario ${c.scenario}: the framework's starting point is ${c.start}.`;
+function cpResultsHtml(){
+  const F=R.fin, A=S.adj;let h="";
+  if(A.on){
+    if(!A.reason)h+=`<div class="alert" style="margin-bottom:10px"><b>Not applied yet.</b> Choose a reason. The number does not change until one is on record.</div>`;
+    else if(!F.on)h+=`<div class="verdict">No change entered. Set a % reduction or a proposed FTE for a year.</div>`;
+    else{
+      const u0=(+S.bench.util||85)/100;
+      h+=`<h4 class="subh">Final number: modelled against proposed</h4><div class="loc-table"><table><thead><tr><th>Year</th><th class="r">Modelled</th><th class="r">Proposed</th><th class="r">Change</th><th class="r">From contingency</th><th class="r">From delivery team</th><th class="r">Implied utilisation</th></tr></thead><tbody>`
+        +F.years.slice(0,5).map((y,i)=>{const a=F.adjYears[i];if(!a)return `<tr><td class="loc-name">Year ${y.n}</td><td class="r num">${fmt(y.fte,2)}</td><td class="r num">${fmt(y.fte,2)}</td><td class="r" colspan="4">unchanged</td></tr>`;
+          const ch=y.fte-a.fteM,pc=a.fteM?ch/a.fteM*100:0,u=u0*a.deliveryModelled/Math.max(a.delivery,1e-9);
+          return `<tr><td class="loc-name">Year ${y.n}</td><td class="r num">${fmt(a.fteM,2)}</td><td class="r num"><b>${fmt(y.fte,2)}</b></td><td class="r num">${sgn(ch,2)} (${sgn(pc,1)}%)</td><td class="r num">${fmt(-a.fromCont,2)}</td><td class="r num">${fmt(-a.fromDel,2)}</td><td class="r num" style="${u>=ADJ_RED-1e-9?"color:var(--warn);font-weight:700":u>=ADJ_AMBER-1e-9?"color:var(--risk);font-weight:700":""}">${Math.round(u*100)}%</td></tr>`}).join("")+`</tbody></table></div>`;
+      h+=`<div class="hint" style="margin:8px 0">Reason: <b>${esc(adjReasonLabel(A.reason))}</b>${A.note?`. ${esc(A.note)}`:""}. The cut comes out of contingency first, then the delivery team (SDM included). The client summary shows the proposed number only.</div>`;
+      const risks=adjRisks();
+      if(risks.length){
+        h+=`<h4 class="subh">Risks this creates</h4>`+risks.map(r=>`<p class="cprisk"><span class="cpsev ${r.sev}">${r.sev}</span><b>${esc(r.title)}.</b> ${esc(r.detail)}</p>`).join("");
+        h+=`<h4 class="subh">Mitigations</h4><div class="hint" style="margin-bottom:6px">Ticked ones go into the summary. Edit the wording or add your own.</div>`;
+        adjMitList(risks).forEach(m=>{const tags=m.r.filter(x=>risks.some(r=>r.id===x)).map(x=>risks.find(r=>r.id===x).title.toLowerCase());
+          h+=`<div class="cpmit"><input type="checkbox" data-adjmit="${m.id}" ${adjMitOn(m.id)?"checked":""} aria-label="Include this mitigation"><div><input type="text" data-adjmit-t="${m.id}" value="${esc(adjMitText(m))}"><small>For: ${esc(tags.join("; "))}</small></div></div>`});
+      }
+      (A.extra||[]).forEach((x,i)=>{h+=`<div class="cpmit"><span></span><div class="row" style="flex-wrap:nowrap"><input type="text" data-adjextra-t="${i}" value="${esc(x.t||"")}" style="flex:1"><button type="button" class="btn sm" data-adjrm="${i}">Remove</button></div></div>`});
+      h+=`<div class="cpmit"><span></span><div class="row" style="flex-wrap:nowrap"><input type="text" id="adjNewMit" placeholder="Add your own mitigation" style="flex:1"><button type="button" class="btn sm" data-adjadd="1">Add</button></div></div>`;
+    }
+  }
+  const c=commercialOptions();
+  h+=`<h4 class="subh">Commercial options <span class="hint" style="text-transform:none;letter-spacing:0">proposed · model level, no price · internal</span></h4>`;
+  h+=`<div class="verdict"><b>${esc(c.head)}</b><br><span class="hint">${esc(cmStartText(c))} The fit rules below move it from the data you have.${!c.histStated&&R.volAvail?" Months of ticket history is not set, so 6 months is assumed.":""}</span></div>`;
+  if(c.caution)h+=`<div class="alert" style="margin-top:8px">${esc(c.caution)}</div>`;
+  c.opts.forEach((o,i)=>{
+    const pos=o.why.filter(w=>w.pts>0),neg=o.why.filter(w=>w.pts<0);
+    h+=`<details class="cpopt" ${o.rating==="rec"||o.rating==="add"||i===0?"open":""}><summary><span class="cpsev ${o.rating}">${cmRatingLabel(o.rating)}</span><b>${esc(o.n)}</b></summary><div class="cpoptb">`
+      +(pos.length?`<div class="hint">For</div><ul>${pos.map(w=>`<li>${esc(w.t)}</li>`).join("")}</ul>`:"")
+      +(neg.length?`<div class="hint">Against</div><ul>${neg.map(w=>`<li>${esc(w.t)}</li>`).join("")}</ul>`:"")
+      +`<div class="hint">Guardrails if you choose it</div><ul>${o.guard.map(g=>`<li>${esc(g)}</li>`).join("")}</ul>`
+      +(o.up.length?`<div class="hint">What would move it up</div><ul>${o.up.map(g=>`<li>${esc(g)}</li>`).join("")}</ul>`:"")+`</div></details>`;
+  });
+  return h;
+}
+function cpLiveText(){
+  const cm=S.cm; if(!(cm.ceiling!=null&&+cm.ceiling>0))return "";
+  const y1=R.total,gap=y1-(+cm.ceiling);
+  if(gap<=0)return `<div class="hint">The modelled Year 1 team (${fmt(y1,1)} FTE) is within the ceiling.</div>`;
+  return `<div class="alert">The ceiling is <b>${fmt(gap,1)} FTE (${Math.round(gap/y1*100)}%)</b> below the modelled Year 1 team (${fmt(y1,1)}). <button type="button" class="btn sm" data-cmceil="1" style="margin-left:6px">Use the ceiling as the Year 1 proposal</button></div>`;
+}
+function updateCP(){
+  const A=S.adj, cm=S.cm, F=R.fin, T=R.term;
+  const setv=(id,v)=>{const el=$(id);if(el&&document.activeElement!==el)el.value=v==null?"":v};
+  $("cpOn").checked=!!A.on;
+  $("cpBody").hidden=!A.on;
+  document.querySelectorAll("[data-cpmode]").forEach(b=>b.setAttribute("aria-pressed",String(A.mode===b.dataset.cpmode)));
+  $("cpPctRow").hidden=A.mode==="year";$("cpYearRow").hidden=A.mode!=="year";
+  setv("cpPct",A.pct);
+  for(let i=0;i<5;i++){const el=$("cpY"+(i+1));if(el){setv("cpY"+(i+1),A.y&&A.y[i]);el.placeholder=fmt(R.fin.mod[i],1)}}
+  setv("cpReason",A.reason);setv("cpNote",A.note);
+  setv("cmHist",cm.histMonths);setv("cmCeil",cm.ceiling);$("cmCeil").placeholder=`not set (modelled ${fmt(R.total,1)})`;
+  setv("cmBase",cm.baseline);
+  document.querySelectorAll("[data-cmpress]").forEach(b=>b.setAttribute("aria-pressed",String(cm.pressure===b.dataset.cmpress)));
+  $("cmLive").innerHTML=cpLiveText();
+  const st=!A.on?"":!A.reason?`<div class="alert">Not applied yet. Choose a reason first.</div>`:!F.on?`<div class="hint">No change entered. The modelled number stands.</div>`:`<div class="verdict"><b>${F.years.map((y,i)=>F.adjYears[i]?`Year ${y.n} ${fmt(F.adjYears[i].fteM,1)} → ${fmt(y.fte,1)}`:null).filter(Boolean).join("; ")} FTE.</b> ${adjRisks().length} risk${adjRisks().length===1?"":"s"} flagged below.</div>`;
+  $("cpLive").innerHTML=st;
+  $("cpResults").innerHTML=cpResultsHtml();
+}
+function commercialDoc(){
+  const F=R.fin,c=commercialOptions(),A=S.adj;let h=`<h3>Commercial position</h3>`;
+  if(F.on){
+    h+=`<p class="hint">Reason: ${esc(adjReasonLabel(A.reason))}${A.note?`. ${esc(A.note)}`:""}. The cut comes out of contingency first, then the delivery team. Effort only.</p><table><thead><tr><th>Year</th><th class="r">Modelled</th><th class="r">Proposed</th><th class="r">Change</th><th class="r">From contingency</th><th class="r">From delivery team</th></tr></thead><tbody>`
+      +F.years.map((y,i)=>{const a=F.adjYears[i];return a?`<tr><td>Year ${y.n}</td><td class="r">${fmt(a.fteM,2)}</td><td class="r"><b>${fmt(y.fte,2)}</b></td><td class="r">${sgn(y.fte-a.fteM,2)}</td><td class="r">${fmt(-a.fromCont,2)}</td><td class="r">${fmt(-a.fromDel,2)}</td></tr>`:`<tr><td>Year ${y.n}</td><td class="r">${fmt(y.fte,2)}</td><td class="r">${fmt(y.fte,2)}</td><td class="r" colspan="3">unchanged</td></tr>`}).join("")+`</tbody></table>`;
+    const risks=adjRisks();
+    h+=`<ul class="assume">${risks.map(r=>`<li><b>[${r.sev}] ${esc(r.title)}.</b> ${esc(r.detail)}</li>`).join("")}${adjMitList(risks).filter(m=>adjMitOn(m.id)).map(m=>`<li>Mitigation: ${esc(adjMitText(m))}</li>`).join("")}${(A.extra||[]).filter(x=>x.t).map(x=>`<li>Mitigation: ${esc(x.t)}</li>`).join("")}</ul>`;
+  }else h+=`<p class="hint">No commercial adjustment: the final number is the modelled team.</p>`;
+  h+=`<p><b>${esc(c.head)}</b> ${esc(cmStartText(c))}${c.caution?" "+esc(c.caution):""}</p><table><thead><tr><th>Option</th><th>Fit</th><th>Why</th></tr></thead><tbody>`
+    +c.opts.map(o=>`<tr><td>${esc(o.n)}</td><td>${cmRatingLabel(o.rating)}</td><td class="hint">${esc(o.why.slice().sort((a,b)=>Math.abs(b.pts)-Math.abs(a.pts)).slice(0,2).map(w=>w.t).join(" "))}</td></tr>`).join("")+`</tbody></table><p class="hint">Model level only, no price. The fit rules beyond the framework's scenario recommendation are proposed. Internal: the client summary does not include this.</p>`;
+  return h;
+}
+function commercialMd(L){
+  const F=R.fin,c=commercialOptions(),A=S.adj;
+  L.push("","## Commercial position (internal, effort only, no price)");
+  if(F.on){
+    L.push(`- Reason: ${adjReasonLabel(A.reason)}${A.note?` — ${A.note}`:""}. The cut comes out of contingency first, then the delivery team (SDM included).`);
+    F.years.forEach((y,i)=>{const a=F.adjYears[i];L.push(a?`- Year ${y.n}: modelled ${fmt(a.fteM,2)} FTE, proposed **${fmt(y.fte,2)}** FTE (${sgn(y.fte-a.fteM,2)}).`:`- Year ${y.n}: unchanged at ${fmt(y.fte,2)} FTE.`)});
+    const risks=adjRisks();risks.forEach(r=>L.push(`- Risk [${r.sev}] **${r.title}**: ${r.detail}`));
+    adjMitList(risks).filter(m=>adjMitOn(m.id)).forEach(m=>L.push(`- Mitigation: ${adjMitText(m)}`));(A.extra||[]).forEach(x=>{if(x.t)L.push(`- Mitigation: ${x.t}`)});
+  }else L.push("- No adjustment: the final number is the modelled team.");
+  L.push("",`**Commercial options.** ${c.head} ${cmStartText(c)}${c.caution?" "+c.caution:""}`);
+  c.opts.forEach(o=>{const p=o.why.filter(w=>w.pts>0).slice(0,2).map(w=>w.t),n=o.why.filter(w=>w.pts<0).slice(0,2).map(w=>w.t);L.push(`- **${o.n}**: ${cmRatingLabel(o.rating)}.${p.length?" For: "+p.join(" "):""}${n.length?" Against: "+n.join(" "):""}`)});
+  c.opts[0].guard.forEach(g=>L.push(`- Guardrail (${c.opts[0].n}): ${g}`));
+}
+function cpSheetRows(){
+  const F=R.fin,c=commercialOptions(),A=S.adj,rows=[];
+  if(F.on){rows.push(["Year","Modelled FTE","Proposed FTE","Change","From contingency","From delivery team"]);F.years.forEach((y,i)=>{const a=F.adjYears[i];rows.push(a?[`Y${y.n}`,a.fteM,y.fte,y.fte-a.fteM,-a.fromCont,-a.fromDel]:[`Y${y.n}`,y.fte,y.fte,0,0,0])});rows.push([],["Reason",adjReasonLabel(A.reason)],["Note",A.note||""]);const risks=adjRisks();risks.forEach(r=>rows.push([`Risk [${r.sev}]`,`${r.title}: ${r.detail}`]));adjMitList(risks).filter(m=>adjMitOn(m.id)).forEach(m=>rows.push(["Mitigation",adjMitText(m)]));(A.extra||[]).forEach(x=>{if(x.t)rows.push(["Mitigation",x.t])});rows.push([])}
+  rows.push(["Commercial option","Fit","Score (0-100, proposed)"]);c.opts.forEach(o=>rows.push([o.n,cmRatingLabel(o.rating),Math.round(o.score)]));rows.push([],["Suggested",c.head],["Starting point",cmStartText(c)]);
+  c.opts.forEach(o=>o.why.forEach(w=>rows.push([o.n+(w.pts>0?" (for)":" (against)"),w.t])));c.opts[0].guard.forEach(g=>rows.push([`Guardrail (${c.opts[0].n})`,g]));
+  return rows;
+}
 function metricsOf(st){
   return withState(migrate(clone(st)),R=>{const C=confidence(), tr=R.termRows[R.term-1];
-    return {fte:R.total,people:S.rounding!=="none"?R.people:null,base:R.s1,work:R.runWork,ai:R.ai2,sdm:R.s5,cont:R.s6,contPct:R.contPct,
+    return {fin:R.fin.total,finOn:R.fin.on,fte:R.total,people:S.rounding!=="none"?R.people:null,base:R.s1,work:R.runWork,ai:R.ai2,sdm:R.s5,cont:R.s6,contPct:R.contPct,
       term:R.term,avg:tr.avg,lastY:R.years[R.term-1].fte,conf:C.score,band:C.band,lo:C.lo,hi:C.hi,cov:covLabel(),shifts:`${R.blocks.length} windows, ${R.blocks.filter(k=>k.mode==="oncall").length} on call`,
       towers:R.towers.map(t=>`${t.kind}${t.aiops===true?"+AIOps":""}`).join(", ")||"none",tickets:R.towers.reduce((x,t)=>x+t.tickets,0),
       savings:R.pf.mode==="portfolio"?"AIOps use cases":`${R.savePct}% a year`,trans:R.trans.total,sc:R.sc}});
 }
-const SCN_ROWS=[["Year 1 team (FTE)",m=>fmt(m.fte,1)],["Rostered people",m=>m.people==null?"–":fmt(m.people,0)],["Coverage",m=>`${m.cov} · ${m.shifts}`],["Towers",m=>m.towers],["Tickets a month",m=>fmt(m.tickets,0)],
+const SCN_ROWS=[["Year 1 team (FTE)",m=>fmt(m.fte,1)],["Proposed Year 1 (commercial position)",m=>m.finOn?fmt(m.fin,1):"–"],["Rostered people",m=>m.people==null?"–":fmt(m.people,0)],["Coverage",m=>`${m.cov} · ${m.shifts}`],["Towers",m=>m.towers],["Tickets a month",m=>fmt(m.tickets,0)],
   ["Base team (Step 1)",m=>fmt(m.base,1)],["Work team (steps 2, 5 and 6, without AI engineers)",m=>fmt(m.work,1)],["AI engineers (AIOps)",m=>fmt(m.ai,1)],["SDM",m=>fmt(m.sdm,1)],["Contingency",m=>`${fmt(m.cont,1)} (${m.contPct}%)`],
   ["Framework scenario",m=>String(m.sc)],["Term",m=>`${m.term} year${m.term>1?"s":""}`],["Year 2+ savings",m=>m.savings],["Final-year team",m=>fmt(m.lastY,1)],["Average FTE a year",m=>fmt(m.avg,1)],
   ["Confidence",m=>`${fmt(m.conf,0)} · ${m.band}`],["Range",m=>`${fmt(m.lo,1)} – ${fmt(m.hi,1)}`],["Transition (FTE-months)",m=>m.trans>0?fmt(m.trans,1):"–"]];
@@ -2285,6 +2566,36 @@ function runSelfTests(){
   {const m=migrate({hours:24,days:5,spd:3,assign:["in","in","ro"],shiftMode:["active","active","oncall"],locations:[{id:"in",name:"India",kind:"Offshore",leave:18,hol:10},{id:"ro",name:"Romania",kind:"Nearshore EU",leave:21,hol:15}],backfill:false,util1:100,cov:{x:{shifts:[0,2],people:1}}});
     const live=m.cov.x.shifts, blocks=blocksOf(m);
     withState(Object.assign(m,{risks:Object.fromEntries(Object.keys(m.risks).map(k=>[k,[]]))}),R=>add("An estimate saved with shifts opens as windows with the same roster","3 windows; (16 h active + 8 h on call × 15%) × 5 × 2 ÷ 40 = 4.3 FTE; live shifts follow",`${blocks.length} windows; ${fmt(R.roster,2)} FTE; ${live.length} live`,blocks.length===3&&near(R.roster,4.3)&&live.length===2&&live.every(id=>blocks.some(k=>k.id===id)),"migration"))}
+  /* commercial position: an editable final number, and commercial options */
+  {const mk=mod=>testState(st=>{st.towers=[amsTower(300,{skills:[mkSkill("be",100)]})];st.cplx="medium";st.term=3;st.aiMaturity="low";st.cm={histMonths:12,baseline:"yes",ceiling:null,pressure:"medium"};if(mod)mod(st)});
+   const on=o=>st=>{Object.assign(st.adj,{on:true,reason:"budget"},o)};
+   const same=(a,b)=>Math.abs(a-b)<1e-6;
+   let M=null;withState(mk(),R=>{M={total:R.total,s6:R.s6,fte:R.years.map(y=>y.fte),G:R.snaps[6].G,sub5:R.sub5}});
+   withState(mk(st=>{Object.assign(st.adj,{on:false,pct:20,reason:"budget"})}),R=>withState(mk(st=>{Object.assign(st.adj,{on:true,pct:20,reason:""})}),R2=>add("Final number: nothing changes while the switch is off or no reason is chosen","final = modelled","off "+fmt(R.fin.total,2)+", no reason "+fmt(R2.fin.total,2)+" vs "+fmt(M.total,2),!R.fin.on&&!R2.fin.on&&same(R.fin.total,M.total)&&same(R2.fin.total,M.total),"commercial position")));
+   withState(mk(on({mode:"pct",pct:10})),R=>add("Final number: a 10% reduction takes 10% off every year and leaves the modelled steps alone","proposed = 0.9 × modelled; R.total unchanged",`${R.fin.years.map(y=>fmt(y.fte,2)).join(" / ")} · modelled Y1 ${fmt(R.total,2)}`,R.fin.on&&same(R.total,M.total)&&R.fin.years.every((y,i)=>same(y.fte,M.fte[i]*0.9)&&same(R.fin.adjYears[i].fteM,M.fte[i]))&&same(R.fin.total,M.total*0.9),"commercial position"));
+   withState(mk(on({mode:"year",y:[M.total-0.5*M.s6]})),R=>add("Final number: a cut smaller than the contingency comes out of the contingency only","contingency halved, SDM and delivery unchanged",`contingency ${fmt(R.fin.s6,2)} (was ${fmt(M.s6,2)}), SDM ${fmt(R.fin.snap.G,2)} (was ${fmt(M.G,2)})`,same(R.fin.s6,0.5*M.s6)&&same(R.fin.snap.G,M.G)&&same(R.fin.total,M.total-0.5*M.s6),"commercial position"));
+   withState(mk(on({mode:"pct",pct:20})),R=>{const L=R.fin.snap;add("Final number: a larger cut empties the contingency, then the delivery team (SDM included)","contingency 0, SDM and delivery lower, total = L2 + L3 + SDM",`contingency ${fmt(R.fin.s6,2)}, SDM ${fmt(L.G,2)} (was ${fmt(M.G,2)}), total ${fmt(R.fin.total,2)} = ${fmt(L.L2+L.L3+L.G,2)}`,same(R.fin.s6,0)&&L.G<M.G&&same(R.fin.total,L.L2+L.L3+L.G),"commercial position")});
+   withState(mk(on({mode:"pct",pct:15})),R=>{const rs=R.fin.roles.reduce((x,r)=>x+r.fte,0),cs=R.fin.snap.cells.reduce((x,c)=>x+c.a2+c.a3+c.g,0);add("Final number: roles and locations still add up to the proposed total","roles = locations = total",`${fmt(rs,2)} / ${fmt(cs,2)} / ${fmt(R.fin.total,2)}`,same(rs,R.fin.total)&&same(cs,R.fin.total),"commercial position")});
+   withState(mk(on({mode:"year",y:[null,3.3]})),R=>add("Final number: per-year mode sets only the years you fill in","Y1 unchanged, Y2 = 3.3",`${fmt(R.fin.years[0].fte,2)} / ${fmt(R.fin.years[1].fte,2)}`,!R.fin.adjYears[0]&&same(R.fin.total,M.total)&&same(R.fin.years[1].fte,3.3),"commercial position"));
+   withState(mk(on({mode:"pct",pct:-10})),R=>add("Final number: a negative change adds capacity and flags it","1.1 × modelled and an 'above the modelled team' risk",`${fmt(R.fin.total,2)} vs ${fmt(M.total,2)}`,same(R.fin.total,M.total*1.1)&&adjRisks().some(r=>r.id==="above"),"commercial position"));
+   withState(mk(on({mode:"pct",pct:12})),R=>{const tr=R.fin.termRows[2],av=R.fin.years.slice(0,3).reduce((x,y)=>x+y.fte,0)/3;add("Final number: the term averages are recomputed from the proposed years","3-year average = mean of the first three proposed years",`${fmt(tr.avg,2)} vs ${fmt(av,2)}`,same(tr.avg,av)&&!same(tr.avg,R.termRows[2].avg),"commercial position")});
+   withState(mk(on({mode:"pct",pct:20})),R=>{const a=adjRisks().map(r=>r.id).join(",");withState(mk(on({mode:"year",y:[M.total-0.5*M.s6]})),R2=>{const b=adjRisks().map(r=>r.id).join(",");add("Final number: implied utilisation is flagged when the team is cut below the work","20% cut flags utilisation; a cut inside the contingency does not",`${a} | ${b}`,/util/.test(a)&&!/util/.test(b),"commercial position")})});
+   withState(mk(on({mode:"pct",pct:45})),R=>{const a=adjRisks().map(r=>r.id).join(",");add("Final number: a cut below the Step 1 base team is flagged","floor risk raised",`${a} (floor ${fmt(R.floor,2)}, lowest base ${fmt(Math.min(...R.fin.years.map(y=>y.base)),2)})`,R.floor>0&&R.fin.years.some(y=>y.base<R.floor)&&/floor/.test(a),"commercial position")});
+   withState(mk(on({mode:"pct",pct:10})),R=>{const c=buildCustomerReport();add("Final number: the client summary shows the proposed number only","proposed Y1 shown; no reason, risks or modelled figure",`proposed ${fmt(R.fin.total,1)} ${c.indexOf(fmt(R.fin.total,1))>=0?"shown":"missing"}, ${/Client budget constraint|Commercial position|Mitigation|Commercial options/.test(c)?"leaks":"clean"}`,c.indexOf(fmt(R.fin.total,1))>=0&&!/Client budget constraint|Commercial position|Mitigation|Commercial options/.test(c),"commercial position")});
+   const co=mod=>{let r=null;withState(mk(mod),R=>{const c=commercialOptions();r={top:c.top,sc:R.sc,out:c.opts.find(o=>o.id==="outcome"),fixed:c.opts.find(o=>o.id==="fixed"),head:c.head,opts:c.opts}});return r};
+   const s3=co(),s4=co(st=>{st.aiMaturity="moderate"});
+   add("Commercial options: with volumetrics and a year of data, Scenario 3 suggests a fixed fee and Scenario 4 adds an outcome-based component",`S3 fixed fee; S4 fixed fee with outcome add-on`,`S${s3.sc} ${s3.top}, outcome ${s3.out.rating}; S${s4.sc} ${s4.top}, outcome ${s4.out.rating}`,s3.sc===3&&s3.top==="fixed"&&s3.out.rating!=="add"&&s4.sc===4&&s4.top==="fixed"&&s4.out.rating==="add"&&/outcome-based component/.test(s4.head),"commercial position");
+   const s1=co(st=>{st.towers=[amsTower(300,{vol:false,skills:[mkSkill("be",100)]})];st.cm.histMonths=0;st.cm.baseline="unknown"});
+   add("Commercial options: with no volumetrics and low AI maturity (Scenario 1) an assessment-led start is suggested and a fixed fee is not yet","assessment-led recommended, fixed fee Not yet",`S${s1.sc} ${s1.top}, fixed ${s1.fixed.rating}`,s1.sc===1&&s1.top==="assess"&&s1.fixed.rating==="not","commercial position");
+   const thin=co(st=>{st.cm.histMonths=2});
+   add("Commercial options: under three months of ticket data pulls a fixed fee down by 25 and an assessment-led start up by 10","−25 and +10 against 12 months",`fixed ${Math.round(s3.fixed.score)}→${Math.round(thin.fixed.score)}, assess ${Math.round(s3.opts.find(o=>o.id==="assess").score)}→${Math.round(thin.opts.find(o=>o.id==="assess").score)}`,same(s3.fixed.score-thin.fixed.score,25)&&same(thin.opts.find(o=>o.id==="assess").score-s3.opts.find(o=>o.id==="assess").score,10),"commercial position");
+   const noBase=co(st=>{st.aiMaturity="moderate";st.cm.baseline="no"});
+   add("Commercial options: no measurable baseline lowers outcome-based terms by 40 against an agreed one","40 points lower",`${Math.round(s4.out.score)} vs ${Math.round(noBase.out.score)}`,same(s4.out.score-noBase.out.score,40),"commercial position");
+   const all=[s3,s4,s1,thin,noBase];
+   add("Commercial options: scores stay between 0 and 100 and exactly one base model is recommended","every case",all.map(c=>c.opts.filter(o=>o.rating==="rec").length).join(""),all.every(c=>c.opts.every(o=>o.score>=0&&o.score<=100)&&c.opts.filter(o=>o.rating==="rec").length===1),"commercial position");
+   const old=migrate({});
+   add("An estimate saved before the commercial position opens with it switched off","adj off, baseline not confirmed, medium pressure",`${old.adj?old.adj.on:"missing"} / ${old.cm?old.cm.baseline+" / "+old.cm.pressure:"missing"}`,!!old.adj&&old.adj.on===false&&!!old.cm&&old.cm.baseline==="unknown"&&old.cm.pressure==="medium","commercial position");}
+
   withState(testState(st=>{st.towers=[amsTower(900,{skills:[mkSkill("be",100)]})]}),R=>add("Part 1 team is the larger of base and work, plus SDM","max(base, work) + SDM",`${fmt(R.p1.total,2)} vs ${fmt(Math.max(R.s1,R.s2-R.ai2)+R.ai2+R.p1.sdm,2)}`,near(R.p1.total,Math.max(R.s1,R.s2-R.ai2)+R.ai2+R.p1.sdm)&&near(R.p1.sdm,R.p1.deliv/R.sdmRatio),"DAMO convention"));
   withState(testState(st=>{st.towers=[amsTower(40,{skills:[mkSkill("mob",100)]})];st.cplx="medium"}),R=>{const exp=Math.max(0,R.s3-R.p1.lift);
     add("Skill cover first uses the spare capacity in the base team","added headcount = max(0, skill cover − spare)",`${fmt(R.bridge.d3,2)} vs ${fmt(exp,2)}`,near(R.bridge.d3,exp)&&near(R.p1.total+R.bridge.d3+R.bridge.d4+R.bridge.d5+R.s6,R.total),"proposed")});
@@ -2314,12 +2625,13 @@ async function exportExcel(){
   const sheet=(name,rows,widths)=>{const ws=X.utils.aoa_to_sheet(rows.map(r=>r.map(r2)));if(widths)ws["!cols"]=widths.map(w=>({wch:w}));X.utils.book_append_sheet(wb,ws,name)};
   const C=R.conf||confidence(), A=R.allow||allowances(), T=R.term, whole=S.rounding!=="none";
   sheet("Summary",[["Deal",S.deal||""],["Version",S.meta.version],["Status",approvalStale()?"Changed since approval":STATUS[S.meta.status]],["Prepared by",S.meta.preparedBy],["Approved by",S.meta.status==="approved"?S.meta.approvedBy:""],["Approval date",S.meta.status==="approved"?S.meta.approvedAt:""],["Exported",new Date().toISOString().slice(0,10)],[],
-    ["Year 1 team (FTE)",R.total],["Rostered people",whole?R.people:""],[`${T}-year average (FTE a year)`,R.termRows[T-1].avg],["Confidence score",C.score],["Confidence band",C.band],["Range low (FTE)",C.lo],["Range high (FTE)",C.hi],["Coverage",covLabel()],["Framework scenario",`${R.sc}: ${R.SC.name}`],["Transition (FTE-months)",R.trans.total],[],["FTE only: no rates, cost or price."]],[34,40]);
-  sheet("Build",[["Step","What it did","Step FTE","Team after (FTE)","People"]].concat(buildRows().map(r=>[r.stage,r.what,r.add,r.snap.fte,whole?r.snap.people:""])).concat(whole?[["Rounding","",R.roundAdd,"",R.people]]:[]),[22,90,12,16,10]);
+    ["Year 1 team (FTE)",R.fin.total],["Rostered people",whole?R.fin.people:""],[`${T}-year average (FTE a year)`,R.fin.termRows[T-1].avg],R.fin.on?["Modelled Year 1 team (FTE, before the commercial position)",R.total]:["Commercial position","none"],["Confidence score",C.score],["Confidence band",C.band],["Range low (FTE)",C.lo],["Range high (FTE)",C.hi],["Coverage",covLabel()],["Framework scenario",`${R.sc}: ${R.SC.name}`],["Transition (FTE-months)",R.trans.total],[],["FTE only: no rates, cost or price."]],[34,40]);
+  sheet("Build",[["Step","What it did","Step FTE","Team after (FTE)","People"]].concat(buildRows().map(r=>[r.stage,r.what,r.add,r.snap.fte,whole?r.snap.people:""])).concat(whole?[["Rounding","",R.roundAdd,"",R.people]]:[]).concat(R.fin.on?[["Commercial position",adjReasonLabel(S.adj.reason),R.fin.total-R.total,R.fin.total,whole?R.fin.people:""]]:[]),[22,90,12,16,10]);
   sheet("Towers",[["Tower","Kind","We provide","SLA","Demand from","Counts at","Tickets/mo","L1 tickets","L2 tickets","L3 tickets","SLA uplift L2 %","SLA uplift L3 %","Coordination %","A hrs","B hrs","C hrs","FTE","AIOps","AI engineers"]].concat(R.towers.map(t=>[t.name,t.kind,ownedText(t),slaText(t),t.src,t.lvl.toUpperCase(),t.tickets,t.l1t,t.l2t,t.l3t,t.sm.l2*100,t.sm.l3*100,t.hand*100,t.A,t.Bh,t.C,t.fte,t.aiops===true?"Yes":"No",t.ai])),[22,6,14,34,18,8]);
-  sheet("Team by role",[["Role","Tower","FTE"]].concat(R.roles.map(r=>[r.role,r.tower,r.fte])).concat([["Total","",R.total]]),[44,22,10]);
-  sheet("Team by location",[["Location","L2 (incl. L1) FTE","L3 FTE","SDM FTE","People"]].concat(R.snaps[6].cells.filter(c=>c.a2+c.a3+c.g>0).map(c=>[c.name,c.a2,c.a3,c.g,whole?c.people:""])),[18,16,10,10,10]);
-  sheet("Years",[["Year","FTE","Before contingency","Contingency"].concat(R.pf.mode==="portfolio"?["FTE freed by AIOps","Reduced","Redeployed","Committed"]:[])].concat(R.years.map((y,i)=>[y.n,y.fte,y.base,y.cont].concat(R.pf.mode==="portfolio"?[R.pf.years[i].gross,R.pf.years[i].reduce,R.pf.years[i].redeploy,R.pf.years[i].commit]:[]))),[8,10,18,12,18,10,12,12]);
+  sheet("Team by role",[["Role","Tower","FTE"]].concat(R.fin.roles.map(r=>[r.role,r.tower,r.fte])).concat([["Total","",R.fin.total]]),[44,22,10]);
+  sheet("Team by location",[["Location","L2 (incl. L1) FTE","L3 FTE","SDM FTE","People"]].concat(R.fin.snap.cells.filter(c=>c.a2+c.a3+c.g>0).map(c=>[c.name,c.a2,c.a3,c.g,whole?c.people:""])),[18,16,10,10,10]);
+  sheet("Years",[["Year","FTE","Before contingency","Contingency"].concat(R.pf.mode==="portfolio"?["FTE freed by AIOps","Reduced","Redeployed","Committed"]:[])].concat(R.fin.years.map((y,i)=>[y.n,y.fte,y.base,y.cont].concat(R.pf.mode==="portfolio"?[R.pf.years[i].gross,R.pf.years[i].reduce,R.pf.years[i].redeploy,R.pf.years[i].commit]:[]))),[8,10,18,12,18,10,12,12]);
+  sheet("Commercial position",cpSheetRows(),[30,100,22]);
   sheet("Allowances",[["Step","FTE"],["Productive need",A.core],["Productive-time allowance (utilisation)",A.util],["Leave and holiday backfill",A.leave],["Contingency",A.cont],["Risk modifiers",A.risk],["Year 1 team",A.total],["Buffer above productive capacity",A.buffer],["Buffer %",A.bufferPct],["Rounding",A.round]],[40,10]);
   sheet("Deviations",[["Setting","Framework","Used","Source"]].concat((R.devs||deviations()).map(d=>[d[0],String(d[1]),String(d[2]),d[3]])),[44,20,24,16]);
   sheet("Confidence",[["Driver","Weight","Score","Suggested or set","What the score means","Points"]].concat(C.rows.map(r=>[r.name,r.w,r.sc,r.user?"set":"suggested",r.rub[r.sc-1],r.pts])).concat([["Score",100,"","",C.band,C.score]]),[44,8,8,14,70,8]);
@@ -2612,7 +2924,7 @@ function updateRiskDeltas(k,base,add,pct){
 let R;
 function update(){
   R=compute();
-  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); updateS6(); updateS7(); updateTrans(); updateS9(); updateS8(); updateResults(); renderBar(); renderNav(); setNavH(); updateMeta(); save();
+  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); updateS6(); updateS7(); updateTrans(); updateS9(); updateS8(); updateCP(); updateResults(); renderBar(); renderNav(); setNavH(); updateMeta(); save();
 }
 /* A compact version of the coverage timeline for the inputs panel: one 48-cell bar per row, on the customer clock from the window start. */
 function miniHtml(C){
@@ -3087,25 +3399,25 @@ function updateS8(){
   const exTot=EX_TIERS.reduce((x,[k])=>x+n(k),0);
   const tol=(+S.exTol||0)/100;
   const cell=S.rounding==="cell";
-  const T=R.term, yEnd=R.years[T-1].fte, avg=R.termRows[T-1].avg;
+  const T=R.term, yEnd=R.fin.years[T-1].fte, avg=R.fin.termRows[T-1].avg;
   const band=(ours,theirs)=>{if(!(theirs>0))return ours>0?`<span class="band hi">new</span>`:"–";const p=(ours-theirs)/theirs;return Math.abs(p)<=tol?`<span class="band ok">consistent</span>`:p>0?`<span class="band hi">${fmt(p*100,0)}% above</span>`:`<span class="band lo">${fmt(-p*100,0)}% below</span>`};
   const rows=[
-    ["L2",n("L2"),R.L2,cell?R.L2p:null],
-    ["L3 incl. SRE / automation",n("L3")+n("trans"),R.L3,cell?R.L3p:null],
-    ["Governance (SDM)",n("gov"),R.G,cell?R.Gp:null],
+    ["L2",n("L2"),R.fin.snap.L2,cell?R.fin.snap.L2p:null],
+    ["L3 incl. SRE / automation",n("L3")+n("trans"),R.fin.snap.L3,cell?R.fin.snap.L3p:null],
+    ["Governance (SDM)",n("gov"),R.fin.snap.G,cell?R.fin.snap.Gp:null],
     ["Other roles",n("other"),0,cell?0:null]
   ];
   $("exTable").innerHTML=rows.map(r=>`<tr><td class="loc-name">${r[0]}</td><td class="r num">${fmt(r[1],1)}</td><td class="r num">${fmt(r[2],2)}</td><td class="r num">${r[3]==null?"–":fmt(r[3],0)}</td><td class="r num">${sgn(r[2]-r[1],1)}</td><td>${r[0]==="Other roles"&&r[1]>0?`<span class="band lo">not in our scope</span>`:band(r[2],r[1])}</td></tr>`).join("")
-    +`<tr><td><b>Total</b></td><td class="r num"><b>${fmt(exTot,1)}</b></td><td class="r num"><b>${fmt(R.total,2)}</b></td><td class="r num"><b>${S.rounding!=="none"?fmt(R.people,0):"–"}</b></td><td class="r num"><b>${sgn(R.total-exTot,1)}</b></td><td>${band(R.total,exTot)}</td></tr>`;
-  const bars=[["Existing team","today",exTot,"var(--faint)"],["Our Year 1","Step 7 team",R.total,"var(--accent)"],[`Our ${T}-year average`,"Step 8",avg,"#8C5FA8"],[`Our Year ${T}`,"end of term",yEnd,"var(--add)"]];
+    +`<tr><td><b>Total</b></td><td class="r num"><b>${fmt(exTot,1)}</b></td><td class="r num"><b>${fmt(R.fin.total,2)}</b></td><td class="r num"><b>${S.rounding!=="none"?fmt(R.fin.people,0):"–"}</b></td><td class="r num"><b>${sgn(R.fin.total-exTot,1)}</b></td><td>${band(R.fin.total,exTot)}</td></tr>`;
+  const bars=[["Existing team","today",exTot,"var(--faint)"],["Our Year 1",R.fin.on?"proposed":"Step 7 team",R.fin.total,"var(--accent)"],[`Our ${T}-year average`,"Step 8",avg,"#8C5FA8"],[`Our Year ${T}`,"end of term",yEnd,"var(--add)"]];
   const mx=Math.max(...bars.map(b=>b[2]),0.0001);
   $("exBars").innerHTML=bars.map(b=>`<div class="rbar"><span class="t"><b>${b[0]}</b><span>${b[1]}${exTot>0&&b[0]!=="Existing team"?` · ${sgn((b[2]-exTot)/exTot*100,0)}%`:""}</span></span><span class="track"><i style="width:${b[2]/mx*100}%;background:${b[3]}"></i></span><span class="v">${fmt(b[2],1)}</span></div>`).join("");
   let v;
   if(!(exTot>0)){v="Enter the existing team to run the fact check.";}
   else{
-    const d=R.total-exTot, p=d/exTot;
-    if(Math.abs(p)<=tol)v=`<b>Consistent with today's team.</b> Our Year 1 is ${fmt(R.total,1)} FTE against ${fmt(exTot,1)} today (${sgn(p*100,0)}%), inside the ±${S.exTol}% tolerance.`;
-    else if(p>0){const core=R.total-R.s4-R.s6;v=`<b>Our Year 1 is ${fmt(d,1)} FTE (${fmt(p*100,0)}%) above today's team.</b> ${fmt(R.s4,1)} FTE is transformation capacity and ${fmt(R.s6,1)} is contingency, which the existing team may not carry; without them we would be at ${fmt(core,1)} (${sgn((core-exTot)/exTot*100,0)}%). Check that today's team covers the same ${covLabel()} window, and whether it runs Year 1 transition risk.`;}
+    const d=R.fin.total-exTot, p=d/exTot;
+    if(Math.abs(p)<=tol)v=`<b>Consistent with today's team.</b> Our Year 1 is ${fmt(R.fin.total,1)} FTE against ${fmt(exTot,1)} today (${sgn(p*100,0)}%), inside the ±${S.exTol}% tolerance.`;
+    else if(p>0){const core=R.fin.total-R.s4-R.fin.s6;v=`<b>Our Year 1 is ${fmt(d,1)} FTE (${fmt(p*100,0)}%) above today's team.</b> ${fmt(R.s4,1)} FTE is transformation capacity and ${fmt(R.fin.s6,1)} is contingency, which the existing team may not carry; without them we would be at ${fmt(core,1)} (${sgn((core-exTot)/exTot*100,0)}%). Check that today's team covers the same ${covLabel()} window, and whether it runs Year 1 transition risk.`;}
     else v=`<b>Our Year 1 is ${fmt(-d,1)} FTE (${fmt(-p*100,0)}%) below today's team.</b> Check nothing is missing from scope: today's team has ${fmt(n("other"),1)} FTE in roles outside our model. If the scope matches, the gap is the productivity case to present.`;
     const pe=(yEnd-exTot)/exTot;
     v+=` By Year ${T} our team is ${fmt(yEnd,1)} FTE, ${sgn(pe*100,0)}% against today${pe<0?", which is the saving the client sees over the term":""}.`;
@@ -3128,10 +3440,11 @@ function renderBar(){
   const sn=cur===1?R.snaps[1]:cur===2?R.snaps[2]:(cur===5||cur===9)?P:cur===3?R.snaps[3]:cur===4?R.snaps[4]:R.snaps[6];
   const whole=S.rounding!=="none", cell=S.rounding==="cell";
   const roundAdd=sn.people-sn.fte;
+  const dsp=(cur===8&&R.fin.on)?R.fin.snap:sn;
   const title=(STAGES.find(x=>x.n===cur)||{}).t||"";
-  $("barLbl").textContent=cur===6||cur===7||cur===8?"Year 1 team":cur===5||cur===9?"Part 1 team":`Team after ${title.toLowerCase()}`;
-  $("barFte").innerHTML=`${fmt(sn.fte,1)}<small>FTE</small>`;
-  $("barHc").innerHTML=whole?`Rostered as <b>${fmt(sn.people,0)}</b> people`:"No rounding applied";
+  $("barLbl").textContent=cur===8&&R.fin.on?"Final Year 1 number":cur===6||cur===7||cur===8?"Year 1 team":cur===5||cur===9?"Part 1 team":`Team after ${title.toLowerCase()}`;
+  $("barFte").innerHTML=`${fmt(dsp.fte,1)}<small>FTE</small>`;
+  $("barHc").innerHTML=whole?`Rostered as <b>${fmt(dsp.people,0)}</b> people`:"No rounding applied";
   const chip=(cls,l,v,go)=>`<div class="chip ${cls}" ${go?`data-gochip="${go}" style="cursor:pointer"`:""}><span class="l">${l}</span><span class="v">${v}</span></div>`;
   const sep=t=>`<div class="chip sep">${t||"›"}</div>`;
   let h=chip("base","Roster",fmt(R.roster,1),1)+chip("add","+ Util",sgn(R.utilAdd),1)+chip("add","+ Leave",sgn(R.leaveAdd),1)+chip("risk","+ Risk",sgn(R.risk1Add),1)+chip("base","1 · Base team",fmt(R.s1,1),1);
@@ -3145,7 +3458,8 @@ function renderBar(){
   if(reached(4))h+=chip("add","6 · Transform",sgn(B.d4),4);
   if(reached(6))h+=sep()+chip("add","SDM re-based",sgn(B.d5),6)+chip("add","7 · Contingency",sgn(R.s6),6)+chip("risk","+ Risk",sgn(R.risk6Add),6)+chip("base","Year 1 team",fmt(R.total,1),6);
   if(reached(7))h+=sep()+chip("base",`8 · ${R.term}-yr avg`,fmt(R.termRows[R.term-1].avg,1),7)+chip("add","vs 1-year",R.term>1?"−"+fmt(R.termRows[R.term-1].vs1*100,0)+"%":"–",7);
-  if(reached(8)){const exTot=EX_TIERS.reduce((x,[q])=>x+Math.max(0,+(S.ex||{})[q]||0),0);h+=sep()+chip("base","9 · vs existing",exTot>0?sgn((R.total-exTot)/exTot*100,0)+"%":"–",8);}
+  if(reached(8)&&R.fin.on)h+=sep()+chip("risk","Commercial",sgn(R.fin.total-R.total),8)+chip("base","Final Year 1",fmt(R.fin.total,1),8);
+  if(reached(8)){const exTot=EX_TIERS.reduce((x,[q])=>x+Math.max(0,+(S.ex||{})[q]||0),0);h+=sep()+chip("base","9 · vs existing",exTot>0?sgn((R.fin.total-exTot)/exTot*100,0)+"%":"–",8);}
   if(whole)h+=sep()+chip("round","Rounding",sgn(roundAdd));
   const nxt=ORDER[pos+1];
   if(nxt)h+=sep()+chip("todo",`Step ${STEPNO[nxt]} next`,"—");
@@ -3163,10 +3477,10 @@ function renderBar(){
   }
   if(whole)st+=seg(roundAdd,"var(--round)","Rounding");
   $("barStack").innerHTML=st;
-  $("barSplit").innerHTML=`<div class="r"><span>L2</span><b>${cell?fmt(sn.L2p,0):fmt(sn.L2,1)}</b></div>
-    <div class="r"><span>L3</span><b>${cell?fmt(sn.L3p,0):fmt(sn.L3,1)}</b></div>
-    <div class="r"><span>SDM</span><b>${cell?fmt(sn.Gp,0):fmt(sn.G,1)}</b></div>
-    <div class="locs">${sn.cells.filter(c=>c.a2+c.a3+c.g>0).map(c=>`${esc(c.name)} ${whole&&S.rounding!=="total"?fmt(c.people,0):fmt(c.a2+c.a3+c.g,1)}`).join(" · ")} · ${covLabel()}</div>`;
+  $("barSplit").innerHTML=`<div class="r"><span>L2</span><b>${cell?fmt(dsp.L2p,0):fmt(dsp.L2,1)}</b></div>
+    <div class="r"><span>L3</span><b>${cell?fmt(dsp.L3p,0):fmt(dsp.L3,1)}</b></div>
+    <div class="r"><span>SDM</span><b>${cell?fmt(dsp.Gp,0):fmt(dsp.G,1)}</b></div>
+    <div class="locs">${dsp.cells.filter(c=>c.a2+c.a3+c.g>0).map(c=>`${esc(c.name)} ${whole&&S.rounding!=="total"?fmt(c.people,0):fmt(c.a2+c.a3+c.g,1)}`).join(" · ")} · ${covLabel()}</div>`;
 }
 
 /* ---------- stage results and final summary ---------- */
@@ -3208,31 +3522,33 @@ function updateResults(){
   RES_TEXT[7]=`${T}-year average: ${fmt(tr.avg,2)} FTE a year, ${T>1?"−"+fmt(tr.vs1*100,1)+"% vs a 1-year contract":"1-year term"}. Year 1 ${fmt(R.total,2)} FTE; Year ${T} ${fmt(R.years[T-1].fte,2)} FTE.`;
   if($("res-7"))$("res-7").innerHTML=`<div><div class="rl">${T}-year average</div><div class="rv">${fmt(tr.avg,2)}<small>FTE / yr</small></div></div><div class="rd"><b>${T>1?"−"+fmt(tr.vs1*100,1)+"%":"no change"}</b> vs a 1-year contract. Year 1 team ${fmt(R.total,2)} FTE; Year ${T} ${fmt(R.years[T-1].fte,2)} FTE.</div>`;
   const exTot=EX_TIERS.reduce((x,[q])=>x+Math.max(0,+(S.ex||{})[q]||0),0);
-  RES_TEXT[8]=`Final Year 1 team: ${fmt(R.total,2)} FTE${whole?`, ${fmt(sn[6].people,0)} people`:""}. ${exTot>0?`${sgn((R.total-exTot)/exTot*100,0)}% against today's team of ${fmt(exTot,1)} FTE.`:""}`;
-  if($("res-8"))$("res-8").innerHTML=`<div><div class="rl">Final Year 1 team</div><div class="rv">${fmt(R.total,2)}${ppl(sn[6])}</div></div><div class="rd">${exTot>0?`<b>${sgn((R.total-exTot)/exTot*100,0)}%</b> against today's team of ${fmt(exTot,1)} FTE. `:""}Fact check only: this stage does not change the team.</div>`;
+  const trF=R.fin.termRows[T-1];
+  RES_TEXT[8]=`Final Year 1 team: ${fmt(R.fin.total,2)} FTE${whole?`, ${fmt(R.fin.snap.people,0)} people`:""}. ${exTot>0?`${sgn((R.fin.total-exTot)/exTot*100,0)}% against today's team of ${fmt(exTot,1)} FTE.`:""}`;
+  if($("res-8"))$("res-8").innerHTML=`<div><div class="rl">Final Year 1 team</div><div class="rv">${fmt(R.fin.total,2)}${ppl(R.fin.snap)}</div></div><div class="rd">${exTot>0?`<b>${sgn((R.fin.total-exTot)/exTot*100,0)}%</b> against today's team of ${fmt(exTot,1)} FTE. `:""}Fact check only: this stage does not change the team.</div>`;
   /* final panel */
-  const last=sn[6];
+  const last=R.fin.snap;
   $("finalKpis").innerHTML=[
-    ["Year 1 team",`${fmt(R.total,1)}`,"FTE","main"],
+    ["Year 1 team",`${fmt(R.fin.total,1)}`,"FTE","main"],
     ["Rostered people",whole?fmt(last.people,0):"–",whole?`${fmt(last.L2p,0)} L2 · ${fmt(last.L3p,0)} L3 · ${fmt(last.Gp,0)} SDM`:"no rounding",""],
-    [`${T}-year average`,fmt(tr.avg,1),`FTE a year · ${T>1?"−"+fmt(tr.vs1*100,0)+"% vs 1-year":"1-year term"}`,""],
+    [`${T}-year average`,fmt(trF.avg,1),`FTE a year · ${T>1?"−"+fmt(trF.vs1*100,0)+"% vs 1-year":"1-year term"}`,""],
     ["Confidence",R.conf?fmt(R.conf.score,0):"–",R.conf?`${R.conf.band} · range ${fmt(R.conf.lo,1)}–${fmt(R.conf.hi,1)} FTE`:"",""]
   ].map(k=>`<div class="kpi ${k[3]}"><span>${k[0]}</span><b>${k[1]}</b><em>${esc(k[2])}</em></div>`).join("");
   const rows=buildRows();
   $("finalBuild").innerHTML=rows.map(r=>`<tr><td class="loc-name">${r.stage}</td><td class="hint">${esc(r.what)}</td><td class="r num">${sgn(r.add,2)}</td><td class="r num"><b>${fmt(r.snap.fte,2)}</b>${esc(r.ppl)}</td></tr>`).join("")
     +(whole?`<tr><td class="loc-name">Rounding</td><td class="hint">${({cell:"Up per location and tier; SDM to nearest",loc:"Up per location",total:"Total rounded up"})[S.rounding]}</td><td class="r num">${sgn(R.roundAdd,2)}</td><td class="r num"><b>${fmt(R.people,0)} people</b></td></tr>`:"")
-    +`<tr><td class="loc-name">Part 2 · Term</td><td class="hint">${R.savePct}% YoY savings from Y2, contingency ${R.contPct}% → ${R.cont2}%</td><td class="r num">–</td><td class="r num"><b>${fmt(tr.avg,2)}</b> avg</td></tr>`
+    +(R.fin.on?`<tr><td class="loc-name">Commercial position</td><td class="hint">${esc(adjReasonLabel(S.adj.reason))}: ${sgn(-R.fin.cut1,2)} FTE in Year 1 (contingency first, then the delivery team)</td><td class="r num">${sgn(R.fin.total-R.total,2)}</td><td class="r num"><b>${fmt(R.fin.total,2)}</b>${whole?` · ${fmt(R.fin.people,0)} people`:""}</td></tr>`:"")
+    +`<tr><td class="loc-name">Part 2 · Term</td><td class="hint">${R.savePct}% YoY savings from Y2, contingency ${R.contPct}% → ${R.cont2}%</td><td class="r num">–</td><td class="r num"><b>${fmt(trF.avg,2)}</b> avg</td></tr>`
     +(R.trans.ktW+R.trans.parW?`<tr><td class="loc-name">Transition</td><td class="hint">One-off before service start: ${R.trans.ktW} weeks KT + ${R.trans.parW} weeks parallel run; average ${fmt(R.trans.avg,1)} FTE</td><td class="r num">–</td><td class="r num"><b>${fmt(R.trans.total,1)}</b> FTE-months</td></tr>`:"")
-    +`<tr><td class="loc-name">Part 2 · Final fact check</td><td class="hint">${exTot>0?`Existing team ${fmt(exTot,1)} FTE`:"No existing team entered"}</td><td class="r num">–</td><td class="r num">${exTot>0?sgn((R.total-exTot)/exTot*100,0)+"%":"–"}</td></tr>`;
+    +`<tr><td class="loc-name">Part 2 · Final fact check</td><td class="hint">${exTot>0?`Existing team ${fmt(exTot,1)} FTE`:"No existing team entered"}</td><td class="r num">–</td><td class="r num">${exTot>0?sgn((R.fin.total-exTot)/exTot*100,0)+"%":"–"}</td></tr>`;
   if(S.active===8)renderDeskViews();
 }
 function renderDeskViews(){
   renderRegister();
   try{renderScenarios()}catch(e){$("scnList").innerHTML=`<tr><td colspan="5" class="hint">Scenarios couldn't be read.</td></tr>`}
-  const rt=R.total||1;
-  $("finalRoles").innerHTML=R.roles.length?R.roles.map(r=>`<tr><td class="loc-name">${esc(r.role)}</td><td>${esc(r.tower)}</td><td class="r num">${fmt(r.fte,2)}</td><td class="r num">${fmt(r.fte/rt*100,0)}%</td></tr>`).join("")
-    +`<tr><td><b>Total</b></td><td></td><td class="r num"><b>${fmt(R.roles.reduce((x,r)=>x+r.fte,0),2)}</b></td><td class="r num">100%</td></tr>`
-    :`<tr><td colspan="4" class="hint">No towers yet: the team is the Step 1 base team (${fmt(R.total,2)} FTE of L2/L3 shift cover).</td></tr>`;
+  const rt=R.fin.total||1;
+  $("finalRoles").innerHTML=R.fin.roles.length?R.fin.roles.map(r=>`<tr><td class="loc-name">${esc(r.role)}</td><td>${esc(r.tower)}</td><td class="r num">${fmt(r.fte,2)}</td><td class="r num">${fmt(r.fte/rt*100,0)}%</td></tr>`).join("")
+    +`<tr><td><b>Total</b></td><td></td><td class="r num"><b>${fmt(R.fin.roles.reduce((x,r)=>x+r.fte,0),2)}</b></td><td class="r num">100%</td></tr>`
+    :`<tr><td colspan="4" class="hint">No towers yet: the team is the Step 1 base team (${fmt(R.fin.total,2)} FTE of L2/L3 shift cover).</td></tr>`;
   const A=allowances();
   let h=wstep("1","Productive need",fmt(A.core,2),"The team with every allowance switched off: coverage and work at 100% productive time");
   h+=wstep("2","Productive-time allowance",`<span class="delta add">${sgn(A.util,2)}</span>`,`Utilisation ${S.util1}% per resource and ${S.bench.util}% on ticket effort ([F] G6). Not a buffer: people are not productive every hour`);
@@ -3255,7 +3571,7 @@ function renderDeskViews(){
 const KIND_PLAIN={AMS:"Application management",IMS:"Infrastructure management",DMS:"Data platform management",AI:"AI platforms and agentic solutions"};
 const ROLE_PLAIN={"Not yet assigned to a skill set":"Support engineers","Shift cover: L2/L3 engineers to staff every shift":"Shift engineers (staff every shift in the support window)","Transformation: SRE, automation, CI/CD":"Transformation engineers (SRE, automation, CI/CD)"};
 function buildCustomerReport(){
-  const whole=S.rounding!=="none", last=R.snaps[6], T=R.term;
+  const whole=S.rounding!=="none", last=R.fin.snap, T=R.term;
   const date=new Date().toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"});
   const n1=x=>fmt(x,1);
   /* coverage in plain words */
@@ -3267,10 +3583,10 @@ function buildCustomerReport(){
     const basis=t.src==="Ticket history"?`sized on ${fmt(t.tickets,0)} tickets a month from your ticket history`:t.src==="MAU proxy"?`sized from user numbers (about ${fmt(t.tickets,0)} tickets a month); to be confirmed with ticket history`:`sized from the estate's size and complexity (about ${fmt(t.tickets,0)} tickets a month); to be confirmed with ticket history`;
     return `<tr><td><b>${esc(t.name)}</b><br><span class="muted">${KIND_PLAIN[t.kind]}</span></td><td>${esc(basis)}</td><td>${ownedText(t)}${slaText(t)?`<br><span class="muted">${esc(slaText(t))}</span>`:""}</td><td>${t.aiops===true?"Included":"Not included"}</td></tr>`}).join("");
   /* roles, merged across towers */
-  const byRole={};R.roles.forEach(r=>{const k=ROLE_PLAIN[r.role]||r.role;(byRole[k]=byRole[k]||{fte:0,towers:new Set()}).fte+=r.fte;byRole[k].towers.add(r.tower)});
+  const byRole={};R.fin.roles.forEach(r=>{const k=ROLE_PLAIN[r.role]||r.role;(byRole[k]=byRole[k]||{fte:0,towers:new Set()}).fte+=r.fte;byRole[k].towers.add(r.tower)});
   const roleRows=Object.entries(byRole).map(([k,v])=>`<tr><td>${esc(k)}</td><td class="muted">${esc([...v.towers].join(", "))}</td><td class="r">${n1(v.fte)}</td></tr>`).join("");
   const locRows=last.cells.filter(c=>c.a2+c.a3+c.g>0).map(c=>`<tr><td>${esc(c.name)}</td><td class="r">${whole?c.p2:n1(c.a2)}</td><td class="r">${whole?c.p3:n1(c.a3)}</td><td class="r">${whole?c.pg:n1(c.g)}</td><td class="r"><b>${whole&&S.rounding!=="total"?fmt(c.people,0):n1(c.a2+c.a3+c.g)}</b></td></tr>`).join("");
-  const yrs=R.years.slice(0,T);
+  const yrs=R.fin.years.slice(0,T);
   const traj=yrs.map(y=>`<td class="r"><b>${n1(y.fte)}</b></td>`).join("");
   const drop=T>1?(1-yrs[T-1].fte/yrs[0].fte)*100:0;
   /* what we need from the client */
@@ -3312,7 +3628,7 @@ function buildCustomerReport(){
   <h1>${esc(S.deal||"Managed service")}: proposed support team</h1>
   <p class="muted">${esc(date)} · version ${S.meta.version}. Indicative team for discussion, subject to due diligence. Pricing is provided separately.</p>
   <div class="kpis">
-    <div class="kpi"><span>Year 1 team</span><b>${whole?fmt(R.people,0):n1(R.total)}</b><em>${whole?"people":"FTE"}</em></div>
+    <div class="kpi"><span>Year 1 team</span><b>${whole?fmt(R.fin.people,0):n1(R.fin.total)}</b><em>${whole?"people":"FTE"}</em></div>
     <div class="kpi"><span>Support window</span><b>${esc(covLabel())}</b><em>${S.hours} hours a day, ${S.days} days a week</em></div>
     <div class="kpi"><span>${T>1?`Year ${T} team`:"Contract"}</span><b>${T>1?n1(yrs[T-1].fte):"1 yr"}</b><em>${T>1?`FTE, ${fmt(drop,0)}% below Year 1 through automation`:"term"}</em></div>
   </div>
@@ -3321,7 +3637,7 @@ function buildCustomerReport(){
   ${scope?`<h2>What is in scope</h2><table><thead><tr><th>Service</th><th>How it was sized</th><th>Support levels and SLA</th><th>AIOps</th></tr></thead><tbody>${scope}</tbody></table>
   ${R.aiTowers.length?`<p class="muted">Where AIOps is included, dedicated AI engineers build intelligent alerting, automated root-cause analysis and self-healing, so fewer incidents need a person to resolve them.</p>`:""}`:""}
   <h2>The team in Year 1</h2>
-  <table><thead><tr><th>Role</th><th>Services</th><th class="r">FTE</th></tr></thead><tbody>${roleRows||`<tr><td>Support engineers</td><td></td><td class="r">${n1(R.total)}</td></tr>`}<tr><td><b>Total</b></td><td class="muted">${whole?`rostered as ${fmt(R.people,0)} people, rounded up to whole people in each location`:""}</td><td class="r"><b>${n1(R.total)}</b></td></tr></tbody></table>
+  <table><thead><tr><th>Role</th><th>Services</th><th class="r">FTE</th></tr></thead><tbody>${roleRows||`<tr><td>Support engineers</td><td></td><td class="r">${n1(R.fin.total)}</td></tr>`}<tr><td><b>Total</b></td><td class="muted">${whole?`rostered as ${fmt(R.fin.people,0)} people, rounded up to whole people in each location`:""}</td><td class="r"><b>${n1(R.fin.total)}</b></td></tr></tbody></table>
   <table><thead><tr><th>Location</th><th class="r">Support engineers</th><th class="r">Senior engineers</th><th class="r">Service delivery</th><th class="r">${whole&&S.rounding!=="total"?"People":"FTE"}</th></tr></thead><tbody>${locRows}</tbody></table>
   ${T>1?`<h2>The team over the contract</h2><table><thead><tr>${yrs.map(y=>`<th class="r">Year ${y.n}</th>`).join("")}</tr></thead><tbody><tr>${traj}</tr></tbody></table>
   <p>From Year 2 the team gets smaller as runbooks mature and automation takes on repeat work. The people needed to cover every shift stay in place.</p>`:""}
@@ -3346,13 +3662,14 @@ function stageDoc(n,title,extra){
     <h3>Risks</h3><table><thead><tr><th>Status</th><th>Risk</th><th class="r">FTE modifier</th></tr></thead><tbody>${risks||'<tr><td colspan="3">None</td></tr>'}</tbody></table></section>`;
 }
 function buildReport(){
-  const sn=R.snaps, last=sn[6], whole=S.rounding!=="none", T=R.term, tr=R.termRows[T-1];
+  const sn=R.snaps, last=R.fin.snap, whole=S.rounding!=="none", T=R.term, tr=R.fin.termRows[T-1];
   const exTot=EX_TIERS.reduce((x,[q])=>x+Math.max(0,+(S.ex||{})[q]||0),0);
   const date=new Date().toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"});
   const rows=buildRows();
   const build=rows.map(r=>`<tr><td><b>${r.stage}</b></td><td>${esc(r.what)}</td><td class="r">${sgn(r.add,2)}</td><td class="r"><b>${fmt(r.snap.fte,2)}</b>${esc(r.ppl)}</td></tr>`).join("")
     +(whole?`<tr><td><b>Rounding</b></td><td>${({cell:"Up per location and tier; SDM to nearest person",loc:"Up per location",total:"Total rounded up"})[S.rounding]}</td><td class="r">${sgn(R.roundAdd,2)}</td><td class="r"><b>${fmt(R.people,0)} people</b></td></tr>`:"")
-    +`<tr class="final"><td><b>Year 1 team</b></td><td>Final estimate</td><td></td><td class="r"><b>${fmt(R.total,2)} FTE${whole?` · ${fmt(R.people,0)} people`:""}</b></td></tr>`;
+    +(R.fin.on?`<tr><td><b>Commercial position</b></td><td>${esc(adjReasonLabel(S.adj.reason))}: ${sgn(-R.fin.cut1,2)} FTE in Year 1 (contingency first, then the delivery team)</td><td class="r">${sgn(R.fin.total-R.total,2)}</td><td class="r"><b>${fmt(R.fin.total,2)}</b></td></tr>`:"")
+    +`<tr class="final"><td><b>${R.fin.on?"Final Year 1 team (proposed)":"Year 1 team"}</b></td><td>Final estimate</td><td></td><td class="r"><b>${fmt(R.fin.total,2)} FTE${whole?` · ${fmt(R.fin.people,0)} people`:""}</b></td></tr>`;
   const locRows=last.cells.filter(c=>c.a2+c.a3+c.g>0).map(c=>`<tr><td>${esc(c.name)}</td><td class="r">${fmt(c.a2,2)}</td><td class="r">${fmt(c.a3,2)}</td><td class="r">${fmt(c.g,2)}</td><td class="r"><b>${whole&&S.rounding!=="total"?fmt(c.people,0):fmt(c.a2+c.a3+c.g,2)}</b></td></tr>`).join("");
   const css=`body{font:14px/1.5 "IBM Plex Sans","Segoe UI",system-ui,sans-serif;color:#18202B;background:#fff;margin:0}
     main{max-width:980px;margin:0 auto;padding:32px 24px 48px}
@@ -3400,7 +3717,7 @@ function buildReport(){
   ${approvalStale()?`<p class="alert">The inputs changed after approval: these numbers are not the approved ones.</p>`:""}
   <p class="muted">Prepared ${esc(date)}. FTE only: no rates, cost or price. Sources: [F] DAMO Solution Estimation Framework, [P] AI_Works DAMO Team Pricing Sheet; values marked "proposed" are calibration assumptions.</p>
   <div class="kpis">
-    <div class="kpi main"><span>Year 1 team</span><b>${fmt(R.total,1)}</b><em>FTE</em></div>
+    <div class="kpi main"><span>Year 1 team</span><b>${fmt(R.fin.total,1)}</b><em>FTE</em></div>
     <div class="kpi"><span>Rostered people</span><b>${whole?fmt(last.people,0):"–"}</b><em>${whole?`${fmt(last.L2p,0)} L2 · ${fmt(last.L3p,0)} L3 · ${fmt(last.Gp,0)} SDM`:"no rounding"}</em></div>
     <div class="kpi"><span>${T}-year average</span><b>${fmt(tr.avg,1)}</b><em>${T>1?"−"+fmt(tr.vs1*100,0)+"% vs 1-year":"1-year term"}</em></div>
     <div class="kpi"><span>Confidence</span><b>${fmt(R.conf.score,0)}</b><em>${R.conf.band} · range ${fmt(R.conf.lo,1)}–${fmt(R.conf.hi,1)} FTE</em></div>
@@ -3410,13 +3727,14 @@ function buildReport(){
   <h3>Final team by location</h3>
   <table><thead><tr><th>Location</th><th class="r">L2</th><th class="r">L3</th><th class="r">SDM</th><th class="r">${whole&&S.rounding!=="total"?"People":"FTE"}</th></tr></thead><tbody>${locRows}</tbody></table>
   <h3>Year 1 team by role</h3>${tableOf("finalRoles")}
+  ${commercialDoc()}
   <h3>Allowances in the Year 1 team</h3><div class="working">${$("finalAllow").innerHTML}</div>
   <h3>Where the inputs came from</h3>${tableOf("finalProv")}
   <h3>Deviations from the framework</h3>${tableOf("finalDev")}
   <h3>Assumptions register</h3>${registerGroups().map(g=>`<div class="muted" style="margin:10px 0 2px"><b>${esc(g.cat)}</b></div><ul class="assume">${g.items.map(i=>`<li><b>Step ${i.step}</b> ${esc(i.t)} <span class="src">${esc(i.src)}</span></li>`).join("")}</ul>`).join("")}
   ${(R.scnCols||[]).length>1?`<h3>Scenarios compared</h3>${tableOf("scnCmp")}`:""}
   <h3>Verify against the framework</h3><p>${(()=>{const t=R.tests||runSelfTests();return `${t.filter(x=>x.pass).length} of ${t.length} self-checks pass.${t.some(x=>!x.pass)?" Failing: "+esc(t.filter(x=>!x.pass).map(x=>x.name).join("; "))+".":""}`})()}</p>
-  <p class="muted">Coverage ${esc(covLabel())} · ${R.blocks.length} location windows · utilisation ${S.util1}% · leave backfill ${S.backfill?"on":"off"} · complexity ${esc(R.CX.name)} · term ${T} year${T>1?"s":""}${exTot>0?` · existing team ${fmt(exTot,1)} FTE (${sgn((R.total-exTot)/exTot*100,0)}%)`:""}</p>
+  <p class="muted">Coverage ${esc(covLabel())} · ${R.blocks.length} location windows · utilisation ${S.util1}% · leave backfill ${S.backfill?"on":"off"} · complexity ${esc(R.CX.name)} · term ${T} year${T>1?"s":""}${exTot>0?` · existing team ${fmt(exTot,1)} FTE (${sgn((R.fin.total-exTot)/exTot*100,0)}%)`:""}</p>
   ${stageDoc(1,"Base team from coverage",tableOf("locCalc"))}
   ${stageDoc(2,"Service towers",tableOf("towerCalc")+tableOf("skillCalc"))}
   ${stageDoc(5,"Reconcile and SDM: the Part 1 team",tableOf("reconTable")+`<div class="verdict">${$("verdict").innerHTML}</div>`)}
@@ -3476,6 +3794,11 @@ document.addEventListener("click",e=>{
   if(chipEl){go(+chipEl.dataset.gochip);return}
   const t=e.target.closest("button");if(!t)return;
   const d=t.dataset;
+  if(d.cpmode){S.adj.mode=d.cpmode;update();return}
+  if(d.cmpress){S.cm.pressure=d.cmpress;update();return}
+  if(d.adjadd!=null){const inp=$("adjNewMit");if(inp&&inp.value.trim()){S.adj.extra=S.adj.extra||[];S.adj.extra.push({t:inp.value.trim()});update()}return}
+  if(d.adjrm!=null){if(S.adj.extra)S.adj.extra.splice(+d.adjrm,1);update();return}
+  if(d.cmceil!=null){if(S.cm.ceiling>0){S.adj.on=true;S.adj.mode="year";S.adj.y=S.adj.y||[];S.adj.y[0]=+S.cm.ceiling;if(!S.adj.reason)S.adj.reason="budget";update()}return}
   if(d.drm){DOCS=DOCS.filter(x=>x.id!==d.drm);renderDocLists();}
   else if(d.dpaste){const ta=$("dp-"+d.dpaste);const v=ta.value.trim();if(v){DOCS.push({id:uid(),type:d.dpaste,name:`Pasted text ${DOCS.filter(x=>x.type===d.dpaste).length+1}`,text:v,meta:`${v.length.toLocaleString()} chars`});ta.value="";renderDocLists();}}
   else if(t.id==="xRun"){runExtraction();}
@@ -3547,6 +3870,11 @@ function skl(el){const tw=twr(el);return tw.skills.find(k=>k.id===el.closest("[d
 function findRisk(el){const [k,id]=pair(el.closest("[data-risk]").dataset.risk);return S.risks[k].find(r=>r.id===id)}
 document.addEventListener("input",e=>{
   const t=e.target, d=t.dataset;
+  if(t.id==="cpPct"){S.adj.pct=t.value===""?0:+t.value;update();return}
+  if(d.cpy!=null){S.adj.y=S.adj.y||[];S.adj.y[+d.cpy]=(t.value===""||isNaN(+t.value))?null:+t.value;update();return}
+  if(t.id==="cpNote"){S.adj.note=t.value;update();return}
+  if(t.id==="cmHist"){S.cm.histMonths=(t.value===""||isNaN(+t.value))?null:Math.max(0,+t.value);update();return}
+  if(t.id==="cmCeil"){S.cm.ceiling=(t.value===""||isNaN(+t.value))?null:Math.max(0,+t.value);update();return}
   if(t.id==="dealName"){S.deal=t.value;updateMeta();save();return}
   if(t.id==="mPrep"){S.meta.preparedBy=t.value;save();return}
   if(t.id==="mAppr"){S.meta.approvedBy=t.value;updateMeta();save();return}
@@ -3590,6 +3918,12 @@ document.addEventListener("input",e=>{
 });
 document.addEventListener("change",e=>{
   const t=e.target, d=t.dataset;
+  if(t.id==="cpOn"){S.adj.on=t.checked;update();return}
+  if(t.id==="cpReason"){S.adj.reason=t.value;update();return}
+  if(t.id==="cmBase"){S.cm.baseline=t.value;update();return}
+  if(d.adjmit){S.adj.mit=S.adj.mit||{};S.adj.mit[d.adjmit]=Object.assign({},S.adj.mit[d.adjmit],{on:t.checked});update();return}
+  if(d.adjmitT){const m=ADJ_MITS.find(x=>x.id===d.adjmitT),v=t.value.trim();S.adj.mit=S.adj.mit||{};S.adj.mit[d.adjmitT]=Object.assign({},S.adj.mit[d.adjmitT],{text:(m&&v===m.t)?"":v});update();return}
+  if(d.adjextraT!=null){const i=+d.adjextraT;if(S.adj.extra&&S.adj.extra[i])S.adj.extra[i].t=t.value.trim();update();return}
   if(d.dfile){addFiles(d.dfile,[...t.files]);t.value="";return}
   if(d.acat){const [k,i]=pair(d.acat);S.assumptions[k][+i].c=t.value;save();renderRegister();return}
   if(d.scmp){const list=scnLoad();const x=list.find(q=>q.id===d.scmp);if(x){x.cmp=t.checked;scnSave(list);renderScenarios()}return}
@@ -3636,7 +3970,7 @@ function summary(){
     L.push("","**Risks**");
     (S.risks[k]||[]).forEach(r=>L.push(`- ${r.on?"[applied]":"[not applied]"} ${r.title}: ${r.pct}% FTE modifier. ${r.note}`));
   };
-  L.push(`# ${S.deal||"DAMO deal"}: estimate workflow`,"",`Version ${S.meta.version} · ${approvalStale()?"changed since approval":STATUS[S.meta.status]}${S.meta.preparedBy?` · prepared by ${S.meta.preparedBy}`:""}${S.meta.status==="approved"&&S.meta.approvedBy?` · approved by ${S.meta.approvedBy}${S.meta.approvedAt?` on ${S.meta.approvedAt}`:""}`:""}`,"",`**Team: ${fmt(R.total,2)} FTE${S.rounding!=="none"?`, rostered as ${fmt(R.people,0)} people`:""}**`);
+  L.push(`# ${S.deal||"DAMO deal"}: estimate workflow`,"",`Version ${S.meta.version} · ${approvalStale()?"changed since approval":STATUS[S.meta.status]}${S.meta.preparedBy?` · prepared by ${S.meta.preparedBy}`:""}${S.meta.status==="approved"&&S.meta.approvedBy?` · approved by ${S.meta.approvedBy}${S.meta.approvedAt?` on ${S.meta.approvedAt}`:""}`:""}`,"",`**Team: ${fmt(R.fin.total,2)} FTE${S.rounding!=="none"?`, rostered as ${fmt(R.fin.people,0)} people`:""}${R.fin.on?` (proposed; modelled ${fmt(R.total,2)})`:""}**`);
   L.push("",`## Part 1 · Step 1 · Base team (${covLabel()}, ${R.blocks.length} location windows)`);
   L.push(`- a  Window hours to cover per week: ${fmt(Math.min(24,+S.hours||0),0)} × ${S.days} = ${fmt(R.reqH,0)}`);
   L.push(`- a′ Staffed hours per week: ${fmt(R.actH,1)} active${R.oncH>0?` + ${fmt(R.oncH,1)} on-call × ${fmt(R.oc1*100,1)}%`:""} = ${fmt(R.aEff,1)}`);
@@ -3703,11 +4037,11 @@ function summary(){
   rows("s7");
   {const ex=S.ex||{}, n=k=>Math.max(0,+ex[k]||0), exTot=EX_TIERS.reduce((x,[k])=>x+n(k),0);
   L.push("","## Part 2 · Step 9 · Final fact check against the existing team","","| Tier | Existing | Our Y1 FTE |","|---|---|---|",
-    `| L2 | ${fmt(n("L2"),1)} | ${fmt(R.L2,2)} |`,`| L3 incl. SRE / automation | ${fmt(n("L3")+n("trans"),1)} | ${fmt(R.L3,2)} |`,`| Governance (SDM) | ${fmt(n("gov"),1)} | ${fmt(R.G,2)} |`,`| Other roles | ${fmt(n("other"),1)} | 0.00 |`,`| **Total** | **${fmt(exTot,1)}** | **${fmt(R.total,2)}** |`);
+    `| L2 | ${fmt(n("L2"),1)} | ${fmt(R.fin.snap.L2,2)} |`,`| L3 incl. SRE / automation | ${fmt(n("L3")+n("trans"),1)} | ${fmt(R.fin.snap.L3,2)} |`,`| Governance (SDM) | ${fmt(n("gov"),1)} | ${fmt(R.fin.snap.G,2)} |`,`| Other roles | ${fmt(n("other"),1)} | 0.00 |`,`| **Total** | **${fmt(exTot,1)}** | **${fmt(R.fin.total,2)}** |`);
   L.push("",$("exVerdict").textContent);}
   rows("s8");
   renderDeskViews();
-  L.push("","## Year 1 team by role","","| Role | Tower | FTE |","|---|---|---|");R.roles.forEach(r=>L.push(`| ${r.role} | ${r.tower} | ${fmt(r.fte,2)} |`));
+  L.push("","## Year 1 team by role","","| Role | Tower | FTE |","|---|---|---|");R.fin.roles.forEach(r=>L.push(`| ${r.role} | ${r.tower} | ${fmt(r.fte,2)} |`));commercialMd(L);
   {const A=R.allow;L.push("","## Allowances in the Year 1 team",`- Productive need ${fmt(A.core,2)}; productive-time allowance ${sgn(A.util,2)}; leave backfill ${sgn(A.leave,2)}; contingency ${sgn(A.cont,2)}; risk ${sgn(A.risk,2)} → ${fmt(A.total,2)} FTE`,`- Buffer above productive capacity: ${fmt(A.buffer,2)} FTE (${fmt(A.bufferPct,1)}%)`);}
   L.push("","## Assumptions register");registerGroups().forEach(g=>{L.push("",`### ${g.cat}`);g.items.forEach(i=>L.push(`- (step ${i.step}) ${i.t} [${i.src}]`))});
   L.push("","## Where the inputs came from");if(R.provRows.length){L.push("","| Input | Source | Evidence | Status |","|---|---|---|---|");R.provRows.forEach(r=>L.push(`| ${r.label} | ${r.source} | ${r.evidence||"–"} | ${r.edited?"edited after import":"as imported"} |`))}else L.push("- Every input was entered by the deal team.");
