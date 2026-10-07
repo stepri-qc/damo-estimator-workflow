@@ -2163,9 +2163,9 @@ function compute(){
     let fd=1,s6n=s6,totalN=total,snap=snaps[6],peopleN=people,rolesN=roles;
     if(a1){
       const dTot=locs.reduce((x,l)=>x+l.d2+l.d3,0), G=locs.reduce((x,l)=>x+l.g,0), dg=dTot+G;
-      fd=dg>0?Math.max(0,(dg-a1.fromDel)/dg):1; s6n=Math.max(0,s6-a1.fromCont);
+      fd=sub5>0?Math.max(0,(sub5-a1.fromDel)/sub5):1; s6n=Math.max(0,s6-a1.fromCont);   /* sized on the Year 1 total: the cells fall short of it when a tower has no skill set */
       const cells=locs.map(l=>{const d2=l.d2*fd,d3=l.d3*fd,dn=dTot*fd;return {id:l.id,name:l.name,a2:d2+(dn>0?s6n*d2/dn:0),a3:d3+(dn>0?s6n*d3/dn:0),g:l.g*fd}});
-      totalN=dg*fd+s6n;
+      totalN=ys[0].fte;
       let P2=0,P3=0,PG=0,pp=0;
       cells.forEach(c=>{
         if(S.rounding==="cell"){c.p2=up(c.a2);c.p3=up(c.a3);c.pg=c.g>0?Math.max(1,Math.round(c.g)):0;c.people=c.p2+c.p3+c.pg}
@@ -2596,6 +2596,13 @@ function runSelfTests(){
    const old=migrate({});
    add("An estimate saved before the commercial position opens with it switched off","adj off, baseline not confirmed, medium pressure",`${old.adj?old.adj.on:"missing"} / ${old.cm?old.cm.baseline+" / "+old.cm.pressure:"missing"}`,!!old.adj&&old.adj.on===false&&!!old.cm&&old.cm.baseline==="unknown"&&old.cm.pressure==="medium","commercial position");}
 
+  {const split=gradeSplit(0,2.83,1.59,[1/7,2/7,4/7]),lead=split[0].l2+split[0].l3+split[0].sdm,sen=split[1].l2+split[1].l3+split[1].sdm,tot=split.reduce((x,r)=>x+r.l2+r.l3+r.sdm,0);
+   add("Grade mix: when the SDMs alone outnumber the Seniors, Consultants are lifted so Lead is not above Senior","Lead ≤ Senior, headcount unchanged",`Lead ${fmt(lead,2)}, Senior ${fmt(sen,2)}, total ${fmt(tot,2)}`,lead<=sen+1e-9&&Math.abs(tot-4.42)<1e-9,"grade mix");
+   const sp2=gradeSplit(6,6,1,[1/7,2/7,4/7]),l2l=sp2[0].l2,tl=sp2[0].l3,ld=sp2[0].l3+sp2[0].sdm,sn2=sp2[1].l2+sp2[1].l3;
+   add("Grade mix: only the SDMs and a tech lead on L3 are Lead; L2 has none","L2 Lead 0, tech lead = the pyramid's Lead share of L3, Lead ≤ Senior",`L2 Lead ${fmt(l2l,2)}, L3 tech lead ${fmt(tl,2)}, Lead ${fmt(ld,2)} vs Senior ${fmt(sn2,2)}`,l2l===0&&Math.abs(tl-6/7)<1e-9&&ld<=sn2+1e-9,"grade mix");
+   const gp=gradePeople(gradeSplit(2,3,2,[1/7,2/7,4/7]),5,2);
+   add("Grade mix: in whole people Lead is not above Senior and nobody is lost","Lead ≤ Senior, people add up",`${gp.join(" / ")}`,gp[0]<=gp[1]&&gp[0]+gp[1]+gp[2]===7,"grade mix");
+   withState(testState(st=>{st.towers=[amsTower(500,{skills:[]})];st.cplx="low";st.term=3;st.adj={on:true,mode:"pct",pct:20,y:[],reason:"budget",note:"",mit:{},extra:[]}}),R=>add("Final number: a 20% cut is exactly 20% even when a tower has no skill set and part of the team is not in the location cells","proposed Year 1 = 0.8 × modelled; snapshot equals the total",`${fmt(R.fin.total,2)} vs ${fmt(R.total*0.8,2)}; snapshot ${fmt(R.fin.snap.fte,2)}`,Math.abs(R.fin.total-R.total*0.8)<1e-6&&Math.abs(R.fin.snap.fte-R.fin.total)<1e-6&&Math.abs(R.fin.years[0].fte-R.fin.total)<1e-6,"commercial position"))}
   withState(testState(st=>{st.towers=[amsTower(900,{skills:[mkSkill("be",100)]})]}),R=>add("Part 1 team is the larger of base and work, plus SDM","max(base, work) + SDM",`${fmt(R.p1.total,2)} vs ${fmt(Math.max(R.s1,R.s2-R.ai2)+R.ai2+R.p1.sdm,2)}`,near(R.p1.total,Math.max(R.s1,R.s2-R.ai2)+R.ai2+R.p1.sdm)&&near(R.p1.sdm,R.p1.deliv/R.sdmRatio),"DAMO convention"));
   withState(testState(st=>{st.towers=[amsTower(40,{skills:[mkSkill("mob",100)]})];st.cplx="medium"}),R=>{const exp=Math.max(0,R.s3-R.p1.lift);
     add("Skill cover first uses the spare capacity in the base team","added headcount = max(0, skill cover − spare)",`${fmt(R.bridge.d3,2)} vs ${fmt(exp,2)}`,near(R.bridge.d3,exp)&&near(R.p1.total+R.bridge.d3+R.bridge.d4+R.bridge.d5+R.s6,R.total),"proposed")});
@@ -3256,6 +3263,28 @@ function renderS6(){
   $("pyrInputs").innerHTML=GRADES.map((g,i)=>`<label for="pyr-${i}">${g}<input type="number" id="pyr-${i}" data-pyr="${i}" min="0" max="20" step="0.5" value="${p[i]}"></label>`).join("");
   $("contPct").value=S.contPct==null?"":S.contPct;
 }
+/* Grade mix. Leads are the SDMs and a tech lead on L3 only; L2 has Seniors and Consultants. The pyramid sets the shares; the
+   tech lead gives way, and if the SDMs alone are still above the Seniors, Consultants are lifted to Senior, so Lead is never above Senior.
+   Headcount never changes. */
+function gradeSplit(L2,L3,G,shares){
+  const pl=shares[0],ps=shares[1],pc=shares[2],sc=(ps+pc)||1;
+  const l2=[0,L2*ps/sc,L2*pc/sc], l3=[L3*pl,L3*ps,L3*pc], sdm=[G,0,0];
+  const lead=()=>l3[0]+sdm[0], sen=()=>l2[1]+l3[1]+sdm[1];
+  if(lead()>sen()+1e-9){
+    const x=Math.min(l3[0],(lead()-sen())/2);l3[0]-=x;l3[1]+=x;
+    let need=lead()-sen();
+    if(need>1e-9){const y3=Math.min(l3[2],need);l3[2]-=y3;l3[1]+=y3;need-=y3;if(need>1e-9){const y2=Math.min(l2[2],need);l2[2]-=y2;l2[1]+=y2}}
+  }
+  return [0,1,2].map(i=>({l2:l2[i],l3:l3[i],sdm:sdm[i]}));
+}
+/* whole people by grade: the delivery people are shared by the grade split (largest remainder), the SDMs are Lead, and Lead stays at or below Senior */
+function gradePeople(split,delivP,sdmP){
+  const tot=split.reduce((x,r)=>x+r.l2+r.l3,0)||1, raw=split.map(r=>(r.l2+r.l3)/tot*delivP), fl=raw.map(Math.floor);let left=delivP-fl.reduce((a,b)=>a+b,0);
+  raw.map((v,i)=>[v-fl[i],i]).sort((a,b)=>b[0]-a[0]).forEach(([,i])=>{if(left>0){fl[i]++;left--}});
+  while(fl[0]+sdmP>fl[1]&&fl[0]>0){fl[0]--;fl[1]++}
+  while(sdmP>fl[1]&&fl[2]>0){fl[2]--;fl[1]++}
+  return [fl[0]+sdmP,fl[1],fl[2]];
+}
 function updateS6(){
   const CX=R.CX;
   const C=confidence();R.conf=C;
@@ -3274,20 +3303,20 @@ function updateS6(){
   h+=wstep("2","Contingency",`<span class="delta add">${sgn(R.contRaw,2)}</span>`,`${fmt(R.sub5,2)} × ${R.contPct}% (${CX.name} complexity)`);
   h+=wstep("3","Risk modifiers",`<span class="delta risk">${sgn(R.risk6Add,2)}</span>`,`${fmt(R.contRaw,2)} × ${fmt(R.rp6*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
   h+=wstep("=","Step 7 adds",`${sgn(R.s6,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team: ${fmt(R.sub5,2)} + ${fmt(R.s6,2)} = ${fmt(R.total,2)} FTE. Contingency is spread across L2 and L3 in each location.`,"total");
-  h+=wstep("4","Grade mix",R.pyr.join(" : "),`Lead : Senior : Consultant on L2 and L3. SDMs are graded Lead. No change to FTE.`);
+  h+=wstep("4","Grade mix",R.pyr.join(" : "),`Lead : Senior : Consultant. Leads are the SDMs and a tech lead on L3; L2 has no Lead; Lead is never above Senior. No change to FTE.`);
   if(!S.cplx)h=`<div class="alert" style="margin-bottom:10px">Choose the engagement complexity. No contingency is added until you do.</div>`+h;
   $("steps6").innerHTML=h;
   /* grade table */
   const L2=R.L2, L3=R.L3, G=R.G;
-  const rowsF=GRADES.map((g,i)=>({g,sh:R.shares[i],l2:L2*R.shares[i],l3:L3*R.shares[i],sdm:i===0?G:0}));
-  rowsF.forEach(r=>r.fte=r.l2+r.l3+r.sdm);
+  const gsp=gradeSplit(L2,L3,G,R.shares);
+  const rowsF=GRADES.map((g,i)=>({g,l2:gsp[i].l2,l3:gsp[i].l3,sdm:gsp[i].sdm}));
+  rowsF.forEach(r=>{r.fte=r.l2+r.l3+r.sdm;r.sh=r.fte/Math.max(L2+L3+G,1e-9)});
   const whole=S.rounding!=="none";
   const sdmP=whole?(S.rounding==="cell"?R.Gp:Math.max(G>0?1:0,Math.round(G))):G;
   const delivP=whole?Math.max(0,R.people-sdmP):0;
   if(whole){
-    const raw=R.shares.map(x=>x*delivP), fl=raw.map(Math.floor); let left=delivP-fl.reduce((a,b)=>a+b,0);
-    raw.map((v,i)=>[v-fl[i],i]).sort((a,b)=>b[0]-a[0]).forEach(([,i])=>{if(left>0){fl[i]++;left--}});
-    rowsF.forEach((r,i)=>r.people=fl[i]+(i===0?sdmP:0));
+    const gp=gradePeople(gsp,delivP,sdmP);
+    rowsF.forEach((r,i)=>r.people=gp[i]);
   }
   $("gradeCalc").innerHTML=rowsF.map(r=>`<tr><td class="loc-name">${r.g}</td><td class="r num">${fmt(r.sh*100,0)}%</td><td class="r num">${fmt(r.l2,2)}</td><td class="r num">${fmt(r.l3,2)}</td><td class="r num">${fmt(r.sdm,2)}</td><td class="r num">${fmt(r.fte,2)}</td><td class="r num"><b>${whole?r.people:"–"}</b></td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td class="r num">100%</td><td class="r num">${fmt(L2,2)}</td><td class="r num">${fmt(L3,2)}</td><td class="r num">${fmt(G,2)}</td><td class="r num">${fmt(R.total,2)}</td><td class="r num"><b>${whole?fmt(R.people,0):"–"}</b></td></tr>`;
@@ -3297,12 +3326,13 @@ function updateS6(){
   R.gradeRows=rowsF;
   updateRiskDeltas("s6",R.contRaw,R.risk6Add,R.rp6);
   $("minSenior").value=S.minSenior==null?1:S.minSenior;
-  {const N=Math.max(0,+S.minSenior||0), sShare=R.shares[0]+R.shares[1], sFte=(R.L2+R.L3)*sShare, need=N*R.actH/R.fteH/R.u1*R.bf2, okS=sFte>=need-1e-9;
-   $("senVerdict").innerHTML=`<b>${CX.name} complexity gives a ${R.pyr.join(" : ")} pyramid</b>: ${fmt(R.shares[2]*100,0)}% Consultants, ${fmt(R.shares[1]*100,0)}% Seniors, ${fmt(R.shares[0]*100,0)}% Leads on L2 and L3. Lower complexity leans on juniors, higher complexity on seniors.
+  {const N=Math.max(0,+S.minSenior||0), sFte=rowsF[0].l2+rowsF[0].l3+rowsF[1].l2+rowsF[1].l3, need=N*R.actH/R.fteH/R.u1*R.bf2, okS=sFte>=need-1e-9;
+   $("senVerdict").innerHTML=`<b>${CX.name} complexity gives a ${R.pyr.join(" : ")} pyramid</b>: overall ${fmt(rowsF[2].sh*100,0)}% Consultants, ${fmt(rowsF[1].sh*100,0)}% Seniors, ${fmt(rowsF[0].sh*100,0)}% Leads. Only the SDMs and a tech lead on L3 are Lead, L2 has none, and Lead is never above Senior. Lower complexity leans on juniors, higher complexity on seniors.
      <br>${N>0?`Lead and Senior together are <b>${fmt(sFte,1)} FTE</b> of the ${fmt(R.L2+R.L3,1)} FTE delivery team. Keeping ${N} of them on duty in every staffed hour needs about <b>${fmt(need,1)} FTE</b> (${fmt(R.actH,0)} staffed hours a week ÷ ${R.fteH} contracted hours, with utilisation and leave). ${okS?"The pyramid covers it.":`<span style="color:var(--risk)">It is short by ${fmt(need-sFte,1)} FTE.</span> Headcount is not changed: move the pyramid up, name seniors as on-call cover, or lower the requirement.`}`:"No senior cover is required per hour, so there is nothing to check."}`}
+  {const gap=R.total-(L2+L3+G);if(gap>0.05)$("senVerdict").innerHTML+=`<br><span style="color:var(--risk)"><b>${fmt(gap,1)} FTE of the ${fmt(R.total,1)} FTE team is not in these grade and location tables</b>, because a tower has no skill set (see the warning in Step 2). Add a skill set to each tower to assign it.</span>`}
   renderAuto("s6",[
     ["F1",`Engagement complexity is ${CX.name}: ${CX.desc.toLowerCase()}. Set by the deal team.`,"input"],
-    ["F2",`Grade pyramid Lead : Senior : Consultant = ${R.pyr.join(" : ")} across L2 and L3. SDMs are Lead. The pyramid does not change headcount.`,"DAMO pyramid 1:2:4 · proposed"],
+    ["F2",`Grade pyramid Lead : Senior : Consultant = ${R.pyr.join(" : ")}. Only the SDMs and a tech lead on L3 are Lead, L2 has none, and Lead is never above Senior overall. The pyramid does not change headcount.`,"DAMO pyramid 1:2:4 · proposed"],
     ["F3",`Contingency is ${R.contPct}% of the delivery team plus SDM, added as FTE and spread across L2/L3 in each location.`,"[F] 1.6 · 5–10%"],
     ["F4","Grades describe the team shape only. No rates or cost are applied.","agreed"]
   ]);

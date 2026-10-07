@@ -355,7 +355,7 @@ stage 6     = contingency × (1 + Σ active stage 6 risk %)
 ```
 
 - **Contingency** is added as FTE and spread across L2/L3 in each location, in proportion to each cell.
-- **The pyramid sets the grade mix only.** It splits L2 and L3 FTE into Lead / Senior / Consultant without changing headcount. SDMs are graded Lead. Whole people per grade are allocated by largest remainder.
+- **The pyramid sets the grade mix only.** It splits the team into Lead / Senior / Consultant without changing headcount (`gradeSplit()`). Only the SDMs and a tech lead on L3 are Lead: L2 has Seniors and Consultants only, and L3 takes the pyramid's Lead share as the tech lead. Lead is never above Senior overall: the tech lead gives way first, and if the SDMs alone still outnumber the Seniors, Consultants are lifted to Senior. Whole people per grade (`gradePeople()`) are allocated by largest remainder with the same cap. If a tower has no skill set, its FTE is not in the grade and location tables and Step 7 says so.
 
 **Does the grade mix fit the windows?** A check card asks for a minimum number of Lead or Senior people on duty in every staffed hour (default 1) and compares it with the Lead + Senior FTE the pyramid gives: `needed = minimum × staffed hours a week ÷ contracted hours ÷ utilisation × backfill`. It only reports: seniority never changes headcount. If it is short, move the pyramid up, name seniors as on-call cover, or lower the requirement. Low complexity leans on juniors (1:2:4), high complexity on seniors (1:2:2).
 
