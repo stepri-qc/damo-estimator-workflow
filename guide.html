@@ -191,7 +191,7 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(P))}catch(e){}};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt=(x,d=2)=>(Math.round(x*10**d)/10**d).toFixed(d);
-const tryTool=(n,text)=>`<div class="try"><a class="btn sm primary" href="index.html#stage=${n}" target="_blank" rel="noopener">Open ${n===0?"Documents":"step "+({1:1,2:2,3:5,4:6,5:3,6:7,7:8,8:9,9:4})[n]} in the tool ↗</a><span>${text}</span></div>`;
+const tryTool=(n,text)=>`<div class="try"><a class="btn sm primary" href="index.html#stage=${n}" target="_blank" rel="noopener">Open ${n===0?"Documents":"step "+({1:1,2:2,3:5,4:6,5:3,6:7,7:8,8:9,9:4,10:10})[n]} in the tool ↗</a><span>${text}</span></div>`;
 
 /* ================= chapters ================= */
 const CH=[
@@ -449,9 +449,7 @@ ${tryTool(7,"Choose the term and compare the 1–5 year table.")}`},
 <span class="eyebrow">Part 2 · Step 9</span>
 <h1>Final fact check, overall estimate and approval</h1>
 <p class="lead">Compare the final team with the team running the estate today (entered at step 4), then read the Overall estimate the way a deal desk will.</p>
-<h2>Commercial position: the final number and commercial options</h2>
-<p>Below the fact check, the <b>Commercial position</b> panel is optional. Steps 1 to 8 always show the modelled team. Tick <span class="ui">Adjust the final number</span> to set a proposed one for a client budget or to win on price: a % reduction (a negative number adds capacity) or a proposed FTE for each year, with a <b>reason</b>. Nothing changes until a reason is chosen. The cut comes out of contingency first, then the delivery team (SDM included). The panel shows modelled against proposed by year, the implied utilisation, and the risks the numbers create (the team runs hotter than planned, below the Step 1 base team, contingency used up, well below the existing team, relying on faster AI savings, scope unchanged while capacity falls) with mitigations you can tick, reword or add to. The proposed number then drives the fact check, the final panel, the Excel workbook and the client summary, which shows the proposed number only. The summary document records the reason, the risks and the mitigations.</p>
-<p>The same panel holds four optional inputs (months of ticket history, a measurable baseline, the client's Year 1 budget ceiling, price pressure) and rates four commercial shapes: <b>fixed fee</b>, <b>outcome-based terms</b> (as an add-on), <b>time and materials with a cap</b>, and an <b>assessment-led start</b>. It starts from the framework's recommendation for the scenario and adjusts for the data you have, with reasons, guardrails and what would move each option up. Model level only: no price, and not in the client summary.</p>
+<div class="tip"><b>Commercial position is a separate step</b> The numbers on this step are the modelled ones. A proposed final number and the commercial options live in Step 10, which is optional and never changes steps 1 to 9.</div>
 <h2>In the Overall estimate panel</h2>
 <div class="tbl"><table><thead><tr><th>View</th><th>What to look for</th></tr></thead><tbody>
 <tr><td>How each step built the team</td><td>The build-up from the base team to the Part 1 team, then what skill cover, transformation, the SDM re-base and contingency added, with rounding and transition</td></tr>
@@ -470,6 +468,16 @@ ${tryTool(7,"Choose the term and compare the 1–5 year table.")}`},
 <h2>Scenarios and checks</h2>
 <p><span class="ui">Save current as a scenario</span>, change inputs (e.g. 24×7 instead of 16×5), save again, and tick to compare side by side. <span class="ui">Run checks</span> verifies the engine against the framework's worked examples and that this estimate adds up.</p>
 ${tryTool(8,"Read the allowances and run the checks.")}`},
+{id:"s10",grp:"Part 3 · Commercial position",t:"Step 10 · Commercial position",html:()=>`
+<span class="eyebrow">Part 3 · Step 10</span>
+<h1>Commercial position</h1>
+<p class="lead">Optional. Set a proposed final number for a client budget or to win on price, see the risks it creates, and see which commercial shape the data supports. Steps 1 to 9 stay as modelled.</p>
+<h2>A proposed final number</h2>
+<p>Tick <span class="ui">Adjust the final number</span> and choose how to set it: <b>Year 1 FTE</b> (type the number you want, for example 7 where the tool models 10; every later year moves by the same proportion), <b>% change</b> (a negative number adds capacity), or <b>Per year</b> (set each year yourself). Choose a <b>reason</b>: nothing changes until one is on record. The cut comes out of contingency first, then the delivery team (SDM included). The panel shows modelled against proposed by year and the implied utilisation, the risks the numbers create (the team runs hotter than planned, below the Step 1 base team, contingency used up, well below the existing team, relying on faster AI savings, scope unchanged while capacity falls) and mitigations you can tick, reword or add to.</p>
+<p>The proposed number drives the client summary, which shows it and nothing else from this step, and the Excel workbook. The summary document keeps the modelled steps and adds this step with the reason, the risks and the mitigations. Step 9 and the Overall estimate always show the modelled numbers.</p>
+<h2>Commercial options</h2>
+<p>Four optional inputs (months of ticket history, a measurable baseline, the client's Year 1 budget ceiling, price pressure) feed a rating of four commercial shapes: <b>fixed fee</b>, <b>outcome-based terms</b> (as an add-on), <b>time and materials with a cap</b>, and an <b>assessment-led start</b>. It starts from the framework's recommendation for the scenario and adjusts for the data you have, with reasons, guardrails and what would move each option up. If the budget ceiling is below the modelled Year 1 team, a button sets the ceiling as the proposed Year 1 team. Model level only: no price, and not in the client summary.</p>
+${tryTool(10,"Set a proposed Year 1 team and read the risks and the commercial options.")}`},
 
 {id:"share",grp:"Review & share",t:"Sharing the estimate",html:()=>`
 <span class="eyebrow">Review &amp; share</span>
