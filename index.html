@@ -1590,6 +1590,8 @@ function defaultBench(){return {
   handoff:4,                                                                       /* proposed: coordination uplift % per ownership interface, from damo-estimator */
   sla:{resp15:25,resp30:12,restore2h:10,avail999:10,cap:40},                       /* [F] Sc.3 Step 2: stringent SLA +20–30% on L2/L3; graduated values from damo-estimator */
   routing:{P1:[0,40,60],P2:[10,60,30],P3:[55,40,5],P4:[85,15,0]},                  /* proposed: % of each priority entering at L1 / L2 / L3, from damo-estimator */
+  srLvl:{low:0.25,medium:0.5,high:1.5},                                            /* proposed, from damo-estimator: hours per service request by complexity (Low to L1, Medium to L2, High to L3) */
+  crLvl:{low:4,medium:8,high:16},                                                  /* proposed, from damo-estimator: hours per change request by complexity */
   tpa:{S:4,M:10,L:17.5,XL:30,XXL:50},                                              /* [F] Sc.1 midpoints */
   ims:{wEnv:1,wHost:1.5,wDb:1,sec:3,tpp:4.5},                                      /* proposed, from damo-estimator */
   dms:{wDp:1,wPipe:0.5,wInt:1,wUp:0.75,wDown:0.75,tpp:3.4},                        /* proposed */
@@ -1663,7 +1665,7 @@ const SRE_SHARE=1.8/(1.8+0.5);
 function skillName(k){return k.name||(k.skill==="spec"?"Niche skill":"Skill set")}
 function mkTower(kind){
   /* everything starts unanswered: the deal team fills it in */
-  return {id:uid(),kind,name:"",vol:null,inc:null,sr:null,estate:null,
+  return {id:uid(),kind,name:"",vol:null,inc:null,sr:null,cr:null,srMix:null,crMix:null,estate:null,
     cpx:null,apps:{S:null,M:null,L:null,XL:null,XXL:null},mau:null,mauRate:null,
     env:null,host:null,db:null,sec:false,
     dp:null,pipe:null,integ:null,up:null,down:null,
@@ -1783,7 +1785,7 @@ function migrate(p){
       st.cov=p.cov||{};
       if(!Array.isArray(p.towers)||p.towers.some(t=>!t.kind))st.towers=defaults().towers;
       const db=defaultBench(), pb=p.bench||{};
-      st.bench=Object.assign(db,pb,{tpa:Object.assign(db.tpa,pb.tpa||{}),ims:Object.assign(db.ims,pb.ims||{}),dms:Object.assign(db.dms,pb.dms||{}),ai:Object.assign(db.ai,pb.ai||{}),sla:Object.assign(db.sla,pb.sla||{}),routing:Object.assign(db.routing,pb.routing||{})});
+      st.bench=Object.assign(db,pb,{tpa:Object.assign(db.tpa,pb.tpa||{}),ims:Object.assign(db.ims,pb.ims||{}),dms:Object.assign(db.dms,pb.dms||{}),ai:Object.assign(db.ai,pb.ai||{}),sla:Object.assign(db.sla,pb.sla||{}),routing:Object.assign(db.routing,pb.routing||{}),srLvl:Object.assign(db.srLvl,pb.srLvl||{}),crLvl:Object.assign(db.crLvl,pb.crLvl||{})});
       /* towers saved before a field existed get its default; the old L2/L3 choice becomes tier ownership */
       st.towers=st.towers.map(t=>{const n=Object.assign(mkTower(t.kind),t);n.sla=Object.assign(mkTower(t.kind).sla,t.sla||{});
         if(!t.own&&t.levels)n.own={both:{L1:"customer",L2:"us",L3:"us"},l2:{L1:"customer",L2:"us",L3:"vendor"},l3:{L1:"customer",L2:"customer",L3:"us"}}[t.levels]||null;return n});
@@ -1881,7 +1883,7 @@ function compute(){
   const towers=S.towers.map(t0=>{
     const t={...t0,name:t0.name||`${t0.kind} tower`};
     let tickets, src, score=null;
-    if(t.vol===true){tickets=n0(t.inc)+n0(t.sr);src="Ticket history"}
+    if(t.vol===true){tickets=n0(t.inc)+n0(t.sr)+n0(t.cr);src="Ticket history"}
     else if(t.vol!==false||cpxState(t)===null){tickets=0;src="Not answered yet"}
     else if(!cpxKnown(t)){tickets=n0(t.mau)*n0(t.mauRate)/100;src="MAU proxy"}
     else if(t.kind==="AMS"){tickets=SIZES.reduce((s2,z)=>s2+n0(t.apps[z])*B.tpa[z],0);src="T-shirt sizing"}
@@ -1889,6 +1891,8 @@ function compute(){
     else if(t.kind==="AI"){score=B.ai.wAgent*n0(t.agents)+B.ai.wModel*n0(t.models)+B.ai.wTool*n0(t.tools)+B.ai.wKs*n0(t.ksrc)+(t.hiRisk?B.ai.risk:0);tickets=score*B.ai.tpp;src="AI platform complexity"}
     else {score=B.dms.wDp*n0(t.dp)+B.dms.wPipe*n0(t.pipe)+B.dms.wInt*n0(t.integ)+B.dms.wUp*n0(t.up)+B.dms.wDown*n0(t.down);tickets=score*B.dms.tpp;src="Data complexity"}
     tickets*=dm;
+    /* with ticket history: incidents run through the L1/L2/L3 cascade and the priority mix; service requests are costed by complexity and routed to the level that does them; change requests are planned engineering work. A proxy gives one blended volume, which runs through the incident cascade. */
+    const hist=t.vol===true, incT=hist?n0(t.inc)*dm:tickets, srN=hist?n0(t.sr)*dm:0, crN=hist?n0(t.cr)*dm:0;
     /* where the counts are measured (ticket history only; proxies are L1-inflow benchmarks), then the levels we serve */
     const lvl=t.vol===true?(t.tktLevel||"l1"):"l1";
     const own=ownOf(t), ours=k=>own[k]==="us";
@@ -1899,16 +1903,22 @@ function compute(){
     let e1=1,e2=0,e3=0;
     if(mx&&lvl==="l1"){const tot=["P1","P2","P3","P4"].reduce((x,k)=>x+n0(mx[k]),0)||1;e1=e2=e3=0;["P1","P2","P3","P4"].forEach(k=>{const sh=n0(mx[k])/tot, r=B.routing[k];e1+=sh*r[0]/100;e2+=sh*r[1]/100;e3+=sh*r[2]/100});const q=e1+e2+e3||1;e1/=q;e2/=q;e3/=q}
     let c1,c2,c3;
-    if(lvl==="l1"){const V1=tickets*e1;c1=V1*(1-B.p12/100);c2=V1*B.p12/100+tickets*e2;c3=c2*B.p23/100+tickets*e3}
-    else if(lvl==="l2"){c1=0;c2=tickets;c3=tickets*B.p23/100}
-    else {c1=0;c2=0;c3=tickets}
-    const l1Unknown=lvl!=="l1"&&ours("L1")&&tickets>0, l2Unknown=lvl==="l3"&&ours("L2")&&tickets>0;
+    if(lvl==="l1"){const V1=incT*e1;c1=V1*(1-B.p12/100);c2=V1*B.p12/100+incT*e2;c3=c2*B.p23/100+incT*e3}
+    else if(lvl==="l2"){c1=0;c2=incT;c3=incT*B.p23/100}
+    else {c1=0;c2=0;c3=incT}
+    const l1Unknown=lvl!=="l1"&&ours("L1")&&incT>0, l2Unknown=lvl==="l3"&&ours("L2")&&incT>0;
     const l1t=ours("L1")?c1:0, l2t=ours("L2")?c2:0, l3t=ours("L3")?c3:0;
     const sm=slaMod(t,B);
     /* each adjacent pair of levels with different owners is an interface; each costs coordination effort on our tickets */
     const bnd=(own.L1!==own.L2?1:0)+(own.L2!==own.L3?1:0), hand=(sv==="none"&&!ours("L1"))?0:bnd*(+B.handoff||0)/100;
     const u=B.util/100;
-    const A1=l1t*B.are1/u*(1+hand), A2=l2t*B.are2*(1+sm.l2)/u*(1+hand), A3=l3t*B.are3*(1+sm.l3)/u*(1+hand), A=A1+A2+A3;
+    /* service requests: Low to L1, Medium to L2, High to L3 at that complexity's ARE; a level that is not ours passes them to the next level we own.
+       Change requests: the mix-weighted ARE, engineering work (L3 when we own L3, else L2), none if we own neither. Counts or %; blank uses the framework defaults */
+    const mixSh=(m,d)=>{const v=["low","medium","high"].map(k=>n0(m&&m[k])),tot=v[0]+v[1]+v[2];return tot>0?{low:v[0]/tot,medium:v[1]/tot,high:v[2]/tot}:{low:d[0]/100,medium:d[1]/100,high:d[2]/100}};
+    const srSh=mixSh(t.srMix,[60,30,10]), crSh=mixSh(t.crMix,[50,35,15]), ownA=[ours("L1"),ours("L2"),ours("L3")], srH=[0,0,0];
+    [["low",0],["medium",1],["high",2]].forEach(([k,i0])=>{let i=i0;while(i<3&&!ownA[i])i++;if(i>2){i=i0;while(i>=0&&!ownA[i])i--}if(i<0)return;srH[i]+=srN*srSh[k]*(+B.srLvl[k]||0)});
+    const crAvg=crSh.low*(+B.crLvl.low||0)+crSh.medium*(+B.crLvl.medium||0)+crSh.high*(+B.crLvl.high||0), crH=(ours("L2")||ours("L3"))?crN*crAvg:0, crTier=ours("L3")?3:2;
+    const A1=(l1t*B.are1+srH[0])/u*(1+hand), A2=(l2t*B.are2*(1+sm.l2)+srH[1]+(crTier===2?crH:0))/u*(1+hand), A3=(l3t*B.are3*(1+sm.l3)+srH[2]+(crTier===3?crH:0))/u*(1+hand), A=A1+A2+A3;
     const slaAdd=(l2t*B.are2*sm.l2+l3t*B.are3*sm.l3)/u*(1+hand), handAdd=A-A/(1+hand);
     const bp=(t.estate==="legacy"?B.bLegacy:B.bModern)/100;
     const Bh=A*bp;
@@ -1923,7 +1933,7 @@ function compute(){
     const skills=t.skills.map(k=>{const sh=shareSum>0?n0(k.share)/shareSum:1/t.skills.length;return {...k,name:skillName(k),tower:t.name,towerId:t.id,norm:rF>0&&fte>0?rF*sh/fte:0,fte:rF*sh,f2:rF2*sh,f3:rF3*sh}});
     if(sreOn)skills.unshift({id:"sre-"+t.id,skill:"sre",name:"Service Reliability Engineer (SRE)",share:0,absorb:true,synthetic:true,tower:t.name,towerId:t.id,norm:sreF/fte,fte:sreF,f2:0,f3:sreF});
     const userSkills=t.skills.length, unassigned=userSkills?0:rF;
-    return {...t,sreOn,sreF,userSkills,unassigned,tickets,src,score,lvl,sv,own,bnd,hand,sm,slaAdd,handAdd,entry:[e1,e2,e3],mixUsed:!!(mx&&lvl==="l1"),l1Unknown,l2Unknown,l1t,l2t,l3t,A,Bh,bp,enhH,C,fte1,fte,fte2,fte3,shareSum,skills};
+    return {...t,sreOn,sreF,userSkills,unassigned,tickets,src,score,lvl,sv,own,bnd,hand,sm,slaAdd,handAdd,entry:[e1,e2,e3],mixUsed:!!(mx&&lvl==="l1"),l1Unknown,l2Unknown,l1t,l2t,l3t,A,Bh,bp,enhH,C,fte1,fte,fte2,fte3,shareSum,skills,incN:hist?n0(t.inc):0,srN:hist?n0(t.sr):0,crN:hist?n0(t.cr):0,srHrs:srH[0]+srH[1]+srH[2],crHrs:crH,srSh,crSh};
   });
   const skills=towers.flatMap(t=>t.skills);
   const demand=sum(towers,"fte");
@@ -2256,7 +2266,7 @@ function slaText(t){const q=t.sla||{},p=[];const m=v=>v>=60&&v%60===0?`${v/60} h
 function ownedText(t){const o=ownOf(t);const k=["L1","L2","L3"].filter(x=>o[x]==="us");return k.length?k.join(", ").replace(/, (L\d)$/," and $1"):"none"}
 
 /* ---------- provenance: inputs applied from documents ---------- */
-const TOWER_KEYS=["sre","vol","inc","sr","tktLevel","levels","own","sla","avail","mix","cpx","apps","env","host","db","sec","dp","pipe","integ","up","down","agents","models","tools","ksrc","hiRisk","mau","estate","aiops","enh"];
+const TOWER_KEYS=["sre","vol","inc","sr","cr","srMix","crMix","tktLevel","levels","own","sla","avail","mix","cpx","apps","env","host","db","sec","dp","pipe","integ","up","down","agents","models","tools","ksrc","hiRisk","mau","estate","aiops","enh"];
 function provVal(key){
   if(key==="client")return S.deal;
   if(key==="coverage")return `${S.hours}x${S.days}|${S.locations.flatMap(l=>(l.win||[]).map(w=>w.m)).join(",")}|${S.weekendMode}`;
@@ -2618,6 +2628,23 @@ function runSelfTests(){
    const old=migrate({});
    add("An estimate saved before the commercial position opens with it switched off","adj off, baseline not confirmed, medium pressure",`${old.adj?old.adj.on:"missing"} / ${old.cm?old.cm.baseline+" / "+old.cm.pressure:"missing"}`,!!old.adj&&old.adj.on===false&&!!old.cm&&old.cm.baseline==="unknown"&&old.cm.pressure==="medium","commercial position");}
 
+  {const full={L1:"us",L2:"us",L3:"us"};
+   const tw=(extra,own,mod)=>{let r=null;withState(testState(st=>{st.towers=[amsTower(0,Object.assign({own:own||full},extra))];if(mod)mod(st)}),R=>{r=R.towers[0]});return r};
+   const near1=(a,b)=>Math.abs(a-b)<1e-6;
+   const sLow=tw({sr:100,srMix:{low:100,medium:0,high:0}}), sMed=tw({sr:100,srMix:{low:0,medium:100,high:0}}), sHigh=tw({sr:100,srMix:{low:0,medium:0,high:100}});
+   add("Service requests are costed by complexity: Low 0.25 h, Medium 0.5 h, High 1.5 h each","100 SRs: 25 h, 50 h, 150 h, ÷ 85% utilisation in A",`${fmt(sLow.srHrs,1)} / ${fmt(sMed.srHrs,1)} / ${fmt(sHigh.srHrs,1)} h; A ${fmt(sLow.A,2)} / ${fmt(sMed.A,2)} / ${fmt(sHigh.A,2)}`,near1(sLow.srHrs,25)&&near1(sMed.srHrs,50)&&near1(sHigh.srHrs,150)&&near1(sLow.A,25/0.85)&&near1(sHigh.A,150/0.85),"service towers");
+   const sPct=tw({sr:100,srMix:{low:50,medium:30,high:20}}), sCnt=tw({sr:100,srMix:{low:5,medium:3,high:2}}), sBlank=tw({sr:100});
+   add("Service request mix: counts and % give the same effort; blank uses 60 / 30 / 10","50/30/20 = 5/3/2; blank = 100 × (0.6×0.25 + 0.3×0.5 + 0.1×1.5) = 45 h",`${fmt(sPct.srHrs,2)} / ${fmt(sCnt.srHrs,2)} / blank ${fmt(sBlank.srHrs,2)}`,near1(sPct.srHrs,sCnt.srHrs)&&near1(sPct.srHrs,100*(0.5*0.25+0.3*0.5+0.2*1.5))&&near1(sBlank.srHrs,45),"service towers");
+   const sNoL1=tw({sr:100,srMix:{low:100,medium:0,high:0}},{L1:"customer",L2:"us",L3:"us"}), sNoL23=tw({sr:100,srMix:{low:0,medium:0,high:100}},{L1:"us",L2:"customer",L3:"customer"}), sNone=tw({sr:100},{L1:"customer",L2:"customer",L3:"customer"});
+   add("Service requests follow ownership: a level that is not ours passes its SRs to the next level we own; nothing we own, nothing sized","Low SRs go to L2 when L1 is the client's; High SRs go to L1 when L2 and L3 are not ours; none if we own nothing",`${fmt(sNoL1.srHrs,1)} h, L1 FTE ${fmt(sNoL1.fte1,3)} · ${fmt(sNoL23.srHrs,1)} h, L1 FTE ${fmt(sNoL23.fte1,3)} · ${fmt(sNone.srHrs,1)} h`,near1(sNoL1.srHrs,25)&&near1(sNoL1.fte1,0)&&sNoL1.fte>0&&near1(sNoL23.srHrs,150)&&sNoL23.fte1>0&&near1(sNone.srHrs,0)&&near1(sNone.fte,0),"service towers");
+   const cHigh=tw({cr:10,crMix:{low:0,medium:0,high:100}}), cMix=tw({cr:10,crMix:{low:50,medium:35,high:15}}), cNoEng=tw({cr:10,crMix:{low:0,medium:0,high:100}},{L1:"us",L2:"customer",L3:"customer"}), cL2=tw({cr:10,crMix:{low:0,medium:0,high:100}},{L1:"customer",L2:"us",L3:"customer"});
+   add("Change requests are planned engineering work costed by complexity: Low 4 h, Medium 8 h, High 16 h; none if we own neither L2 nor L3","10 high CRs = 160 h; the 50/35/15 mix = 10 × (2 + 2.8 + 2.4) = 72 h; L1-only = 0 h; on L3 when we own it, else L2",`${fmt(cHigh.crHrs,1)} / ${fmt(cMix.crHrs,1)} / ${fmt(cNoEng.crHrs,1)} h; L3 FTE ${fmt(cHigh.fte3,3)} vs L2-only L3 FTE ${fmt(cL2.fte3,3)}`,near1(cHigh.crHrs,160)&&near1(cMix.crHrs,72)&&near1(cNoEng.crHrs,0)&&cHigh.fte3>0&&near1(cL2.fte3,0)&&cL2.fte2>0,"service towers");
+   const iOnly=tw({inc:100,sr:0,cr:0}), iAll=tw({inc:100,sr:60,cr:8});
+   add("Change requests and service requests count in the ticket volume but never enter the incident cascade","tickets = incidents + SRs + CRs; L1/L2/L3 incident tickets unchanged",`${fmt(iAll.tickets,0)} tickets; incident L1/L2/L3 ${fmt(iAll.l1t,1)}/${fmt(iAll.l2t,1)}/${fmt(iAll.l3t,1)} vs ${fmt(iOnly.l1t,1)}/${fmt(iOnly.l2t,1)}/${fmt(iOnly.l3t,1)}`,near1(iAll.tickets,168)&&near1(iAll.l1t,iOnly.l1t)&&near1(iAll.l2t,iOnly.l2t)&&near1(iAll.l3t,iOnly.l3t),"service towers");
+   const sx=tw({sr:100,srMix:{low:50,medium:30,high:20}},null,st=>{["low","medium","high"].forEach(k=>st.bench.srLvl[k]*=2)}), cx=tw({cr:10,crMix:{low:50,medium:35,high:15}},null,st=>{["low","medium","high"].forEach(k=>st.bench.crLvl[k]*=2)});
+   add("Benchmarks: the SR and CR AREs by complexity drive the effort","doubling them doubles the SR and CR hours",`${fmt(sx.srHrs,2)} vs ${fmt(sPct.srHrs*2,2)}; ${fmt(cx.crHrs,2)} vs ${fmt(cMix.crHrs*2,2)}`,near1(sx.srHrs,sPct.srHrs*2)&&near1(cx.crHrs,cMix.crHrs*2),"service towers");
+   const oldS=migrate({towers:[{id:"a",kind:"AMS",vol:true,inc:50,sr:10,estate:"modern",skills:[]}],bench:{p12:70,p23:20,are1:0.25,are2:3,are3:10}}), ot=oldS.towers[0];
+   add("An estimate saved before change requests opens with the new fields and benchmarks at their defaults","cr, srMix, crMix empty; SR 0.25/0.5/1.5 h, CR 4/8/16 h",`${ot.cr}/${JSON.stringify(ot.srMix)}/${JSON.stringify(ot.crMix)}; ${Object.values(oldS.bench.srLvl).join("/")}; ${Object.values(oldS.bench.crLvl).join("/")}`,ot.cr===null&&ot.srMix===null&&ot.crMix===null&&oldS.bench.srLvl.high===1.5&&oldS.bench.crLvl.medium===8,"service towers")}
   withState(testState(st=>{st.towers=[amsTower(300,{skills:[mkSkill("be",100)]})];st.cplx="medium";st.term=3;st.aiMaturity="low";st.adj={on:true,mode:"fte",pct:0,fte:7,y:[],reason:"budget",note:"",mit:{},extra:[]}}),R=>{const r=7/R.total;add("Final number: a proposed Year 1 team in FTE sets Year 1 exactly and moves later years by the same proportion","Year 1 = 7.0; every year × (7 ÷ modelled)",`${R.fin.years.map(y=>fmt(y.fte,2)).join(" / ")} (ratio ${fmt(r,3)})`,Math.abs(R.fin.total-7)<1e-6&&R.fin.years.every((y,i)=>Math.abs(y.fte-R.fin.mod[i]*r)<1e-6)&&R.fin.on,"commercial position")});
   {const split=gradeSplit(0,2.83,1.59,[1/7,2/7,4/7]),lead=split[0].l2+split[0].l3+split[0].sdm,sen=split[1].l2+split[1].l3+split[1].sdm,tot=split.reduce((x,r)=>x+r.l2+r.l3+r.sdm,0);
    add("Grade mix: when the SDMs alone outnumber the Seniors, Consultants are lifted so Lead is not above Senior","Lead ≤ Senior, headcount unchanged",`Lead ${fmt(lead,2)}, Senior ${fmt(sen,2)}, total ${fmt(tot,2)}`,lead<=sen+1e-9&&Math.abs(tot-4.42)<1e-9,"grade mix");
@@ -2657,7 +2684,7 @@ async function exportExcel(){
   sheet("Summary",[["Deal",S.deal||""],["Version",S.meta.version],["Status",approvalStale()?"Changed since approval":STATUS[S.meta.status]],["Prepared by",S.meta.preparedBy],["Approved by",S.meta.status==="approved"?S.meta.approvedBy:""],["Approval date",S.meta.status==="approved"?S.meta.approvedAt:""],["Exported",new Date().toISOString().slice(0,10)],[],
     ["Year 1 team (FTE)",R.fin.total],["Rostered people",whole?R.fin.people:""],[`${T}-year average (FTE a year)`,R.fin.termRows[T-1].avg],R.fin.on?["Modelled Year 1 team (FTE, before the commercial position)",R.total]:["Commercial position","none"],["Confidence score",C.score],["Confidence band",C.band],["Range low (FTE)",C.lo],["Range high (FTE)",C.hi],["Coverage",covLabel()],["Framework scenario",`${R.sc}: ${R.SC.name}`],["Transition (FTE-months)",R.trans.total],[],["FTE only: no rates, cost or price."]],[34,40]);
   sheet("Build",[["Step","What it did","Step FTE","Team after (FTE)","People"]].concat(buildRows().map(r=>[r.stage,r.what,r.add,r.snap.fte,whole?r.snap.people:""])).concat(whole?[["Rounding","",R.roundAdd,"",R.people]]:[]).concat(R.fin.on?[["Commercial position",adjReasonLabel(S.adj.reason),R.fin.total-R.total,R.fin.total,whole?R.fin.people:""]]:[]),[22,90,12,16,10]);
-  sheet("Towers",[["Tower","Kind","We provide","SLA","Demand from","Counts at","Tickets/mo","L1 tickets","L2 tickets","L3 tickets","SLA uplift L2 %","SLA uplift L3 %","Coordination %","A hrs","B hrs","C hrs","FTE","AIOps","AI engineers"]].concat(R.towers.map(t=>[t.name,t.kind,ownedText(t),slaText(t),t.src,t.lvl.toUpperCase(),t.tickets,t.l1t,t.l2t,t.l3t,t.sm.l2*100,t.sm.l3*100,t.hand*100,t.A,t.Bh,t.C,t.fte,t.aiops===true?"Yes":"No",t.ai])),[22,6,14,34,18,8]);
+  sheet("Towers",[["Tower","Kind","We provide","SLA","Demand from","Counts at","Tickets/mo","L1 tickets","L2 tickets","L3 tickets","SLA uplift L2 %","SLA uplift L3 %","Coordination %","A hrs","B hrs","C hrs","FTE","AIOps","AI engineers","Incidents/mo","SRs/mo","CRs/mo","SR hours","CR hours"]].concat(R.towers.map(t=>[t.name,t.kind,ownedText(t),slaText(t),t.src,t.lvl.toUpperCase(),t.tickets,t.l1t,t.l2t,t.l3t,t.sm.l2*100,t.sm.l3*100,t.hand*100,t.A,t.Bh,t.C,t.fte,t.aiops===true?"Yes":"No",t.ai,t.incN,t.srN,t.crN,t.srHrs,t.crHrs])),[22,6,14,34,18,8]);
   sheet("Team by role",[["Role","Tower","FTE"]].concat(R.fin.roles.map(r=>[r.role,r.tower,r.fte])).concat([["Total","",R.fin.total]]),[44,22,10]);
   sheet("Team by location",[["Location","L2 (incl. L1) FTE","L3 FTE","SDM FTE","People"]].concat(R.fin.snap.cells.filter(c=>c.a2+c.a3+c.g>0).map(c=>[c.name,c.a2,c.a3,c.g,whole?c.people:""])),[18,16,10,10,10]);
   sheet("Years",[["Year","FTE","Before contingency","Contingency"].concat(R.pf.mode==="portfolio"?["FTE freed by AIOps","Reduced","Redeployed","Committed"]:[])].concat(R.fin.years.map((y,i)=>[y.n,y.fte,y.base,y.cont].concat(R.pf.mode==="portfolio"?[R.pf.years[i].gross,R.pf.years[i].reduce,R.pf.years[i].redeploy,R.pf.years[i].commit]:[]))),[8,10,18,12,18,10,12,12]);
@@ -2692,11 +2719,11 @@ function allowances(){
   return {core:t4,util:t3-t4,productive:t3,leave:t2-t3,cont:t1-t2,risk:t0-t1,total:t0,
     buffer:t0-t3,bufferPct:t3>0?(t0-t3)/t3*100:0,round:R.people-t0,people:R.people};
 }
-const BENCH_LBL={are1:"L1 hours per ticket",handoff:"Coordination uplift % per interface","sla.resp15":"SLA: P1 response ≤15 min uplift %","sla.resp30":"SLA: P1 response ≤30 min uplift %","sla.restore2h":"SLA: P1 restore ≤2 h uplift % (L3)","sla.avail999":"SLA: availability ≥99.9% uplift %","sla.cap":"SLA uplift cap %",p12:"L1 → L2 pass-through %",p23:"L2 → L3 pass-through %",are2:"L2 hours per ticket",are3:"L3 hours per ticket",util:"Effort utilisation %",hrsMonth:"Hours per FTE a month",bModern:"Non-ticketing effort, modern %",bLegacy:"Non-ticketing effort, legacy %",
+const BENCH_LBL={are1:"L1 hours per incident",handoff:"Coordination uplift % per interface","sla.resp15":"SLA: P1 response ≤15 min uplift %","sla.resp30":"SLA: P1 response ≤30 min uplift %","sla.restore2h":"SLA: P1 restore ≤2 h uplift % (L3)","sla.avail999":"SLA: availability ≥99.9% uplift %","sla.cap":"SLA uplift cap %",p12:"L1 → L2 pass-through %",p23:"L2 → L3 pass-through %",are2:"L2 hours per incident",are3:"L3 hours per incident",util:"Effort utilisation %",hrsMonth:"Hours per FTE a month",bModern:"Non-ticketing effort, modern %",bLegacy:"Non-ticketing effort, legacy %",
   "tpa.S":"AMS tickets per S app","tpa.M":"AMS tickets per M app","tpa.L":"AMS tickets per L app","tpa.XL":"AMS tickets per XL app","tpa.XXL":"AMS tickets per XXL app",
   "ims.wEnv":"IMS points per environment","ims.wHost":"IMS points per hosting platform","ims.wDb":"IMS points per database","ims.sec":"IMS points for security","ims.tpp":"IMS tickets per point",
   "dms.wDp":"DMS points per data product","dms.wPipe":"DMS points per pipeline","dms.wInt":"DMS points per integration","dms.wUp":"DMS points per upstream","dms.wDown":"DMS points per downstream","dms.tpp":"DMS tickets per point",
-  "ai.wAgent":"AI points per agent","ai.wModel":"AI points per model","ai.wTool":"AI points per tool integration","ai.wKs":"AI points per knowledge source","ai.risk":"AI points for high-risk use","ai.tpp":"AI tickets per point"};
+  "ai.wAgent":"AI points per agent","ai.wModel":"AI points per model","ai.wTool":"AI points per tool integration","ai.wKs":"AI points per knowledge source","ai.risk":"AI points for high-risk use","ai.tpp":"AI tickets per point","srLvl.low":"Service request hours, Low complexity","srLvl.medium":"Service request hours, Medium complexity","srLvl.high":"Service request hours, High complexity","crLvl.low":"Change request hours, Low complexity","crLvl.medium":"Change request hours, Medium complexity","crLvl.high":"Change request hours, High complexity"};
 function deviations(){
   const out=[], add=(l,d,u,src)=>{if(String(d)!==String(u))out.push([l,d,u,src])};
   add("Utilisation per resource (Step 1) %",85,S.util1,"[F] G6");
@@ -2831,8 +2858,14 @@ function renderS2(){
     const cs=cpxState(t);
     const step=t.vol===false?(cs===false?3:2):1;
     let demand=`<div class="qpath"><span class="${step===1?"on":""}">① Volumetrics</span>›<span class="${step===2?"on":""}">② Structural complexity</span>›<span class="${step===3?"on":""}">③ Monthly active users</span></div><div class="qflow">
-      <div class="q ${step===1?"on":""}"><span class="qh"><i>1</i>Do you have volumetric data for this tower?</span>${yn("data-tvol",t.vol,"Yes, ticket history","No")}${t.vol===true?`<div class="tgrid">${numIn(t,"inc","Incidents / month")}${numIn(t,"sr","Service requests / month")}</div>
-      <span class="qh" style="margin-top:10px">Where are these counts measured?</span><div class="seg" role="group" aria-label="Where the counts are measured">${[["l1","All tickets (service desk, L1)"],["l2","Tickets reaching L2"],["l3","Tickets reaching L3"]].map(([k,l])=>`<button type="button" data-ttl="${k}" aria-pressed="${(t.tktLevel||"l1")===k}">${l}</button>`).join("")}</div>${t.tktLevel?"":`<div class="hint">Assumed all tickets (L1) until you choose. An ITSM export of the whole queue is L1; an incumbent's L2 queue is L2.</div>`}`:""}</div>`;
+      <div class="q ${step===1?"on":""}"><span class="qh"><i>1</i>Do you have volumetric data for this tower?</span>${yn("data-tvol",t.vol,"Yes, ticket history","No")}${t.vol===true?`<div class="tgrid">${numIn(t,"inc","Incidents / mo")}${numIn(t,"sr","Service reqs / mo")}${numIn(t,"cr","Change reqs / mo")}</div>
+      <span class="qh" style="margin-top:10px">Severity mix (P1-P4, counts or %, normalised automatically)</span><div class="tgrid" style="grid-template-columns:repeat(4,minmax(0,1fr))">${["P1","P2","P3","P4"].map(k=>`<label for="tm-${t.id}-${k}">${k}<input type="number" id="tm-${t.id}-${k}" data-tmix="${k}" min="0" max="100000" step="1" value="${t.mix&&t.mix[k]!=null?t.mix[k]:""}"></label>`).join("")}</div>
+      <div class="hint">Incidents only: service requests and change requests never inherit this mix; each has its own complexity mix below. With counts at L1, P1s mostly enter at L2/L3 directly instead of cascading from L1 (routing matrix, proposed).</div>
+      <span class="qh" style="margin-top:10px">SR complexity mix (Low / Medium / High, counts or %) <span class="tag">proposed</span></span><div class="tgrid" style="grid-template-columns:repeat(3,minmax(0,1fr))">${[["low","Low"],["medium","Medium"],["high","High"]].map(([k,l])=>`<label for="tsr-${t.id}-${k}">${l}<input type="number" id="tsr-${t.id}-${k}" data-tsrm="${k}" min="0" max="100000" step="1" value="${t.srMix&&t.srMix[k]!=null?t.srMix[k]:""}"></label>`).join("")}</div>
+      <div class="hint">Costed at the SR AREs in Benchmarks. Low SRs are done by L1, Medium by L2, High by L3; a level that is not ours passes its SRs to the next level we own. Blank uses 60 / 30 / 10.</div>
+      <span class="qh" style="margin-top:10px">CR complexity mix (Low / Medium / High, counts or %) <span class="tag">proposed</span></span><div class="tgrid" style="grid-template-columns:repeat(3,minmax(0,1fr))">${[["low","Low"],["medium","Medium"],["high","High"]].map(([k,l])=>`<label for="tcr-${t.id}-${k}">${l}<input type="number" id="tcr-${t.id}-${k}" data-tcrm="${k}" min="0" max="100000" step="1" value="${t.crMix&&t.crMix[k]!=null?t.crMix[k]:""}"></label>`).join("")}</div>
+      <div class="hint">Costed at the CR AREs in Benchmarks, as planned engineering work: L3 when we own L3, else L2; none if we own neither. Blank uses 50 / 35 / 15.</div>
+      <span class="qh" style="margin-top:10px">Where are the incident counts measured?</span><div class="seg" role="group" aria-label="Where the counts are measured">${[["l1","All tickets (service desk, L1)"],["l2","Tickets reaching L2"],["l3","Tickets reaching L3"]].map(([k,l])=>`<button type="button" data-ttl="${k}" aria-pressed="${(t.tktLevel||"l1")===k}">${l}</button>`).join("")}</div>${t.tktLevel?"":`<div class="hint">Assumed all tickets (L1) until you choose. An ITSM export of the whole queue is L1; an incumbent's L2 queue is L2.</div>`}`:""}</div>`;
     if(t.vol===false)demand+=`<div class="q ${step===2?"on":""}"><span class="qh"><i>2</i>Do you know the structural complexity of the ${t.kind==="AMS"?"application estate":t.kind==="IMS"?"infrastructure estate":t.kind==="AI"?"AI platform estate":"data estate"}?</span>${yn("data-tcpx",cs,t.kind==="AMS"?"Yes, T-shirt size it":"Yes, enter it","No")}${known?cpxInputs:""}</div>`;
     if(t.vol===false&&cs===false)demand+=`<div class="q on"><span class="qh"><i>3</i>Use monthly active users to work out demand and complexity</span>${mauInputs}</div>`;
     demand+=`</div>`;
@@ -2858,18 +2891,14 @@ function renderS2(){
           ${[["P1r","P1 response, min"],["P1x","P1 restore, min"],["P2r","P2 response, min"],["P2x","P2 restore, min"]].map(([k,l])=>`<label for="ts-${t.id}-${k}">${l}<input type="number" id="ts-${t.id}-${k}" data-tsl="${k}" min="0" max="100000" step="5" value="${t.sla&&t.sla[k]!=null?t.sla[k]:""}"></label>`).join("")}
           <label for="tav-${t.id}">Availability<select id="tav-${t.id}" data-tav="1"><option value="">Not stated</option>${AVAIL_CLASSES.map(([k,l,v])=>`<option value="${v}" ${+t.avail===v?"selected":""}>${l} · ${v}%</option>`).join("")}</select></label>
         </div>
-        <details style="margin-top:6px"><summary class="hint" style="cursor:pointer">Priority mix (optional): where tickets enter</summary>
-          <div class="tgrid" style="margin-top:6px">${["P1","P2","P3","P4"].map(k=>`<label for="tm-${t.id}-${k}">${k} %<input type="number" id="tm-${t.id}-${k}" data-tmix="${k}" min="0" max="100000" step="1" value="${t.mix&&t.mix[k]!=null?t.mix[k]:""}"></label>`).join("")}</div>
-          <div class="hint">Counts or %. With counts at L1, P1s mostly enter at L2/L3 directly instead of cascading from L1 (routing matrix, proposed).</div>
-        </details>
         <div class="hint" id="tsh-${t.id}"></div>
       </div>
       <div class="tsec"><span class="h">Demand</span>
         ${demand}
       </div>
-      <div class="tsec"><span class="h">Enhancements and minor change <span style="text-transform:none;letter-spacing:0;font-weight:400">(optional)</span></span>
+      <div class="tsec"><span class="h">Enhancement pool <span style="text-transform:none;letter-spacing:0;font-weight:400">(optional)</span></span>
         <div class="tgrid">${numIn(t,"enh","Hours a month",100000,10)}</div>
-        <div class="hint">Change requests and small enhancements in the run scope ([F] change intensity). Leave blank if out of scope or priced separately.</div>
+        <div class="hint">A separate pool of minor enhancements in the run scope ([F] change intensity), in addition to the change requests counted above. Leave blank if change requests already cover it, or if it is out of scope or priced separately.</div>
       </div>
       <div class="tsec"><span class="h">Estate</span>
         <div class="seg" role="group" aria-label="Estate">${(t.kind==="AI"?[["modern","Managed AI services (APIs)"],["legacy","Self-hosted models / custom agents"]]:[["modern","Modern / SaaS"],["legacy","Complex legacy"]]).map(([k,l])=>`<button type="button" data-testate="${k}" aria-pressed="${t.estate===k}">${l}</button>`).join("")}</div>${t.estate?"":`<div class="hint">Choose one. Modern is used until you do.</div>`}
@@ -2898,8 +2927,12 @@ function renderS2(){
   $("aiRatio").value=S.aiRatio;
   const B=S.bench;
   const bi=(path,label,val,step=1,max=1000)=>`<label for="bn-${path}">${label}<input type="number" id="bn-${path}" data-bn="${path}" min="0" max="${max}" step="${step}" value="${val}"></label>`;
-  $("benchBox").innerHTML=`<h4>Ticket cascade and effort · [F] 1.1, 1.4, 1.5</h4><div class="tgrid">
-    ${bi("p12","L1 → L2 pass-through %",B.p12,1,100)}${bi("p23","L2 → L3 pass-through %",B.p23,1,100)}${bi("are2","L2 hours per ticket",B.are2,0.25,40)}${bi("are3","L3 hours per ticket",B.are3,0.5,80)}
+  $("benchBox").innerHTML=`<h4>Average resolution effort (ARE), hours</h4>
+    <div class="hint">Incidents by level · [F] 1.5: L1 15 min, L2 2–4 h, L3 8–12 h</div><div class="tgrid">${bi("are1","Incident, L1",B.are1,0.05,40)}${bi("are2","Incident, L2",B.are2,0.25,40)}${bi("are3","Incident, L3",B.are3,0.5,80)}</div>
+    <div class="hint">Service requests by complexity · proposed: Low to L1, Medium to L2, High to L3, falling to the next level we own</div><div class="tgrid">${bi("srLvl.low","SR Low",B.srLvl.low,0.05,40)}${bi("srLvl.medium","SR Medium",B.srLvl.medium,0.05,40)}${bi("srLvl.high","SR High",B.srLvl.high,0.05,40)}</div>
+    <div class="hint">Change requests by complexity · proposed: planned engineering work, L3 when we own L3, else L2</div><div class="tgrid">${bi("crLvl.low","CR Low",B.crLvl.low,0.5,200)}${bi("crLvl.medium","CR Medium",B.crLvl.medium,0.5,200)}${bi("crLvl.high","CR High",B.crLvl.high,0.5,200)}</div>
+    <h4>Ticket cascade and effort · [F] 1.1, 1.4</h4><div class="tgrid">
+    ${bi("p12","L1 → L2 pass-through %",B.p12,1,100)}${bi("p23","L2 → L3 pass-through %",B.p23,1,100)}
     ${bi("util","Utilisation %",B.util,1,100)}${bi("hrsMonth","Hours per FTE a month",B.hrsMonth,1,220)}${bi("bModern","Non-ticketing B, modern %",B.bModern,1,100)}${bi("bLegacy","Non-ticketing B, legacy %",B.bLegacy,1,100)}</div>
     <h4>AMS tickets per app a month · [F] Sc.1 midpoints</h4><div class="tgrid">${SIZES.map(z=>bi("tpa."+z,z,B.tpa[z],0.5,200)).join("")}</div>
     <h4>IMS complexity points · proposed</h4><div class="tgrid">${bi("ims.wEnv","Per environment",B.ims.wEnv,0.25,20)}${bi("ims.wHost","Per hosting platform",B.ims.wHost,0.25,20)}${bi("ims.wDb","Per database",B.ims.wDb,0.25,20)}${bi("ims.sec","Security in scope",B.ims.sec,0.5,50)}${bi("ims.tpp","Tickets per point",B.ims.tpp,0.1,50)}</div>
@@ -3053,7 +3086,7 @@ function updateS2(){
     if(d){
       let how;
       if(t.src==="Not answered yet"){delete d.dataset.impl;d.innerHTML="Answer the questions above to size this tower.";const a=$("tadd-"+t.id);if(a)a.textContent="";return}
-      if(t.vol===true)how=`${fmt(n0v(t.inc),0)} incidents + ${fmt(n0v(t.sr),0)} SRs`;
+      if(t.vol===true)how=`${fmt(n0v(t.inc),0)} incidents + ${fmt(n0v(t.sr),0)} SRs + ${fmt(n0v(t.cr),0)} CRs`;
       else if(!cpxKnown(t)){const eq=t.tickets/B.tpa.M;how=`${fmt(n0v(t.mau),0)} MAU × ${t.mauRate}%`;d.dataset.impl=`Implied complexity: about ${fmt(eq,1)} medium (M) applications' worth of demand, ${implTier(t.tickets)}.`}
       else if(t.kind==="AMS")how=SIZES.filter(z=>+t.apps[z]).map(z=>`${t.apps[z]}${z}×${B.tpa[z]}`).join(" + ")||"no apps";
       else how=`score ${fmt(t.score,1)} × ${({IMS:B.ims.tpp,DMS:B.dms.tpp,AI:B.ai.tpp})[t.kind]} tickets per point`;
@@ -3088,7 +3121,7 @@ function updateS2(){
   const l1=R.towers.reduce((x,t)=>x+t.l1t,0);
   h+=wstep("2","L1 / L2 / L3 cascade",`${fmt(l1,1)} / ${fmt(l2,1)} / ${fmt(l3,1)}`,`Tickets we handle at each level we provide. L1 resolves ${100-B.p12}% (${B.are1}h each), L2 = L1 inflow × ${B.p12}%, L3 = L2 × ${B.p23}%.${R.towers.some(t=>t.mixUsed)?` Priority mix routes P1/P2 straight to L2/L3 for ${esc(listNames(R.towers.filter(t=>t.mixUsed)))}.`:""}${nonStd.length?" "+nonStd.map(t=>`${esc(t.name)}: ${t.lvl==="l2"?"counts already at L2, so L2 = tickets":t.lvl==="l3"?"counts at L3, so L3 = tickets":"counts at L1"}${t.sv==="l2"?", L2 only (L3 = 0)":t.sv==="l3"?", L3 only (L2 = 0)":""}`).join("; ")+".":""}`);
   const slaH=R.towers.reduce((x,t)=>x+t.slaAdd,0), handH=R.towers.reduce((x,t)=>x+t.handAdd,0);
-  h+=wstep("3","A · Ticketing effort",`${fmt(A,0)} h`,`(L1 × ${B.are1}h + L2 × ${B.are2}h + L3 × ${B.are3}h) ÷ ${B.util}% utilisation${slaH>0?`, incl. ${fmt(slaH,0)} h SLA uplift`:""}${handH>0?`, incl. ${fmt(handH,0)} h coordination across ownership interfaces`:""}`);
+  h+=wstep("3","A · Ticketing effort",`${fmt(A,0)} h`,`(incidents: L1 × ${B.are1}h + L2 × ${B.are2}h + L3 × ${B.are3}h${R.towers.some(t=>t.srHrs>0)?`; service requests ${fmt(R.towers.reduce((x,t)=>x+t.srHrs,0),0)} h by complexity (${B.srLvl.low} / ${B.srLvl.medium} / ${B.srLvl.high}h, Low to L1, Medium to L2, High to L3)`:""}${R.towers.some(t=>t.crHrs>0)?`; change requests ${fmt(R.towers.reduce((x,t)=>x+t.crHrs,0),0)} h by complexity (${B.crLvl.low} / ${B.crLvl.medium} / ${B.crLvl.high}h)`:""}) ÷ ${B.util}% utilisation${slaH>0?`, incl. ${fmt(slaH,0)} h SLA uplift`:""}${handH>0?`, incl. ${fmt(handH,0)} h coordination across ownership interfaces`:""}`);
   h+=wstep("4","B · Non-ticketing effort",`${fmt(Bh,0)} h`,`A × ${B.bModern}% modern or ${B.bLegacy}% legacy estate, per tower`);
   const Ch=R.towers.reduce((x,t)=>x+t.C,0);
   if(Ch>0)h+=wstep("4b","C · Enhancements",`${fmt(Ch,0)} h`,`Enhancement hours ÷ ${B.util}% utilisation: ${R.towers.filter(t=>t.enhH>0).map(t=>`${esc(t.name)} ${fmt(t.enhH,0)}h`).join(", ")}`);
@@ -3960,6 +3993,8 @@ document.addEventListener("input",e=>{
   if(d.tier){const tw=twr(t);tw.own={...ownOf(tw),[d.tier]:t.value};renderS2();update();return}
   if(d.tav){const tw=twr(t);tw.avail=t.value===""?null:+t.value;tw.slaTier="";t.closest(".tower").querySelectorAll("[data-tsla]").forEach(b=>b.setAttribute("aria-pressed","false"));update();return}
   if(d.tsl){const tw=twr(t);tw.sla=tw.sla||{};tw.sla[d.tsl]=t.value===""?null:Math.max(0,+t.value);tw.slaTier="";t.closest(".tower").querySelectorAll("[data-tsla]").forEach(b=>b.setAttribute("aria-pressed","false"));update();return}
+  if(d.tsrm){const tw=twr(t);tw.srMix=tw.srMix||{};tw.srMix[d.tsrm]=t.value===""?null:Math.max(0,+t.value);update();return}
+  if(d.tcrm){const tw=twr(t);tw.crMix=tw.crMix||{};tw.crMix[d.tcrm]=t.value===""?null:Math.max(0,+t.value);update();return}
   if(d.tmix){const tw=twr(t);tw.mix=tw.mix||{};tw.mix[d.tmix]=t.value===""?null:Math.max(0,+t.value);update();return}
   if(d.tapp){if(t.value===""){twr(t).apps[d.tapp]=null;update()}else{const v=+t.value;if(v>=0){twr(t).apps[d.tapp]=v;update()}}return}
   if(d.ks){if(t.value===""){skl(t).share=0;update()}else{const v=+t.value;if(v>=0&&v<=100){skl(t).share=v;update()}}return}
@@ -4275,7 +4310,9 @@ function evHtml(o){return o&&(o.evidence||o.source)?`<div class="pe">${o.evidenc
 const STRUCT_LBL={environments:"environments",hostingPlatforms:"hosting platforms",databases:"databases",securityInScope:"security in scope",dataProducts:"data products",pipelines:"pipelines",integrations:"integrations",upstream:"upstream systems",downstream:"downstream systems",agents:"agents",models:"models",toolIntegrations:"tool integrations",knowledgeSources:"knowledge sources",highRisk:"high-risk use case"};
 function towerLine(t){
   const parts=[];
-  if(t.volumetrics)parts.push(`volumetrics: ${t.volumetrics.incidentsPerMonth??"?"} incidents + ${t.volumetrics.serviceRequestsPerMonth??0} SRs a month`);
+  if(t.volumetrics)parts.push(`volumetrics: ${t.volumetrics.incidentsPerMonth??"?"} incidents + ${t.volumetrics.serviceRequestsPerMonth??0} SRs + ${t.volumetrics.changeRequestsPerMonth??0} CRs a month`);
+  if(t.srComplexityMix)parts.push(`SR mix ${["low","medium","high"].map(k=>t.srComplexityMix[k]??0).join("/")}`);
+  if(t.crComplexityMix)parts.push(`CR mix ${["low","medium","high"].map(k=>t.crComplexityMix[k]??0).join("/")}`);
   else if(t.structural){const s=t.structural;parts.push("structural: "+(s.apps?SIZES.filter(z=>s.apps[z]).map(z=>`${s.apps[z]} ${z}`).join(", ")+" apps":Object.entries(s).map(([k,v])=>typeof v==="boolean"?`${STRUCT_LBL[k]||k}: ${v?"yes":"no"}`:`${v} ${STRUCT_LBL[k]||k}`).join(", ")))}
   else if(t.mau)parts.push(`${t.mau.toLocaleString()} monthly active users`);
   else parts.push("demand not stated");
@@ -4338,7 +4375,9 @@ function applyProposals(){
     if(t.priorityMix)tw.mix={...t.priorityMix};
     if(t.ticketLevel&&t.volumetrics)tw.tktLevel=t.ticketLevel.toLowerCase();
     if(t.enhancementHoursPerMonth!=null)tw.enh=t.enhancementHoursPerMonth;
-    if(t.volumetrics){tw.vol=true;tw.inc=t.volumetrics.incidentsPerMonth??null;tw.sr=t.volumetrics.serviceRequestsPerMonth??null}
+    if(t.srComplexityMix)tw.srMix={...t.srComplexityMix};
+    if(t.crComplexityMix)tw.crMix={...t.crComplexityMix};
+    if(t.volumetrics){tw.vol=true;tw.inc=t.volumetrics.incidentsPerMonth??null;tw.sr=t.volumetrics.serviceRequestsPerMonth??null;tw.cr=t.volumetrics.changeRequestsPerMonth??null}
     else if(t.structural){
       tw.vol=false;tw.cpx=true;const st=t.structural;
       if(t.kind==="AMS"&&st.apps)SIZES.forEach(z=>{if(st.apps[z]!=null)tw.apps[z]=st.apps[z]});

@@ -169,12 +169,14 @@ A path marker on each card shows which route is in use. Assumption B4 lists each
 
 IMS/DMS weights and tickets per point come from the `damo-estimator` structural-complexity model (pipelines weight is new); the AI platform weights are new. All are `proposed` and editable in the stage's Benchmarks panel.
 
-Every route ends in tickets a month, which then follow the framework effort chain ([F] 1.1, 1.4, 1.5, p.3):
+**With ticket history, a tower captures three volumes, the same as the damo-estimator:** incidents, service requests and change requests a month. Incidents carry a **severity mix** (P1 to P4, counts or %) and run through the L1/L2/L3 cascade below. Service requests carry a **complexity mix** (Low / Medium / High, counts or %; blank uses 60 / 30 / 10) and are costed at the **SR ARE by complexity** (Low 0.25 h, Medium 0.5 h, High 1.5 h): Low goes to L1, Medium to L2, High to L3, and a level that is not ours passes its SRs to the next level we own. Change requests carry their own complexity mix (blank 50 / 35 / 15) and the **CR ARE by complexity** (Low 4 h, Medium 8 h, High 16 h), as planned engineering work on L3 when we own L3, else L2, and none if we own neither. SRs and CRs count in the tickets a month but never enter the incident cascade or the severity mix. The three AREs (incidents by level, SRs by complexity, CRs by complexity) are in the stage's Benchmarks panel and are listed under Deviations when changed. The extraction (`extract-prompt.mjs`) now also reads change requests a month and the SR and CR complexity mixes. The enhancement pool (hours a month) is separate from change requests.
+
+Every route ends in tickets a month, which then follow the framework effort chain ([F] 1.1, 1.4, 1.5, p.3), for incidents:
 
 ```
 L2 tickets = tickets × 70%            L1 is the client's service desk
 L3 tickets = L2 tickets × 20%
-A          = (L2 × 3h + L3 × 10h) ÷ 85% utilisation
+A          = (incidents: L2 × 3h + L3 × 10h, plus SR and CR hours by complexity) ÷ 85% utilisation
 B          = A × 25% (modern) or 35% (complex legacy)
 tower FTE  = (A + B) ÷ 160 hours a month, keeping the L2/L3 split from the effort
 ```

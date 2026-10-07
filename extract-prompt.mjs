@@ -30,7 +30,7 @@ const SCHEMA_EXAMPLE = {
     kind: "AMS", name: "Retail banking apps",
     serviceLevels: "L2+L3", sla: { p1ResponseMin: 15, p1RestoreMin: 120, p2ResponseMin: 30, p2RestoreMin: 480, availabilityPct: 99.9 },
     priorityMix: { P1: 4, P2: 16, P3: 50, P4: 30 },
-    volumetrics: { incidentsPerMonth: 120, serviceRequestsPerMonth: 40 }, ticketLevel: "L1", enhancementHoursPerMonth: 80,
+    volumetrics: { incidentsPerMonth: 120, serviceRequestsPerMonth: 40, changeRequestsPerMonth: 8 }, srComplexityMix: { low: 60, medium: 30, high: 10 }, crComplexityMix: { low: 50, medium: 35, high: 15 }, ticketLevel: "L1", enhancementHoursPerMonth: 80,
     structural: { apps: { S: 0, M: 3, L: 2, XL: 1, XXL: 0 } },
     mau: 50000, estate: "legacy", aiopsInScope: true, skills: ["be", "fe"],
     evidence: "short quote", source: "Incident dump",
@@ -55,6 +55,8 @@ const RULES = `Rules:
 - towers[].serviceLevels: "L1+L2+L3", "L2+L3", "L2" or "L3": the support levels the client wants us to provide for that estate. Omit if not stated.
 - towers[].sla: response and restore targets in minutes for P1 and P2, and availabilityPct (e.g. 99.9). Convert hours to minutes. Include only the targets the documents state.
 - towers[].priorityMix: share of tickets by priority P1-P4 (counts or %), from the incident dump summary when given.
+- towers[].volumetrics.changeRequestsPerMonth: change requests a month, kept separate from incidents and service requests. Omit if not stated.
+- towers[].srComplexityMix / crComplexityMix: how complex the service requests / change requests are: low (simple, routine), medium, high (complex, urgent, multi-team), as counts or percentages, only when the documents give a breakdown. Never infer them from incident priorities.
 - towers[].ticketLevel: where the volumetric counts are measured: "L1" (all tickets raised, e.g. a whole ITSM export), "L2" (tickets reaching L2 / an incumbent's L2 queue) or "L3". Omit if unclear.
 - towers[].enhancementHoursPerMonth: hours a month of enhancements / minor change in the run scope, only if stated or derivable (convert yearly or per-release figures).
 - towers[].kind: "AMS" (applications), "IMS" (infrastructure/cloud), "DMS" (data platforms), or "AI" (AI platforms / agentic solutions). One entry per distinct estate the documents describe.
@@ -130,7 +132,9 @@ export function sanitizeExtraction(raw) {
       if (kind === "AI") structural = prune({ agents: num(s.agents, 0, 10000), models: num(s.models, 0, 1000), toolIntegrations: num(s.toolIntegrations, 0, 100000), knowledgeSources: num(s.knowledgeSources, 0, 10000), highRisk: typeof s.highRisk === "boolean" ? s.highRisk : undefined });
       return prune({
         kind, name: str(t.name, 80),
-        volumetrics: prune({ incidentsPerMonth: num(v.incidentsPerMonth, 0, 1e6), serviceRequestsPerMonth: num(v.serviceRequestsPerMonth, 0, 1e6) }),
+        volumetrics: prune({ incidentsPerMonth: num(v.incidentsPerMonth, 0, 1e6), serviceRequestsPerMonth: num(v.serviceRequestsPerMonth, 0, 1e6), changeRequestsPerMonth: num(v.changeRequestsPerMonth, 0, 1e6) }),
+        srComplexityMix: t.srComplexityMix && typeof t.srComplexityMix === "object" ? prune(Object.fromEntries(["low", "medium", "high"].map((k) => [k, num(t.srComplexityMix[k], 0, 1e6)]))) : undefined,
+        crComplexityMix: t.crComplexityMix && typeof t.crComplexityMix === "object" ? prune(Object.fromEntries(["low", "medium", "high"].map((k) => [k, num(t.crComplexityMix[k], 0, 1e6)]))) : undefined,
         structural,
         mau: num(t.mau, 0, 1e9),
         estate: oneOf(t.estate, ["modern", "legacy"]),
