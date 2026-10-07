@@ -191,6 +191,28 @@ tr:last-child td{border-bottom:0}
 .tl td.c.o{background:var(--risk);color:#fff;border-color:transparent}
 .tl td.c.ah{background:linear-gradient(90deg,var(--add) 50%,var(--surface-2) 50%);color:var(--ink)}
 .tl td.c.oh{background:linear-gradient(90deg,var(--risk) 50%,var(--surface-2) 50%);color:var(--ink)}
+/* live coverage strip, pinned at the top of the Step 1 inputs while editing */
+.stickhost{display:block}
+.fgrid{display:grid;gap:20px}
+.tlmini{position:sticky;top:calc(var(--navh,0px) + 10px);z-index:20;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px 8px;margin:0 0 20px;box-shadow:0 4px 10px -6px rgba(0,0,0,.28)}
+.tm-h{font-size:12px;color:var(--muted);margin-bottom:5px}
+.tm-h b{color:var(--ink)}
+.tm-h span{font:11px var(--mono);color:var(--faint);margin-left:5px}
+.tm-r{display:grid;grid-template-columns:78px minmax(0,1fr);gap:7px;align-items:center;margin:2px 0}
+.tm-l{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tm-d{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
+.tm-b{display:grid;grid-template-columns:repeat(48,1fr);height:13px;border-radius:3px;overflow:hidden;background:var(--surface-2);border:1px solid var(--line)}
+.tm-b i{display:block}
+.tm-b i.a{background:var(--add)}
+.tm-b i.o{background:var(--risk)}
+.tm-b i.req{background:var(--accent)}
+.tm-b i.gap{background:#C0392B}
+.tm-t{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));font:9.5px var(--mono);color:var(--faint)}
+.tm-lg{display:flex;flex-wrap:wrap;gap:3px 11px;font-size:11px;color:var(--faint);margin-top:6px}
+.tm-lg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.tm-s{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+.tm-bad{color:#C0392B}
+.tm-ok{color:var(--add)}
 .tl td.c.gap{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
 .shiftslot{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px 10px;align-items:center}
 .shiftslot .seg button{padding:5px 9px;font-size:12px}
@@ -594,6 +616,7 @@ tr.sel td{background:var(--accent-soft)}
     <div class="cols">
       <div class="panel">
         <header><h3>Inputs</h3><span class="sub">Every change updates the FTE bar below</span></header>
+        <div class="stickhost"><div class="tlmini" id="tlMini" aria-live="polite"></div><div class="fgrid">
 
         <div class="field">
           <div class="lbl">Support window <span class="tag">[F] 1.1 C · Coverage model</span></div>
@@ -605,7 +628,7 @@ tr.sel td{background:var(--accent-soft)}
             <label class="inline" for="winStart">Starts at <input id="winStart" type="time" step="900"></label>
             <label class="inline" for="custTz">Customer time zone, UTC offset <input id="custTz" type="number" min="-12" max="14" step="0.5" style="width:84px"></label>
           </div>
-          <div class="hint">The window is on the customer's clock. Each delivery location below works its own hours, in its own time zone, and the timeline shows how they line up.</div>
+          <div class="hint">The window is on the customer's clock. Each delivery location below works its own hours, in its own time zone, and the timeline shows how they line up. A live strip pinned above these inputs redraws as you change them; the full timeline is below.</div>
         </div>
 
         <div class="divider"></div>
@@ -680,6 +703,7 @@ tr.sel td{background:var(--accent-soft)}
             <option value="none">No rounding (fractional FTE)</option>
           </select>
         </div>
+        </div></div>
       </div>
 
       <div class="panel">
@@ -2255,6 +2279,8 @@ function runSelfTests(){
     add("Coverage timeline: Ecuador 9:00–19:00 plus India 9:30–19:30 and on call 5:30–9:30","20 h active, 4 h on call only, no gap, no overlap",`${fmt(C.activeH,1)} / ${fmt(C.onCallH,1)} / ${fmt(C.gapH,1)} / ${fmt(C.overlapH,1)}`,near(C.activeH,20)&&near(C.onCallH,4)&&near(C.gapH,0)&&near(C.overlapH,0),"windows model")});
   withState(testState(st=>{st.tz=0;st.start=0;st.hours=24;st.locations=[pickLoc("uk"),pickLoc("uk")];st.locations[1].id="uk2";st.locations[0].win=[{id:"a",m:"active",s:0,e:12}];st.locations[1].win=[{id:"b",m:"active",s:10,e:22}]}),R=>{const C=R.cover;
     add("Coverage timeline: two active windows that overlap by 2 h and leave 2 h uncovered","overlap 2 h, gap 2 h",`${fmt(C.overlapH,1)} h overlap, ${fmt(C.gapH,1)} h gap`,near(C.overlapH,2)&&near(C.gapH,2)&&C.gaps.length===1,"windows model")});
+  withState(testState(st=>{st.tz=0;st.start=0;st.hours=24;st.locations=[pickLoc("uk"),pickLoc("uk")];st.locations[1].id="uk2";st.locations[0].win=[{id:"a",m:"active",s:0,e:12}];st.locations[1].win=[{id:"b",m:"active",s:10,e:22}]}),R=>{const m=miniHtml(R.cover),g=(m.match(/<i class="gap">/g)||[]).length,b=(m.match(/class="tm-b"/g)||[]).length;
+    add("Coverage strip beside the inputs marks the uncovered hours","4 half-hour cells (2 h) marked uncovered, a bar for the window, each location and Uncovered",`${g} uncovered cells, ${b} bars`,g===4&&b===4,"windows model")});
   withState(testState(st=>{st.hours=16;st.days=5;st.perShift={L2:1,L3:1};st.locations=[pickLoc("in")];st.locations[0].win=[{id:"a",m:"active",s:9,e:17},{id:"b",m:"oncall",s:17,e:25}]}),R=>add("Roster from window hours, active plus on call","(40 active h + 40 on-call h × 15%) × 2 ÷ 40 = 2.3 FTE",fmt(R.roster,2),near(R.roster,2.3),"windows model"));
   {const m=migrate({hours:24,days:5,spd:3,assign:["in","in","ro"],shiftMode:["active","active","oncall"],locations:[{id:"in",name:"India",kind:"Offshore",leave:18,hol:10},{id:"ro",name:"Romania",kind:"Nearshore EU",leave:21,hol:15}],backfill:false,util1:100,cov:{x:{shifts:[0,2],people:1}}});
     const live=m.cov.x.shifts, blocks=blocksOf(m);
@@ -2586,9 +2612,29 @@ function updateRiskDeltas(k,base,add,pct){
 let R;
 function update(){
   R=compute();
-  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); updateS6(); updateS7(); updateTrans(); updateS9(); updateS8(); updateResults(); renderBar(); renderNav(); updateMeta(); save();
+  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); updateS6(); updateS7(); updateTrans(); updateS9(); updateS8(); updateResults(); renderBar(); renderNav(); setNavH(); updateMeta(); save();
 }
+/* A compact version of the coverage timeline for the inputs panel: one 48-cell bar per row, on the customer clock from the window start. */
+function miniHtml(C){
+  const st=Math.round(hmod(+S.start||0)*2)%48;
+  const bar=fn=>{let o="";for(let j=0;j<48;j++)o+=`<i class="${fn((st+j)%48)}"></i>`;return `<div class="tm-b">${o}</div>`};
+  const row=(label,dot,body)=>`<div class="tm-r"><div class="tm-l" title="${esc(label)}">${dot?`<span class="tm-d" style="background:${dot}"></span>`:""}${esc(label)}</div>${body}</div>`;
+  let ticks="";for(let j=0;j<24;j+=3)ticks+=`<span>${clock(hmod(+S.start||0)+j)}</span>`;
+  let h=`<div class="tm-h"><b>Live coverage</b> on the customer clock<span>${utcLabel(+S.tz||0)}</span></div><div class="tm-r"><div class="tm-l"></div><div class="tm-t">${ticks}</div></div>`+
+    row("Support window","",bar(k=>C.req[k]?"req":""))+
+    C.rows.map(r=>row(r.name,locColor(r.id),bar(k=>r.a[k]?"a":r.o[k]?"o":""))).join("")+
+    (C.gapH>0?row("Uncovered","",bar(k=>C.req[k]&&!C.state[k]?"gap":"")):"");
+  const sum=`<b>${fmt(C.activeH,1)}</b> of ${fmt(C.reqH,1)} h active`+(C.onCallH>0?` · <b>${fmt(C.onCallH,1)}</b> h on call only`:"")+
+    (C.gapH>0?` · <b class="tm-bad">${fmt(C.gapH,1)} h uncovered (${C.gaps.map(g=>clock(g[0])+"-"+clock(g[1])).join(", ")})</b>`:` · <span class="tm-ok">no gap</span>`)+
+    (C.overlapH>0?` · ${fmt(C.overlapH,1)} h overlap`:"");
+  return h+`<div class="tm-lg"><span><i style="background:var(--add)"></i>Active</span><span><i style="background:var(--risk)"></i>On call</span><span><i style="background:var(--accent)"></i>Support window</span><span><i style="background:#C0392B"></i>Uncovered</span></div><div class="tm-s">${sum}</div>`;
+}
+function renderMini(){const el=$("tlMini");if(el)el.innerHTML=miniHtml(R.cover)}
+function setNavH(){const n=document.querySelector(".stages");document.documentElement.style.setProperty("--navh",(n?n.offsetHeight:0)+"px")}
+window.addEventListener("resize",setNavH);
+{const n_=document.querySelector(".stages");if(n_&&window.ResizeObserver)new ResizeObserver(setNavH).observe(n_)}
 function renderTimeline(){
+  renderMini();
   const C=R.cover, st=hmod(+S.start||0), cols=[...Array(24)].map((_,j)=>hmod(st+j));
   const bin=(arr,h)=>[arr[Math.floor(h)*2],arr[Math.floor(h)*2+1]];
   const head=`<tr><th class="rowh">Customer time<br><small>${utcLabel(+S.tz||0)}</small></th>${cols.map(h=>`<th>${clock(h)}</th>`).join("")}<th>Active h/day</th><th>On-call h/day</th></tr>`;
