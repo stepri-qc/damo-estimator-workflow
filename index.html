@@ -1052,12 +1052,12 @@ tr.sel td{background:var(--accent-soft)}
       <h4 style="margin:14px 0 6px">Cross-cutting role ratios <span class="tag">editable</span></h4>
       <div class="tgrid">
         <label for="shPse">Product Support Engineer, per tower<input type="number" id="shPse" data-sh="pse" min="0" max="10" step="0.5"></label>
-        <label for="shSa">Solution Architect, % of an FTE per tower<input type="number" id="shSa" data-sh="sa" min="0" max="100" step="5"></label>
+        <label for="shSa">Solution Architect, % of an FTE per deal<input type="number" id="shSa" data-sh="sa" min="0" max="100" step="5"></label>
         <label for="shQa">Quality Analyst, per 10 delivery FTE<input type="number" id="shQa" data-sh="qa" min="0" max="10" step="0.1" placeholder="none"></label>
         <label for="shBa">Business Analyst, per 10 delivery FTE<input type="number" id="shBa" data-sh="ba" min="0" max="10" step="0.1" placeholder="none"></label>
         <label for="shSre">Service Reliability Engineer, per 10 delivery FTE<input type="number" id="shSre" data-sh="sre" min="0" max="10" step="0.1" placeholder="none"></label>
       </div>
-      <div class="hint">Product Support Engineer (1 per stream, a stream being a service tower) and Solution Architect (10% of an FTE, 0.8 hours of an 8-hour day) come from the roles guidance map; leave the others blank unless the deal needs them. Cross-cutting roles are carved out of the core-stream roles, so the team total never changes. Service Delivery Managers follow the ratio in Step 7.</div>
+      <div class="hint">Product Support Engineer (1 per stream, a stream being a service tower) and Solution Architect (10% of an FTE once per deal, 0.8 hours of an 8-hour day) come from the roles guidance map; leave the others blank unless the deal needs them. Cross-cutting roles are carved out of the core-stream roles, so the team total never changes. Service Delivery Managers follow the ratio in Step 7.</div>
     </div>
     <div class="stage-result" id="res-5" aria-live="polite"></div>
     <div class="stage-nav"><button class="btn" type="button" data-go="2">← Service towers</button><button class="btn primary" type="button" data-go="9">Next: triangulation →</button></div>
@@ -2718,7 +2718,7 @@ function runSelfTests(){
     const ok1=Math.abs(s1.total-rr.p1.total)<1e-9, okF=Math.abs(sf.total-R.total)<1e-9, okY=sy.years.every(y=>Math.abs(Object.values(y.by).reduce((x,v)=>x+v,0)-y.total)<1e-9);
     add("Team shape adds up to the team at every point","Stage 1 team, Year 1 and every later year",`${fmt(s1.total,2)} vs ${fmt(rr.p1.total,2)}; ${fmt(sf.total,2)} vs ${fmt(R.total,2)}`,ok1&&okF&&okY,"proposed");
     const pse=id("pse"), sa=id("sa");
-    add("Cross-cutting roles come from the ratios: 1 Product Support Engineer and 10% Solution Architect per tower","PSE 2.00 and SA 0.20 for 2 towers, carved out of the team",`PSE ${fmt(pse?pse.fte:0,2)}, SA ${fmt(sa?sa.fte:0,2)}`,pse&&sa&&Math.abs(pse.fte-2)<1e-9&&Math.abs(sa.fte-0.2)<1e-9,"proposed");
+    add("Cross-cutting roles come from the ratios: 1 Product Support Engineer per tower and 10% Solution Architect once per deal","PSE 2.00 for 2 towers and SA 0.10 for the deal, carved out of the team",`PSE ${fmt(pse?pse.fte:0,2)}, SA ${fmt(sa?sa.fte:0,2)}`,pse&&sa&&Math.abs(pse.fte-2)<1e-9&&Math.abs(sa.fte-0.1)<1e-9,"proposed");
     add("DMS support splits into Data Analyst (L2) and Data Engineer (L3)","both roles present",`DA ${fmt((id("da")||{fte:0}).fte,2)}, DE ${fmt((id("de")||{fte:0}).fte,2)}`,id("da")&&id("de")&&id("de").fte>0,"proposed");
     add("Back-end developers map to Developer and the SDM to Service Delivery Manager","Developer and SDM rows present",`Dev ${fmt((id("dev")||{fte:0}).fte,2)}, SDM ${fmt((id("sdm")||{fte:0}).fte,2)}`,id("dev")&&id("sdm")&&Math.abs(id("sdm").fte-R.s5)<1e-9,"proposed");
     const aie=sy.years.map(y=>y.by.aie);
@@ -3205,7 +3205,7 @@ function shapeOf(list,X){
   if(liftSum>0){if(coreSum0>0)GCORE.forEach(i=>{if(g[i])g[i]+=liftSum*g[i]/coreSum0});else add("sse",liftSum)}
   const total=Object.values(g).reduce((x,v)=>x+v,0), core=GCORE.reduce((x,i)=>x+(g[i]||0),0);
   const nT=X.towers.filter(t=>t.fte>0).length, deliv=total-(g.sdm||0)-fixed;
-  const want={pse:nT*(+SH.pse||0),sa:nT*(+SH.sa||0)/100,qa:deliv*(+SH.qa||0)/10,ba:deliv*(+SH.ba||0)/10,sre:deliv*(+SH.sre||0)/10};
+  const want={pse:nT*(+SH.pse||0),sa:nT>0?(+SH.sa||0)/100:0,qa:deliv*(+SH.qa||0)/10,ba:deliv*(+SH.ba||0)/10,sre:deliv*(+SH.sre||0)/10};
   const ask=Object.values(want).reduce((x,v)=>x+v,0), cap=0.6*core, k=ask>cap&&ask>0?cap/ask:1;
   if(core>0&&ask>0){
     Object.keys(want).forEach(i=>{want[i]*=k});
