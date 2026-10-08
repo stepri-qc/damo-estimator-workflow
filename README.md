@@ -27,7 +27,7 @@ Step 1 opens with a working base-team example (24×5 laid out over India and Rom
 - **Step 3:** the existing team is blank.
 - **Steps 2 and 9:** the sizing basis (volumetrics or thin slices), life stage, client appetite and pathway clarity are unanswered, which leaves the numbers unchanged.
 - **Suggested risks** for steps 2–9 are listed but switched off, so none changes FTE until turned on.
-- **Kept as defaults:** the agreed conventions (on-call 15%, SDM 1:8, framework benchmarks).
+- **Kept as defaults:** the agreed conventions (on-call 15%, SDM 1:12, framework benchmarks).
 
 The "Default example" paragraphs below use sample inputs to show the maths. They are not what the tool pre-fills.
 
@@ -57,7 +57,7 @@ So `delivery team = max(work team, base team)`, and `Stage 1 team = delivery tea
 | 1 | 1 · Size the team | Coverage: support window, customer time zone, each location's working and on-call windows: the base team | Built |
 | 2 | 1 | Service towers (AMS, IMS, DMS, AI platforms): volumetrics or thin slices per tower, skill sets, AIOps scope | Built |
 | 3 | 1 | Current team: today's team as a reference range against ticket volume and the base team | Built |
-| 4 | 1 | Required team size: work team vs base team (larger wins), SDM 1:8, binding dimension: the **Stage 1 team** | Built |
+| 4 | 1 | Required team size: work team vs base team (larger wins), SDM 1:12, binding dimension: the **Stage 1 team** | Built |
 | 5 | 2 · Qualify the team | Skill type: is the Stage 1 team enough, or is headcount added? | Built |
 | 6 | 2 | Location distribution of the team and the overlap between locations | Built |
 | 7 | 2 | Managerial capacity: SDM ratio and location, tech lead | Built |
@@ -84,6 +84,12 @@ Three answers in Step 9, all proposed and editable in Benchmarks: **application 
 ## Current team as a reference range
 
 Step 3 shows today's team as a range (today ± the tolerance, default 10%). It never drives the number; Step 4 states whether coverage or ticket volume is the **binding dimension** and whether our Stage 1 support team sits below, inside or above the range.
+
+## Indicative team shape
+
+The DAMO roles guidance map turns the team into an indicative shape: System Support Engineer (AMS), Infra Support Engineer (IMS), Data Analyst and Data Engineer (DMS), Developer, Mobile Developer, Service Reliability Engineer, AI Engineer (AIOps), and the cross-cutting Product Support Engineer, Quality Analyst, Business Analyst, Solution Architect and Service Delivery Manager. It is shown twice: **Year 1 after Stage 1** (Step 4, from the run team, before skill cover, transformation and contingency) and **by year after Stage 3** (Step 10, Year 1 is the full team; later years scale every role with the year's team, except the AI engineers, who stay).
+
+The shape groups the same FTE, so no total moves. Skill sets map to roles (Systems Support Engineer to System Support Engineer, Infra support engineer to Infra Support Engineer, Full stack / Back-end / Front-end to Developer, Mobile dev to Mobile Developer, L1 support to Product Support Engineer, Data Support Engineer split into Data Analyst (L2) and Data Engineer (L3), Database and Data engineering to Data Engineer, the AI platform skills to AI Engineer). On an AMS tower the change-request and enhancement effort becomes Developer. Shift cover added to reach the base team is spread over the core-stream roles. The cross-cutting ratios are editable in Step 4: Product Support Engineer 1 per tower and Solution Architect 10% of an FTE per tower come from the map, Quality Analyst, Business Analyst and extra SRE start blank (per 10 delivery FTE). They are carved out of the core-stream roles, capped at 60% of them. The SDM ratio default is 1 per 12 FTE, as in the map.
 
 ## Step 0: documents and AI extraction
 
@@ -216,7 +222,7 @@ Leave and holiday backfill is applied to the tower team the same way as to the b
 
 **SRE on IMS towers.** An IMS tower asks whether SRE (reliability engineering) is a capability the client wants. If yes, a Service Reliability Engineer takes 78% of that tower's L3 FTE (role weights 1.8 : 0.5 against the other L3 skills, from damo-estimator's role policy, `proposed`) and the tower's other skill sets share the rest. It changes the role mix, not the headcount. Extraction proposes it when the documents name SRE, SLOs or error budgets.
 
-**Governance.** The Service Delivery Manager is sized in step 4 at 1 per 8 delivery FTE and appears in the team by role under Governance.
+**Governance.** The Service Delivery Manager is sized in step 4 at 1 per 12 delivery FTE and appears in the team by role under Governance.
 
 **AIOps per tower** ([F] Part 3, Sc.4 Step 3). Each tower asks *Is AIOps in scope for this tower?* If yes, AI engineers are embedded at the framework ratio: one per N support FTE of that tower, to build intelligent alerting, RCA automation, ticket auto-classification and self-healing.
 
@@ -280,16 +286,16 @@ lift          = max(0, base team − work team)     spread over the base team's 
 
 The comparison is shown as bars and a table (base team, team from the work, delivery team used) with a generated sentence saying which one sets the team and by how much.
 
-**SDM only**, at the DAMO convention of one Service Delivery Manager per 8 delivery FTE (editable):
+**SDM only**, at the DAMO convention of one Service Delivery Manager per 12 delivery FTE (the DAMO roles guidance map; editable):
 
 ```
-SDM     = delivery team ÷ 8
+SDM     = delivery team ÷ 12
 stage 5 = SDM × (1 + Σ active stage 5 risk %)
 ```
 
 The SDM is a separate governance tier (not L2/L3) and is based in one step 1 location: onshore by default, then nearshore, then the first location. With whole-person rounding, SDMs round to the nearest person (at least one), not up.
 
-Default example: the work team is 9.70 and the base team is 8.65, so the work sets the team (+12%) and 9.70 is kept. The SDM is 9.70 ÷ 8 = 1.21. If the work team were smaller, for example 2.59 with only one small tower, it would be lifted by +6.05 to 8.65.
+Default example: the work team is 9.70 and the base team is 8.65, so the work sets the team (+12%) and 9.70 is kept. The SDM is 9.70 ÷ 12 = 0.81. If the work team were smaller, for example 2.59 with only one small tower, it would be lifted by +6.05 to 8.65.
 
 **The Stage 1 team** is `delivery team + SDM`. It is shown on its own here, at the triangulation step, and as the first anchor of the final build-up. Stage 2 then tests it: skill cover is absorbed by any spare capacity or adds headcount (step 5), transformation is added after spare capacity (step 9), the SDM is **re-based** on the final delivery team, and contingency is added (step 8). The final build-up table lists every one of these as a row, so the Year 1 number can be walked back to the Stage 1 team.
 
@@ -528,7 +534,7 @@ Step 11 can save the estimate on screen as a named scenario, then compare up to 
 
 ## Verify against the framework
 
-**Run checks** in step 11 runs the engine on the framework's worked examples and checks the estimate on screen adds up: the p.3 coverage roster (6 FTE for 24×5 at 2 per shift), the 100-ticket cascade (30 / 70 / 14, 420.6 h, 3.29 FTE), the SLA uplift range and cap, coordination uplift, AIOps ratios (1:4, 1:8, 1:6 over 20 FTE), the scenario matrix, contingency by complexity, the Annexure 1 illustration (64.8, High), SDM 1:8, and invariants (roles, locations and allowances each add up to the Year 1 team; Year 1 of the term and the step 8 bar equal it). The result is included in the summary and the Excel workbook.
+**Run checks** in step 11 runs the engine on the framework's worked examples and checks the estimate on screen adds up: the p.3 coverage roster (6 FTE for 24×5 at 2 per shift), the 100-ticket cascade (30 / 70 / 14, 420.6 h, 3.29 FTE), the SLA uplift range and cap, coordination uplift, AIOps ratios (1:4, 1:8, 1:6 over 20 FTE), the scenario matrix, contingency by complexity, the Annexure 1 illustration (64.8, High), SDM 1:12, and invariants (roles, locations and allowances each add up to the Year 1 team; Year 1 of the term and the step 8 bar equal it). The result is included in the summary and the Excel workbook.
 
 ## Customer summary
 

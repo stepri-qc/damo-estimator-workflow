@@ -255,7 +255,7 @@
   "aiMaturity": "low",
   "transPct": null,
   "aiRatio": "auto",
-  "sdmRatio": 8,
+  "sdmRatio": 12,
   "sdmLoc": null,
   "cplx": "medium",
   "pyr": {},

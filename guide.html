@@ -217,7 +217,7 @@ const CH=[
 <tr><td>1</td><td>Coverage</td><td>Support window, customer time zone, each location's working and on-call windows, people on duty</td></tr>
 <tr><td>2</td><td>Service towers</td><td>Towers, who provides L1/L2/L3, SLAs, and per tower: volumetrics or thin slices</td></tr>
 <tr><td>3</td><td>Current team</td><td>Today's team by tier as a reference range, compared with the ticket volume and the base team</td></tr>
-<tr><td>4</td><td>Required team size</td><td>Base vs work team, the larger wins; SDM at 1:8. Result: the Stage 1 team and its binding dimension</td></tr>
+<tr><td>4</td><td>Required team size</td><td>Base vs work team, the larger wins; SDM at 1:12. Result: the Stage 1 team and its binding dimension</td></tr>
 <tr><td colspan="3"><b>Stage 2 · Qualify the team</b></td></tr>
 <tr><td>5</td><td>Skill type</td><td>Which windows each specialist must be live in: is the Stage 1 team enough, or is headcount added?</td></tr>
 <tr><td>6</td><td>Location distribution</td><td>Where the team sits across locations, and the overlap between them</td></tr>
@@ -376,10 +376,12 @@ quiz:[
     <label>Base team (Step 1)<input id="reB" type="number" min="0" step="0.1" value="8.65"></label>
     <label>Work team without AI engineers<input id="reW" type="number" min="0" step="0.1" value="5.5"></label>
     <label>AI engineers<input id="reA" type="number" min="0" step="0.1" value="1"></label>
-    <label>SDM ratio (1 per)<input id="reS" type="number" min="1" value="8"></label>
+    <label>SDM ratio (1 per)<input id="reS" type="number" min="1" value="12"></label>
   </div>
   <div class="out" id="reOut"></div>
 </div>
+<h2>Indicative team shape</h2>
+<p>Below the working, the step groups the Stage 1 team by the <b>DAMO roles guidance map</b>: System Support Engineer (AMS), Infra Support Engineer (IMS), Data Analyst and Data Engineer (DMS), Developer, Mobile Developer, Service Reliability Engineer, and the Service Delivery Manager. <b>Cross-cutting roles</b> come from ratios you can edit: one Product Support Engineer per tower and a Solution Architect at 10% of an FTE per tower are prefilled from the map; Quality Analyst, Business Analyst and extra SRE start blank. They are carved out of the core-stream roles, so the total never changes.</p>
 <div class="note"><b>Why AI engineers stay on top</b> They build automation; they don't staff shifts. So the base team can't stand in for them when it's the larger team.</div>
 ${tryTool(5,"See the comparison bars and the verdict sentence.")}`},
 
@@ -411,7 +413,7 @@ ${tryTool(11,"See the team by location and the overlap between them.")}`},
 {id:"s12",grp:"Stage 2 · Qualify the team",t:"Step 7 · Managerial capacity",html:()=>`
 <span class="eyebrow">Stage 2 · Step 7</span>
 <h1>Managerial capacity</h1>
-<p class="lead">Service Delivery Managers (SDM) and the tech lead. SDMs are sized at 1 per 8 delivery FTE (editable) and placed in one location; the tech lead is the pyramid's Lead share on L3.</p>
+<p class="lead">Service Delivery Managers (SDM) and the tech lead. SDMs are sized at 1 per 12 delivery FTE (editable) and placed in one location; the tech lead is the pyramid's Lead share on L3.</p>
 <ol class="steps">
 <li><div>Set the <b>SDM ratio</b> and the <b>SDM location</b>.</div></li>
 <li><div>The SDM is <b>re-based</b> on the delivery team after skill cover is added, so it can be higher than the Stage 1 SDM.</div></li>
@@ -475,6 +477,8 @@ quiz:[
   <div class="card"><h3>AIOps use cases</h3>Pick what the AI engineers build (14 use cases with build effort, deflection, start year and ramp). The panel shows FTE freed, net of the engineers, and whether they can build it in time.</div>
 </div>
 <div class="warn"><b>Heads-up</b> With the default seven use cases, the portfolio usually frees less than the scenario target, and can be less than the AI engineers it takes. The verdict panel shows the net figure; use it to challenge the AIOps ratio or the use-case list.</div>
+<h2>Indicative team shape by year</h2>
+<p>After the ramp the step lists the team by role for every year of the term, using the DAMO roles guidance map. Year 1 is the full team; later years scale every role with that year's team, except the AI engineers, who stay to build and run the use cases. It is indicative: a planning aid for the pricing sheet and the delivery plan, not a roster.</p>
 <h2>Transition (optional)</h2>
 <p>Knowledge-transfer weeks (team 50% present), parallel-run weeks (full team) and a transition manager, in FTE-months. It's a one-off before service start and is <b>not</b> added to the Year 1 team.</p>
 ${tryTool(7,"Choose the term and compare the 1–5 year table.")}`},
@@ -562,13 +566,13 @@ const EXAMPLE=[
  ["AMS tower FTE","15.52","400 tickets → L2 280, L3 56; Silver +12% L2 / +22% L3; +4% coordination"],
  ["IMS tower FTE","2.11","Score 13 × 4.5 = 59 tickets; legacy B 35%; +4% coordination"],
  ["Step 2 tower team","19.82 FTE","Support incl. leave backfill. The 4.36 AI engineers at 1:4 are counted in Stage 3, not here"],
- ["Stage 1 team (step 4)","22.29 FTE","Work team 19.82 beats base 6.14; + 2.48 SDM (1:8). Coverage is not binding: ticket volume is"],
- ["Run team (step 8)","23.96 FTE","Stage 1 team + SDM re-base + 7.5% contingency (Medium)"],
- ["Transformation capacity (step 9)","5.27 FTE","POD 12.5% of 19.82 = 2.48 is less than the 4.36 AI engineers inside it, so the AI engineers set it; plus the SDM and contingency that follow"],
- ["Year 1 team","29.24 FTE · 30 people","Run team 23.96 + transformation 5.27"],
- ["SRE","0.81 FTE","78% of the IMS tower's L3 FTE (incl. contingency share)"],
- ["3-year average","26.09 FTE a year","29.2 → 25.8 → 23.2; 13.5% a year above the floor"],
- ["Confidence","51 · Medium","Range about 24.9 – 33.6 FTE"]
+ ["Stage 1 team (step 4)","21.47 FTE","Work team 19.82 beats base 6.14; + 1.65 SDM (1:12). Coverage is not binding: ticket volume is"],
+ ["Run team (step 8)","23.08 FTE","Stage 1 team + SDM re-base + 7.5% contingency (Medium)"],
+ ["Transformation capacity (step 9)","5.08 FTE","POD 12.5% of 19.82 = 2.48 is less than the 4.36 AI engineers inside it, so the AI engineers set it; plus the SDM and contingency that follow"],
+ ["Year 1 team","28.15 FTE · 29 people","Run team 23.08 + transformation 5.08"],
+ ["SRE","0.80 FTE","78% of the IMS tower's L3 FTE (incl. contingency share)"],
+ ["3-year average","25.15 FTE a year","28.2 → 24.9 → 22.4; 13.5% a year above the floor"],
+ ["Confidence","51 · Medium","Range about 23.9 – 32.4 FTE"]
 ];
 
 const FAQ=[
@@ -582,7 +586,7 @@ const FAQ=[
  ["What does 'Changed since approval' mean?","Someone edited an input after the estimate was approved. Approve again or set the status back to Draft."],
  ["Extract with AI says the passphrase is wrong.","Ask the tool owner for the current passphrase; it's set on the Netlify project as INTAKE_PASSPHRASE."],
  ["Where are my estimates stored?","In your browser only, until you Save file. Clearing browser data or using another browser starts fresh."],
- ["Does the SDM count as part of a tower?","No. Service Delivery Managers are sized in Step 4 at 1 per 8 delivery FTE and appear under Governance in the team by role."]
+ ["Does the SDM count as part of a tower?","No. Service Delivery Managers are sized in Step 4 at 1 per 12 delivery FTE and appear under Governance in the team by role."]
 ];
 
 const GLOSS=[
@@ -608,7 +612,7 @@ const GLOSS=[
  ["SRE","Site/Service Reliability Engineering. On IMS towers, takes 78% of L3 FTE when named as a capability."],
  ["Transformation POD","Capacity for SRE, automation, CI/CD and AI adoption: 12.5–20% of the support team by scenario."],
  ["Scenario","Framework Part 3: 1–4 from client AI adoption × volumetrics availability. Sets POD share, AIOps ratio and savings target."],
- ["SDM","Service Delivery Manager: governance, one per 8 delivery FTE."],
+ ["SDM","Service Delivery Manager: governance, one per 12 delivery FTE."],
  ["Contingency","Extra FTE for estimate risk: 5%, 7.5% or 10% by complexity; tapers from Year 2."],
  ["Coverage floor","The base team. Savings never cut below it when 'Keep the coverage floor' is on."],
  ["Deflection","Share of effort an AIOps use case removes at full adoption, combined per level and capped by a ceiling."],
@@ -652,7 +656,7 @@ function calcSc(){
    <div class="row tot"><span>Step 9 adds</span><span>${fmt(add,2)} FTE</span><div class="f">POD ${fmt(P,2)} − AI engineers ${fmt(ai,2)}${ai>=P&&ai>0?": the AI engineers already cover the POD":""}</div></div>`;
 }
 function calcRe(){
-  const B=Math.max(0,+$("reB").value||0), W=Math.max(0,+$("reW").value||0), A=Math.max(0,+$("reA").value||0), r=Math.max(1,+$("reS").value||8);
+  const B=Math.max(0,+$("reB").value||0), W=Math.max(0,+$("reW").value||0), A=Math.max(0,+$("reA").value||0), r=Math.max(1,+$("reS").value||12);
   const del=Math.max(W,B)+A, sdm=del/r;
   $("reOut").innerHTML=`<div class="row"><span>${W>=B?"Work team is larger: kept":"Base team is larger: team lifted to it"}</span><span>${fmt(Math.max(W,B),2)}</span>${W<B?`<div class="f">${fmt(B-W,2)} FTE of spare time for enhancements or transformation</div>`:""}</div>
    <div class="row"><span>+ AI engineers</span><span>${fmt(A,2)}</span></div>

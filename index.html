@@ -1042,6 +1042,23 @@ tr.sel td{background:var(--accent-soft)}
       <div class="verdict" id="verdict"></div>
     </div>
 
+    <div class="panel" style="margin-top:16px">
+      <header><h3>Indicative team shape: Year 1 after Stage 1</h3><span class="sub">DAMO roles guidance map · the same FTE, grouped by role</span></header>
+      <div class="loc-table"><table>
+        <thead><tr><th>Role</th><th>What they do</th><th>Guidance</th><th class="r">FTE</th><th class="r">Share</th></tr></thead>
+        <tbody id="shape1"></tbody>
+      </table></div>
+      <div class="hint" id="shape1Note" style="margin-top:6px"></div>
+      <h4 style="margin:14px 0 6px">Cross-cutting role ratios <span class="tag">editable</span></h4>
+      <div class="tgrid">
+        <label for="shPse">Product Support Engineer, per tower<input type="number" id="shPse" data-sh="pse" min="0" max="10" step="0.5"></label>
+        <label for="shSa">Solution Architect, % of an FTE per tower<input type="number" id="shSa" data-sh="sa" min="0" max="100" step="5"></label>
+        <label for="shQa">Quality Analyst, per 10 delivery FTE<input type="number" id="shQa" data-sh="qa" min="0" max="10" step="0.1" placeholder="none"></label>
+        <label for="shBa">Business Analyst, per 10 delivery FTE<input type="number" id="shBa" data-sh="ba" min="0" max="10" step="0.1" placeholder="none"></label>
+        <label for="shSre">Service Reliability Engineer, per 10 delivery FTE<input type="number" id="shSre" data-sh="sre" min="0" max="10" step="0.1" placeholder="none"></label>
+      </div>
+      <div class="hint">Product Support Engineer (1 per stream, a stream being a service tower) and Solution Architect (10%) come from the roles guidance map; leave the others blank unless the deal needs them. Cross-cutting roles are carved out of the core-stream roles, so the team total never changes. Service Delivery Managers follow the ratio in Step 7.</div>
+    </div>
     <div class="stage-result" id="res-5" aria-live="polite"></div>
     <div class="stage-nav"><button class="btn" type="button" data-go="2">← Service towers</button><button class="btn primary" type="button" data-go="9">Next: triangulation →</button></div>
   </section>
@@ -1248,6 +1265,14 @@ tr.sel td{background:var(--accent-soft)}
       </div>
     </div>
 
+    <div class="panel" style="margin-top:16px">
+      <header><h3>Indicative team shape by year</h3><span class="sub">DAMO roles guidance map · after Stage 3</span></header>
+      <div class="loc-table"><table>
+        <thead id="shapeYHead"></thead>
+        <tbody id="shapeY"></tbody>
+      </table></div>
+      <div class="hint" id="shapeYNote" style="margin-top:6px"></div>
+    </div>
     <div class="stage-result" id="res-7" aria-live="polite"></div>
     <div class="stage-nav"><button class="btn" type="button" data-go="6">← Seniority &amp; contingency</button><button class="btn primary" type="button" data-go="8">Next: final fact check →</button></div>
   </section>
@@ -1767,8 +1792,8 @@ function defaultsRaw(){
     bench:defaultBench(),
     sparePct:25,
     onCallPct:15,
-    aiMaturity:null,transPct:null,aiRatio:"auto",life:{stage:null,appetite:null,pathway:null},
-    sdmRatio:8,sdmLoc:null,
+    aiMaturity:null,transPct:null,aiRatio:"auto",life:{stage:null,appetite:null,pathway:null},shape:{pse:1,sa:10,qa:null,ba:null,sre:null},
+    sdmRatio:12,sdmLoc:null,
     cplx:null,pyr:{},contPct:null,
     term:null,savePct:null,cont2:null,protectFloor:true,
     adj:{on:false,mode:"fte",pct:0,fte:null,y:[],reason:"",note:"",mit:{},extra:[]},cm:{histMonths:null,baseline:"unknown",ceiling:null,pressure:"medium"},
@@ -1857,6 +1882,7 @@ function migrate(p){
       if(Array.isArray(p.risks))p.risks={s1:p.risks};
       const st=Object.assign(d,p);
       st.life=Object.assign({stage:null,appetite:null,pathway:null},p.life||{});
+      st.shape=Object.assign({pse:1,sa:10,qa:null,ba:null,sre:null},p.shape||{});
       st.assumptions=Object.assign(defaults().assumptions,p.assumptions||{});
       /* assumptions saved as plain text become {t, c} with the step's default category */
       Object.keys(st.assumptions).forEach(k=>{st.assumptions[k]=(st.assumptions[k]||[]).map(a=>typeof a==="string"?{t:a,c:/^Service desk \(L1\)/.test(a)?"Service scope & ownership":(ACAT_DEFAULT[k]||"Other")}:a)});
@@ -2013,6 +2039,7 @@ function compute(){
     const thinFte=thinCnt.reduce((x,v,i)=>x+v*(+thinRate[i]||0),0), thinN=thinCnt[0]+thinCnt[1]+thinCnt[2];
     const thinOn=thinK&&t.basis==="thin", thinL3=Math.max(0,Math.min(100,+TH.l3||0))/100;
     if(thinOn)src=`Thin slices (${thinN} ${t.kind==="AMS"?"applications":"data products"})`;
+    const devFrac=(t.kind==="AMS"&&!thinOn&&fteV>0)?Math.min(1,(crH/u*(1+hand)*(1+bp)+C)/B.hrsMonth/fteV):0;
     const fte1=thinOn?0:fteV1, fte2=thinOn?thinFte*(1-thinL3):fteV2, fte3=thinOn?thinFte*thinL3:fteV3, fte=fte2+fte3;
     const shareSum=t.skills.reduce((s2,k)=>s2+n0(k.share),0);
     const sreOn=t.kind==="IMS"&&t.sre===true&&fte3>0, sreF=sreOn?fte3*SRE_SHARE:0;
@@ -2020,7 +2047,7 @@ function compute(){
     const skills=t.skills.map(k=>{const sh=shareSum>0?n0(k.share)/shareSum:1/t.skills.length;return {...k,name:skillName(k),tower:t.name,towerId:t.id,norm:rF>0&&fte>0?rF*sh/fte:0,fte:rF*sh,f2:rF2*sh,f3:rF3*sh}});
     if(sreOn)skills.unshift({id:"sre-"+t.id,skill:"sre",name:"Service Reliability Engineer (SRE)",share:0,absorb:true,synthetic:true,tower:t.name,towerId:t.id,norm:sreF/fte,fte:sreF,f2:0,f3:sreF});
     const userSkills=t.skills.length, unassigned=userSkills?0:rF;
-    return {...t,thinOn,thinK,thinN,thinFte,volFte:fteV,sreOn,sreF,userSkills,unassigned,tickets,src,score,lvl,sv,own,bnd,hand,sm,slaAdd,handAdd,entry:[e1,e2,e3],mixUsed:!!(mx&&lvl==="l1"),l1Unknown,l2Unknown,l1t,l2t,l3t,A,Bh,bp,enhH,C,fte1,fte,fte2,fte3,shareSum,skills,incN:hist?n0(t.inc):0,srN:hist?n0(t.sr):0,crN:hist?n0(t.cr):0,srHrs:srH[0]+srH[1]+srH[2],crHrs:crH,srSh,crSh};
+    return {...t,thinOn,thinK,thinN,thinFte,volFte:fteV,devFrac,sreOn,sreF,userSkills,unassigned,tickets,src,score,lvl,sv,own,bnd,hand,sm,slaAdd,handAdd,entry:[e1,e2,e3],mixUsed:!!(mx&&lvl==="l1"),l1Unknown,l2Unknown,l1t,l2t,l3t,A,Bh,bp,enhH,C,fte1,fte,fte2,fte3,shareSum,skills,incN:hist?n0(t.inc):0,srN:hist?n0(t.sr):0,crN:hist?n0(t.cr):0,srHrs:srH[0]+srH[1]+srH[2],crHrs:crH,srSh,crSh};
   });
   const skills=towers.flatMap(t=>t.skills);
   const demand=sum(towers,"fte");
@@ -2122,7 +2149,7 @@ function compute(){
 
   /* Step 4: SDM at 1:N of the delivery team (Stages 1–4), governance tier, in one location */
   const sub4=workTeam+lift; /* delivery team = max(work team excl. AI engineers, base team) + AI engineers */
-  const sdmRatio=Math.max(1,+S.sdmRatio||8);
+  const sdmRatio=Math.max(1,+S.sdmRatio||12);
   const sdmRaw=sub4/sdmRatio;
   const rp5=riskPctOf("s5");
   const s5=sdmRaw*(1+rp5);
@@ -2199,15 +2226,23 @@ function compute(){
      Contingency is spread over the delivery roles (as over the location cells); the SDM carries none. */
   const roles=[];
   towers.forEach(t=>{
-    if(t.unassigned>0)roles.push({role:"Not yet assigned to a skill set",tower:t.name,fte:t.unassigned*bf2*(1+rp2)});
-    t.skills.forEach(k=>{const cs=covSkills.find(c=>c.id===k.id);roles.push({role:k.name,tower:t.name,fte:k.added*bf2*(1+rp2)+(cs&&cs.top>0?cs.top*(1+rp3):0)})});
-    if(t.ai>0)roles.push({role:"AI Engineer (AIOps)",tower:t.name,fte:t.ai});
+    if(t.unassigned>0)roles.push({role:"Not yet assigned to a skill set",tower:t.name,fte:t.unassigned*bf2*(1+rp2),tw:t.id,sk:"",kind:t.kind});
+    t.skills.forEach(k=>{const cs=covSkills.find(c=>c.id===k.id);roles.push({role:k.name,tower:t.name,fte:k.added*bf2*(1+rp2)+(cs&&cs.top>0?cs.top*(1+rp3):0),tw:t.id,sk:k.skill,kind:t.kind})});
+    if(t.ai>0)roles.push({role:"AI Engineer (AIOps)",tower:t.name,fte:t.ai,tw:t.id,sk:"aiops",kind:t.kind});
   });
-  if(s4>0)roles.push({role:"Transformation: SRE, automation, CI/CD",tower:"All towers",fte:s4});
-  if(lift>0)roles.push({role:"Shift cover: L2/L3 engineers to staff every shift",tower:"All towers",fte:lift});
+  if(s4>0)roles.push({role:"Transformation: SRE, automation, CI/CD",tower:"All towers",fte:s4,sk:"trans"});
+  if(lift>0)roles.push({role:"Shift cover: L2/L3 engineers to staff every shift",tower:"All towers",fte:lift,sk:"lift"});
   const delivRoles=roles.reduce((x,r)=>x+r.fte,0);
   roles.forEach(r=>{r.fte*=delivRoles>0?1+s6/delivRoles:1});
-  if(s5>0)roles.push({role:"Service Delivery Manager",tower:"Governance",fte:s5});
+  if(s5>0)roles.push({role:"Service Delivery Manager",tower:"Governance",fte:s5,sk:"sdm"});
+  /* the Stage 1 team by role: base and tower work only, with its own SDM, before skill cover, transformation and contingency */
+  const roles1=[];
+  towers.forEach(t=>{
+    if(t.unassigned>0)roles1.push({role:"Not yet assigned to a skill set",tower:t.name,fte:t.unassigned*bf2*(1+rp2),tw:t.id,sk:"",kind:t.kind});
+    t.skills.forEach(k=>roles1.push({role:k.name,tower:t.name,fte:k.added*bf2*(1+rp2),tw:t.id,sk:k.skill,kind:t.kind}));
+  });
+  if(p1lift>0)roles1.push({role:"Shift cover: L2/L3 engineers to staff every shift",tower:"All towers",fte:p1lift,sk:"lift"});
+  if(p1sdm>0)roles1.push({role:"Service Delivery Manager",tower:"Governance",fte:p1sdm,sk:"sdm"});
   locs.forEach(l=>{
     if(S.rounding==="cell"){l.p2=up(l.c2);l.p3=up(l.c3);l.pg=l.g>0?Math.max(1,Math.round(l.g)):0;l.people=l.p2+l.p3+l.pg}
     else if(S.rounding==="loc"){l.p2=l.c2;l.p3=l.c3;l.pg=l.g;l.people=up(l.fte)}
@@ -2309,7 +2344,7 @@ function compute(){
     sub4,sdmRatio,sdmRaw,rp5,s5,risk5Add:s5-sdmRaw,sdmLoc,
     sub5,CX,contPct,contRaw,rp6,s6,risk6Add:s6-contRaw,pyr,shares,
     savePct,cont2,floor,rp7,years,termRows,term,pf:{mode:PF.mode,items:pfItems,years:pfYears,tierFte,ceiling,aiFrom,capacity:ai2*BUILD_PW,realize:PF.realize},
-    total,people,roundAdd:people-total,roles,trans,fin,
+    total,people,roundAdd:people-total,roles,roles1,trans,fin,
     snaps,L2:sum(locs,"c2"),L3:sum(locs,"c3"),G:sum(locs,"g"),L2p:sum(locs,"p2"),L3p:sum(locs,"p3"),Gp:sum(locs,"pg")};
 }
 
@@ -2678,6 +2713,16 @@ function runSelfTests(){
    withState(testState(st=>{st.towers=[amsTower(300,{})];st.life={stage:"growth",appetite:"high",pathway:"unclear"}}),R=>{const sc=R.SC.pct, exp=Math.min(50,sc*1.25*1.25);add("Life stage and appetite move the POD share; pathway clarity credits the savings","POD share = scenario × 125% × 125%; savings × 50%",`POD ${fmt(R.transPct,2)}% (expect ${fmt(exp,2)}), savings ${fmt(R.savePct,2)}% (was ${fmt(base.save,2)}%)`,Math.abs(R.transPct-exp)<1e-9&&Math.abs(R.savePct-base.save*0.5)<1e-9&&R.total-runCompute().total>base.tr,"proposed")});
    withState(testState(st=>{st.towers=[amsTower(300,{})];st.life={stage:"sunset",appetite:"low",pathway:null};st.transPct=10}),R=>add("A typed POD share overrides life stage and appetite","10%",`${fmt(R.transPct,2)}%`,R.transPct===10,"proposed"));
    withState(testState(st=>{st.towers=[amsTower(300,{})]}),R=>add("Unanswered life stage, appetite and pathways leave the numbers unchanged","multipliers 100%",`${R.stageMul}, ${R.appMul}, ${R.pathMul}`,R.stageMul===1&&R.appMul===1&&R.pathMul===1&&R.transPct===R.SC.pct,"proposed"))}
+  withState(testState(st=>{st.towers=[amsTower(300,{aiops:true,skills:[mkSkill("sse",70),mkSkill("be",30)]}),Object.assign(mkTower("DMS"),{vol:true,inc:200,own:{L1:"customer",L2:"us",L3:"us"},skills:[mkSkill("dse",100)]})]}),R=>{
+    const rr=runCompute(), s1=shapeOf(rr.roles1,rr), sf=shapeOf(R.roles,R), sy=shapeYears(R), id=i=>sf.rows.find(r=>r.id===i);
+    const ok1=Math.abs(s1.total-rr.p1.total)<1e-9, okF=Math.abs(sf.total-R.total)<1e-9, okY=sy.years.every(y=>Math.abs(Object.values(y.by).reduce((x,v)=>x+v,0)-y.total)<1e-9);
+    add("Team shape adds up to the team at every point","Stage 1 team, Year 1 and every later year",`${fmt(s1.total,2)} vs ${fmt(rr.p1.total,2)}; ${fmt(sf.total,2)} vs ${fmt(R.total,2)}`,ok1&&okF&&okY,"proposed");
+    const pse=id("pse"), sa=id("sa");
+    add("Cross-cutting roles come from the ratios: 1 Product Support Engineer and 10% Solution Architect per tower","PSE 2.00 and SA 0.20 for 2 towers, carved out of the team",`PSE ${fmt(pse?pse.fte:0,2)}, SA ${fmt(sa?sa.fte:0,2)}`,pse&&sa&&Math.abs(pse.fte-2)<1e-9&&Math.abs(sa.fte-0.2)<1e-9,"proposed");
+    add("DMS support splits into Data Analyst (L2) and Data Engineer (L3)","both roles present",`DA ${fmt((id("da")||{fte:0}).fte,2)}, DE ${fmt((id("de")||{fte:0}).fte,2)}`,id("da")&&id("de")&&id("de").fte>0,"proposed");
+    add("Back-end developers map to Developer and the SDM to Service Delivery Manager","Developer and SDM rows present",`Dev ${fmt((id("dev")||{fte:0}).fte,2)}, SDM ${fmt((id("sdm")||{fte:0}).fte,2)}`,id("dev")&&id("sdm")&&Math.abs(id("sdm").fte-R.s5)<1e-9,"proposed");
+    const aie=sy.years.map(y=>y.by.aie);
+    add("AI engineers stay constant through the term while the rest of the team scales","same AI engineer FTE in every year",aie.map(v=>fmt(v,2)).join(" / "),aie.every(v=>Math.abs(v-aie[0])<1e-9)&&aie[0]>0,"proposed")});
   withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>{const rr=runCompute(), tr=R.total-rr.total;add("Run team excludes AI engineers and the transformation POD","run team has 0 AI engineers; Year 1 = run team + transformation",`AI ${fmt(rr.ai2,2)} · ${fmt(rr.total,2)} + ${fmt(tr,2)} = ${fmt(R.total,2)}`,rr.ai2===0&&tr>0&&Math.abs(rr.total+tr-R.total)<1e-9&&rr.total<R.total,"proposed")});
   withState(testState(st=>{st.towers=[amsTower(300,{})];st.transPct=0}),R=>{const rr=runCompute();add("With no transformation and no AIOps the run team is the whole team","run team = Year 1 team",`${fmt(rr.total,3)} vs ${fmt(R.total,3)}`,Math.abs(rr.total-R.total)<1e-9,"proposed")});
   withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>add("AIOps ratio, low AI adoption","1 : 4",`1 : ${R.ratio}`,R.ratio===4,"[F] Part 3"));
@@ -2687,7 +2732,7 @@ function runSelfTests(){
   withState(testState(st=>{st.aiMaturity="low";st.towers=[Object.assign(mkTower("AMS"),{vol:false,cpx:true,apps:{S:0,M:5,L:0,XL:0,XXL:0},skills:[mkSkill("be",100)]})]}),R=>add("Scenario: low AI, no volumetrics","Scenario 1",`Scenario ${R.sc}`,R.sc===1,"[F] Part 3"));
   [["low",5],["medium",7.5],["high",10]].forEach(([c,v])=>withState(testState(st=>{st.cplx=c}),R=>add(`Contingency, ${c} complexity`,`${v}%`,`${R.contPct}%`,R.contPct===v,"[F] 1.6 5–10%")));
   withState(testState(st=>{st.conf={vol:3,sla:4,cov:4,cpx:3,trans:2,crit:3,change:3,tech:4,aiops:3}}),R=>{const C=confidence();add("Confidence, Annexure 1 illustration","64.8 · High",`${fmt(C.score,1)} · ${C.band}`,near(C.score,64.8,0.05)&&C.band==="High","[F] Annexure 1")});
-  withState(testState(st=>{st.towers=[amsTower(1200)]}),R=>add("SDM at 1 : 8","delivery ÷ 8",`${fmt(R.sub4,2)} ÷ 8 = ${fmt(R.sdmRaw,2)}`,near(R.sdmRaw,R.sub4/8),"DAMO convention"));
+  withState(testState(st=>{st.towers=[amsTower(1200)]}),R=>add("SDM at 1 : 12","delivery ÷ 12",`${fmt(R.sub4,2)} ÷ 12 = ${fmt(R.sdmRaw,2)}`,near(R.sdmRaw,R.sub4/12),"DAMO roles guidance map"));
   /* coverage windows: the user's Ecuador + India picture, overlap and gaps, hours-based roster, migration */
   withState(testState(st=>{st.tz=-5;st.start=7;st.hours=24;st.days=5;st.locations=[pickLoc("ec"),pickLoc("in")];st.locations[0].win=[{id:"a",m:"active",s:9,e:19}];st.locations[1].win=[{id:"b",m:"active",s:9.5,e:19.5},{id:"c",m:"oncall",s:5.5,e:9.5}]}),R=>{const C=R.cover;
     add("Coverage timeline: Ecuador 9:00–19:00 plus India 9:30–19:30 and on call 5:30–9:30","20 h active, 4 h on call only, no gap, no overlap",`${fmt(C.activeH,1)} / ${fmt(C.onCallH,1)} / ${fmt(C.gapH,1)} / ${fmt(C.overlapH,1)}`,near(C.activeH,20)&&near(C.onCallH,4)&&near(C.gapH,0)&&near(C.overlapH,0),"windows model")});
@@ -2785,6 +2830,7 @@ async function exportExcel(){
   sheet("Summary",[["Deal",S.deal||""],["Version",S.meta.version],["Status",approvalStale()?"Changed since approval":STATUS[S.meta.status]],["Prepared by",S.meta.preparedBy],["Approved by",S.meta.status==="approved"?S.meta.approvedBy:""],["Approval date",S.meta.status==="approved"?S.meta.approvedAt:""],["Exported",new Date().toISOString().slice(0,10)],[],
     ["Year 1 team (FTE)",R.fin.total],["Rostered people",whole?R.fin.people:""],[`${T}-year average (FTE a year)`,R.fin.termRows[T-1].avg],R.fin.on?["Modelled Year 1 team (FTE, before the commercial position)",R.total]:["Commercial position","none"],["Confidence score",C.score],["Confidence band",C.band],["Range low (FTE)",C.lo],["Range high (FTE)",C.hi],["Coverage",covLabel()],["Framework scenario",`${R.sc}: ${R.SC.name}`],["Transition (FTE-months)",R.trans.total],[],["FTE only: no rates, cost or price."]],[34,40]);
   sheet("Build",[["Step","What it did","Step FTE","Team after (FTE)","People"]].concat(buildRows().map(r=>[r.stage,r.what,r.add==null?"":r.add,r.snap.fte,whole?r.snap.people:""])).concat(whole?[["Rounding","",R.roundAdd,"",R.people]]:[]).concat(R.fin.on?[["Commercial position",adjReasonLabel(S.adj.reason),R.fin.total-R.total,R.fin.total,whole?R.fin.people:""]]:[]),[22,90,12,16,10]);
+  sheet("Team shape",[["Role","Kind","Guidance","Year 1 after Stage 1 (FTE)"].concat(R.shapeY.years.slice(0,R.term).map(y=>"Year "+y.n+" (FTE)"))].concat(R.shapeY.base.rows.map(r=>{const o=R.shape1.rows.find(x=>x.id===r.id);return [r.name,r.kind,r.guide,o?o.fte:0].concat(R.shapeY.years.slice(0,R.term).map(y=>y.by[r.id]))})).concat([["Total","","",R.shape1.total].concat(R.shapeY.years.slice(0,R.term).map(y=>y.total))]),[30,12,60,22,14,14,14,14,14]);
   sheet("Towers",[["Tower","Kind","We provide","SLA","Demand from","Counts at","Tickets/mo","L1 tickets","L2 tickets","L3 tickets","SLA uplift L2 %","SLA uplift L3 %","Coordination %","A hrs","B hrs","C hrs","FTE","AIOps","AI engineers","Incidents/mo","SRs/mo","CRs/mo","SR hours","CR hours"]].concat(R.towers.map(t=>[t.name,t.kind,ownedText(t),slaText(t),t.src,t.lvl.toUpperCase(),t.tickets,t.l1t,t.l2t,t.l3t,t.sm.l2*100,t.sm.l3*100,t.hand*100,t.A,t.Bh,t.C,t.fte,t.aiops===true?"Yes":"No",t.ai,t.incN,t.srN,t.crN,t.srHrs,t.crHrs])),[22,6,14,34,18,8]);
   sheet("Team by role",[["Role","Tower","FTE"]].concat(R.fin.roles.map(r=>[r.role,r.tower,r.fte])).concat([["Total","",R.fin.total]]),[44,22,10]);
   sheet("Team by location",[["Location","L2 (incl. L1) FTE","L3 FTE","SDM FTE","People"]].concat(R.fin.snap.cells.filter(c=>c.a2+c.a3+c.g>0).map(c=>[c.name,c.a2,c.a3,c.g,whole?c.people:""])),[18,16,10,10,10]);
@@ -2838,7 +2884,7 @@ function deviations(){
   if(S.transPct!=null)add("Transformation POD %",R.SC.pct,S.transPct,"[F] Part 3");
   else if(R.stageMul!==1||R.appMul!==1)out.push(["Transformation POD % (life stage and appetite)",`${R.SC.pct}%`,`${fmt(R.transAuto,1)}%`,"proposed"]);
   if(S.savePct==null&&R.pathMul!==1)out.push(["Savings credited (clarity of improvement pathways)","100%",`${fmt(R.pathMul*100,0)}%`,"proposed"]);
-  add("SDM ratio","1:8",`1:${S.sdmRatio}`,"DAMO convention");
+  add("SDM ratio","1:12",`1:${S.sdmRatio}`,"DAMO roles guidance map");
   if(S.contPct!=null&&S.cplx)add("Y1 contingency %",R.CX.cont,S.contPct,"proposed");
   if(S.pyr&&S.pyr[S.cplx]&&S.cplx)add("Pyramid Lead : Senior : Consultant",CPLX[S.cplx].pyr.join(" : "),pyrOf().join(" : "),"[P]");
   if(R.pf.mode==="portfolio")out.push(["Year 2+ savings",`scenario YoY ${SAVE_BY_SC[R.sc]}%`,"AIOps use-case portfolio","proposed"]);
@@ -3117,6 +3163,65 @@ function updateRiskDeltas(k,base,add,pct){
 
 /* ---------- live update ---------- */
 let R;
+/* ---------- indicative team shape: the DAMO roles guidance map ---------- */
+const GROLES=[
+  ["sse","System Support Engineer","AMS support: L2/L3 support, incidents, service requests, RCA, minor enhancements","FTE derivation from scope and effort estimate (core-stream aligned)","core"],
+  ["isu","Infra Support Engineer","IMS support: L2/L3 support, incidents, service requests, RCA, cloud operations, patching, upgrades","FTE derivation from scope and estimate (core-stream aligned)","core"],
+  ["da","Data Analyst","DMS support: L2/L3 support, incidents, service requests","FTE derivation from scope and estimate (core-stream aligned)","core"],
+  ["de","Data Engineer","DMS support: L2/L3 support, incidents, service requests, RCA, minor enhancements, resolving complex data pipeline failures, platform performance, data quality, data lineage","FTE derivation from scope and estimate (core-stream aligned)","core"],
+  ["pse","Product Support Engineer","Ticket triage (L1.5), service management, ticket communication and reporting","Cross-cutting role. 1 per stream, distributed across PODs","cross"],
+  ["dev","Developer","Software engineering, AIFSD, AI/works, product development and feature enhancements","FTE derivation from scope and estimate (core-stream aligned)","core"],
+  ["mob","Mobile Developer","Mobile platform, UI development, testing and automation, mobile path to production","FTE derivation from scope and estimate (core-stream aligned)","core"],
+  ["qa","Quality Analyst","Test automation, test data management, product validation","Cross-cutting role, across PODs","cross"],
+  ["ba","Business Analyst","Requirements analysis, scope management, product vision and roadmapping","Cross-cutting role, product aligned","cross"],
+  ["sre","Service Reliability Engineer","Observability, availability, IaC, performance, reliability, CI/CD deployments, platform engineering","Cross-cutting role, shared capability across PODs","cross"],
+  ["aie","AI Engineer (AIOps engineer)","Use cases, generative and agentic AI solutions, evaluations, guardrails, bias mitigation, responsible AI","Cross-cutting role, shared capability across PODs","cross"],
+  ["sa","Solution Architect","Solution design, architecture standards, risk, deliverability, commercial models","Cross-cutting role, 10%","cross"],
+  ["sdm","Service Delivery Manager","Ops leader (day to day): incident, problem, request and service level management","Cross-cutting role: 1 SDM for 12 FTE","mgmt"],
+  ["oth","Other named skill","A niche skill set named on a tower","Core-stream, from the tower's estimate","core"]
+];
+const GMAP={sse:"sse",fs:"dev",be:"dev",fe:"dev",mob:"mob",infra:"isu",sre:"sre",qa:"qa",l1:"pse",dse:"dms",dba:"de",data:"de",ai:"aie",prompt:"aie",mlops:"aie",llmops:"aie",aieval:"aie",ds:"aie",spec:"oth"};
+const GCORE=["sse","isu","da","de","dev","mob","oth"];
+/* Groups a team's role list (compute's roles or roles1) under the guidance map. Totals never change: core-stream roles are
+   the work itself, and the cross-cutting roles that the ratios ask for are carved out of the core-stream roles. */
+function shapeOf(list,X){
+  const g={}, add=(id,v)=>{if(v>0)g[id]=(g[id]||0)+v}, lifts=[];
+  const SH=S.shape||{}, tw=id=>X.towers.find(t=>t.id===id);
+  let fixed=0;
+  list.forEach(r=>{
+    if(r.sk==="sdm"){add("sdm",r.fte);return}
+    if(r.sk==="aiops"){add("aie",r.fte);fixed+=r.fte;return}
+    if(r.sk==="trans"){add("sre",r.fte);return}
+    if(r.sk==="lift"){lifts.push(r.fte);return}
+    const t=tw(r.tw), kindG=({AMS:"sse",IMS:"isu",DMS:"dms",AI:"aie"})[r.kind]||"oth";
+    const id=(r.sk&&GMAP[r.sk])||kindG;
+    let f=r.fte, dv=0;
+    if(t&&t.devFrac>0&&id!=="dev"&&id!=="mob"){dv=f*t.devFrac;f-=dv}
+    if(id==="dms"){const l2=Math.max(0,(t?t.fte2-t.fte1:0)),l3=t?t.fte3:0,sh=l2+l3>0?l3/(l2+l3):0.5;add("da",f*(1-sh));add("de",f*sh)}
+    else add(id,f);
+    add("dev",dv);
+  });
+  const liftSum=lifts.reduce((x,v)=>x+v,0), coreSum0=GCORE.reduce((x,i)=>x+(g[i]||0),0);
+  if(liftSum>0){if(coreSum0>0)GCORE.forEach(i=>{if(g[i])g[i]+=liftSum*g[i]/coreSum0});else add("sse",liftSum)}
+  const total=Object.values(g).reduce((x,v)=>x+v,0), core=GCORE.reduce((x,i)=>x+(g[i]||0),0);
+  const nT=X.towers.filter(t=>t.fte>0).length, deliv=total-(g.sdm||0)-fixed;
+  const want={pse:nT*(+SH.pse||0),sa:nT*(+SH.sa||0)/100,qa:deliv*(+SH.qa||0)/10,ba:deliv*(+SH.ba||0)/10,sre:deliv*(+SH.sre||0)/10};
+  const ask=Object.values(want).reduce((x,v)=>x+v,0), cap=0.6*core, k=ask>cap&&ask>0?cap/ask:1;
+  if(core>0&&ask>0){
+    Object.keys(want).forEach(i=>{want[i]*=k});
+    const take=Object.values(want).reduce((x,v)=>x+v,0);
+    GCORE.forEach(i=>{if(g[i])g[i]-=take*g[i]/core});
+    Object.keys(want).forEach(i=>add(i,want[i]));
+  }
+  const rows=GROLES.filter(r=>(g[r[0]]||0)>1e-9).map(r=>({id:r[0],name:r[1],desc:r[2],guide:r[3],kind:r[4],fte:g[r[0]],share:total>0?g[r[0]]/total:0}));
+  return {rows,total,fixed,capped:k<1,carved:core>0?ask*k:0};
+}
+/* Year 1 of the final team, then the later years: every role scales with the year's team, except AI engineers, who stay to build the use cases */
+function shapeYears(X){
+  const b=shapeOf(X.roles,X), y1=X.years[0].fte, den=y1-b.fixed;
+  const years=X.years.map(y=>{const f=den>0?(y.fte-b.fixed)/den:1;return {n:y.n,total:y.fte,by:Object.fromEntries(b.rows.map(r=>[r.id,r.id==="aie"?(r.fte-b.fixed)*f+b.fixed:r.fte*f]))}});
+  return {base:b,years};
+}
 /* The run team: the same engine with no transformation POD and no AI engineers. Stage 2 qualifies this team; Stage 3 adds the transformation capacity on top. */
 function runCompute(){
   const sp=S.transPct, ai=S.towers.map(t=>t.aiops);
@@ -3126,8 +3231,8 @@ function runCompute(){
 }
 function asRun(fn){const M=R; R=M.run; try{fn()}finally{R=M}}
 function update(){
-  R=compute(); R.run=runCompute();
-  updateS1(); updateS2(); asRun(updateS3); updateS4(); asRun(updateS5); asRun(updateS6); R.gradeRows=gradeRowsFor(R); R.conf=confidence(); updateS7(); updateTrans(); asRun(updateS9); asRun(updateS11); asRun(updateS12); updateS8(); updateCP(); updateResults(); renderBar(); renderNav(); setNavH(); updateMeta(); save();
+  R=compute(); R.run=runCompute(); R.shape1=shapeOf(R.run.roles1,R.run); R.shapeY=shapeYears(R);
+  updateS1(); updateS2(); asRun(updateS3); updateS4(); asRun(updateS5); asRun(updateS6); R.gradeRows=gradeRowsFor(R); R.conf=confidence(); updateS7(); updateShape(); updateTrans(); asRun(updateS9); asRun(updateS11); asRun(updateS12); updateS8(); updateCP(); updateResults(); renderBar(); renderNav(); setNavH(); updateMeta(); save();
 }
 /* A compact version of the coverage timeline for the inputs panel: one 48-cell bar per row, on the customer clock from the window start. */
 function miniHtml(C){
@@ -3599,6 +3704,19 @@ function renderS7(){
   $("cont2").value=S.cont2==null?"":S.cont2;
   $("protectFloor").checked=S.protectFloor!==false;
 }
+function updateShape(){
+  const b=R.shape1, B=R.shapeY.base;
+  $("shape1").innerHTML=b.rows.length?b.rows.map(r=>`<tr><td class="loc-name">${esc(r.name)}${r.kind==="cross"?`<small>cross-cutting</small>`:r.kind==="mgmt"?`<small>management</small>`:""}</td><td class="hint">${esc(r.desc)}</td><td class="hint">${esc(r.guide)}</td><td class="r num"><b>${fmt(r.fte,2)}</b></td><td class="r num">${fmt(r.share*100,0)}%</td></tr>`).join("")
+    +`<tr><td><b>Total</b></td><td></td><td></td><td class="r num"><b>${fmt(b.total,2)}</b></td><td class="r num">100%</td></tr>`:`<tr><td colspan="5" class="hint">Add a tower in Step 2 to see the shape.</td></tr>`;
+  $("shape1Note").textContent=`${fmt(b.total,2)} FTE is the Stage 1 team (${fmt(R.run.p1.total,2)}); this only groups it by role.${b.carved>0?` ${fmt(b.carved,2)} FTE of cross-cutting roles is carved out of the core-stream roles.`:""}${b.capped?" The ratios ask for more than 60% of the core-stream team, so they were scaled down.":""} AI engineers (AIOps) are not in Stage 1; they arrive with the transformation capacity in Stage 3.`;
+  const SH=S.shape||{};
+  [["shPse","pse"],["shSa","sa"],["shQa","qa"],["shBa","ba"],["shSre","sre"]].forEach(([id,k])=>{const el=$(id);if(el&&document.activeElement!==el)el.value=SH[k]==null?"":SH[k]});
+  const Y=R.shapeY.years.slice(0,Math.max(1,R.term));
+  $("shapeYHead").innerHTML=`<tr><th>Role</th>${Y.map(y=>`<th class="r">Year ${y.n}</th>`).join("")}<th>Guidance</th></tr>`;
+  $("shapeY").innerHTML=B.rows.length?B.rows.map(r=>`<tr><td class="loc-name">${esc(r.name)}</td>${Y.map(y=>`<td class="r num">${fmt(y.by[r.id],2)}</td>`).join("")}<td class="hint">${esc(r.guide)}</td></tr>`).join("")
+    +`<tr><td><b>Total</b></td>${Y.map(y=>`<td class="r num"><b>${fmt(y.total,2)}</b></td>`).join("")}<td></td></tr>`:`<tr><td colspan="${Y.length+2}" class="hint">Add a tower in Step 2 to see the shape.</td></tr>`;
+  $("shapeYNote").textContent=`Year 1 is the full team after Stage 3 (run team plus transformation capacity). Later years scale every role with the year's team from the capacity ramp, except the AI engineers (AIOps), who stay to build and run the use cases. Indicative: the shape is a planning aid, not a roster.`;
+}
 function updateS7(){
   document.querySelectorAll("[data-term]").forEach(b=>b.setAttribute("aria-pressed",String(S.term===+b.dataset.term)));
   $("savePct").placeholder=String(+(SAVE_BY_SC[R.sc]*R.pathMul).toFixed(2));
@@ -4033,13 +4151,13 @@ function buildReport(){
   ${stageDoc(1,"Base team from coverage",tableOf("locCalc"))}
   ${stageDoc(2,"Service towers",tableOf("towerCalc")+tableOf("skillCalc"))}
   ${stageDoc(9,"Current team: ticket volume, base team and the existing team as a reference range",tableOf("triTable")+`<div class="verdict">${$("triVerdict").innerHTML}</div>`)}
-  ${stageDoc(5,"Required team size: the Stage 1 team",tableOf("reconTable")+`<div class="verdict">${$("verdict").innerHTML}</div>`)}
+  ${stageDoc(5,"Required team size: the Stage 1 team",tableOf("reconTable")+`<h3>Indicative team shape, Year 1 after Stage 1</h3>`+tableOf("shape1")+`<div class="verdict">${$("verdict").innerHTML}</div>`)}
   ${stageDoc(3,"Skill type: is the Stage 1 team enough?",`<div class="verdict">${$("covVerdict").innerHTML}</div>`+tableOf("covCalc"))}
   ${stageDoc(11,"Location distribution of the run team",tableOf("locDist")+`<div class="verdict">${$("locVerdict").innerHTML}</div>`)}
   ${stageDoc(12,"Managerial capacity",tableOf("mgrTable")+`<div class="verdict">${$("mgrVerdict").innerHTML}</div>`)}
   ${stageDoc(6,"Complexity, seniority and contingency: the run team",tableOf("gradeCalc")+`<h3>Estimate confidence · [F] Annexure 1</h3><table><thead><tr><th>Driver</th><th class="r">Weight</th><th>Score</th><th>What the score means</th><th class="r">Points</th></tr></thead><tbody>${confTableHtml(R.conf,false)}</tbody></table><div class="verdict">${$("confVerdict").innerHTML}</div>`)}
   ${stageDoc(4,"Transformation capacity on top of the run team",`<div class="facts">${$("scFacts").innerHTML}</div>`)}
-  ${stageDoc(7,"Capacity ramp and savings",tableOf("termCalc")+`<div class="verdict">${$("termVerdict").innerHTML}</div>`+(R.pf.mode==="portfolio"?`<h3>AIOps use-case portfolio</h3><table><thead><tr><th>Use case</th><th>Level</th><th class="r">Build pw</th><th class="r">Deflection %</th><th>Live from</th><th class="r">Ramp mo</th></tr></thead><tbody>${R.pf.items.filter(i=>i.on).map(i=>`<tr><td>${esc(i.u.n)}</td><td>${i.u.tier}</td><td class="r">${i.u.effort}</td><td class="r">${i.c.defl}</td><td>Year ${i.startY}</td><td class="r">${i.c.ramp}</td></tr>`).join("")}</tbody></table>${tableOf("pfYears")}<div class="verdict">${$("pfVerdict").innerHTML}</div>`:"")+(R.trans.ktW+R.trans.parW?`<h3>Transition (one-off, before service start)</h3><div class="working">${$("stepsTr").innerHTML}</div>`:""))}
+  ${stageDoc(7,"Capacity ramp and savings",`<h3>Indicative team shape by year</h3>`+tableOf("shapeY")+tableOf("termCalc")+`<div class="verdict">${$("termVerdict").innerHTML}</div>`+(R.pf.mode==="portfolio"?`<h3>AIOps use-case portfolio</h3><table><thead><tr><th>Use case</th><th>Level</th><th class="r">Build pw</th><th class="r">Deflection %</th><th>Live from</th><th class="r">Ramp mo</th></tr></thead><tbody>${R.pf.items.filter(i=>i.on).map(i=>`<tr><td>${esc(i.u.n)}</td><td>${i.u.tier}</td><td class="r">${i.u.effort}</td><td class="r">${i.c.defl}</td><td>Year ${i.startY}</td><td class="r">${i.c.ramp}</td></tr>`).join("")}</tbody></table>${tableOf("pfYears")}<div class="verdict">${$("pfVerdict").innerHTML}</div>`:"")+(R.trans.ktW+R.trans.parW?`<h3>Transition (one-off, before service start)</h3><div class="working">${$("stepsTr").innerHTML}</div>`:""))}
   ${stageDoc(8,"Final fact check against the existing team",tableOf("exTable")+`<div class="verdict">${$("exVerdict").innerHTML}</div>`)}
   <section><h2>${PARTS_SHORT[4]} · Step ${STEPNO[10]} · Commercial position</h2>${R.fin.on?`<p class="verdict">The numbers above are the modelled ones. A proposed final number is applied: <b>Year 1 ${fmt(R.fin.total,2)} FTE</b> against ${fmt(R.total,2)} modelled. The client summary and the Excel workbook use it.</p>`:""}${commercialDoc()}</section>
   <footer>Generated by the DAMO Estimation Workflow.</footer>
@@ -4196,6 +4314,7 @@ document.addEventListener("input",e=>{
   if(t.id==="cont2"){if(t.value===""){S.cont2=null;update()}else{const v=+t.value;if(v>=0&&v<=20){S.cont2=v;update()}}return}
   if(t.id==="contPct"){if(t.value===""){S.contPct=null;update()}else{const v=+t.value;if(v>=0&&v<=20){S.contPct=v;update()}}return}
   if(d.pyr){const v=+t.value;if(t.value!==""&&v>=0&&v<=20){const p=pyrOf().slice();p[+d.pyr]=v;S.pyr=Object.assign({},S.pyr,{[S.cplx]:p});update()}return}
+  if(t.dataset.sh){S.shape=S.shape||{};S.shape[t.dataset.sh]=t.value===""?null:Math.max(0,+t.value);update();return}
   if(t.id==="sdmRatio"){const v=Math.round(+t.value);if(v>=4&&v<=20){S.sdmRatio=v;update()}return}
   if(t.id==="transPct"){if(t.value===""){S.transPct=null;update()}else{const v=+t.value;if(v>=0&&v<=50){S.transPct=v;update()}}return}
   if(t.id==="onCallPct"){const v=+t.value;if(t.value!==""&&v>=0&&v<=100){S.onCallPct=v;update()}return}
@@ -4309,6 +4428,9 @@ function summary(){
   L.push(`- **Stage 1 team: ${fmt(Rr.p1.total,2)} FTE** (${fmt(Rr.p1.deliv,2)} delivery + ${fmt(Rr.p1.sdm,2)} SDM)`);
   L.push("","| View | FTE |","|---|---|",`| Base team (step 1) | ${fmt(Rr.s1,2)} |`,`| Team from the towers (step 2${Rr.ai2>0?", without AI engineers":""}) | ${fmt(Rr.p1.run,2)} |`,`| Delivery team used | ${fmt(Rr.p1.deliv,2)} |`);
   L.push("",$("verdict").textContent);
+  L.push("","### Indicative team shape: Year 1 after Stage 1 (DAMO roles guidance map)","","| Role | FTE | Share | Guidance |","|---|---|---|---|");
+  R.shape1.rows.forEach(r=>L.push(`| ${r.name} | ${fmt(r.fte,2)} | ${fmt(r.share*100,0)}% | ${r.guide} |`));
+  L.push(`| **Total** | **${fmt(R.shape1.total,2)}** | 100% | |`);
   L.push("",`## ${PARTS_SHORT[2]} · Step ${STEPNO[3]} · Skill type: is the Stage 1 team enough?`,"","| Skill set | Tower | Live shifts | On-call shifts | Floor | Step 2 FTE | Added |","|---|---|---|---|---|---|---|");
   L.push("",$("covVerdict").textContent);
   Rr.covSkills.forEach(k=>L.push(`| ${k.name} | ${k.tower} | ${k.live.map(i=>i+1).join(", ")||"none"} | ${k.onCall} | ${fmt(k.floor,2)} | ${fmt(k.have,2)} | ${fmt(k.top,2)} |`));
@@ -4348,6 +4470,9 @@ function summary(){
   L.push("",$("termVerdict").textContent);
   if(R.pf.mode==="portfolio"){L.push("","### AIOps use-case portfolio","","| Use case | Level | Build pw | Deflection % | Live from | Ramp mo |","|---|---|---|---|---|---|");R.pf.items.filter(i=>i.on).forEach(i=>L.push(`| ${i.u.n} | ${i.u.tier} | ${i.u.effort} | ${i.c.defl} | Year ${i.startY} | ${i.c.ramp} |`));L.push("","| Year | L2 defl. | L3 defl. | FTE freed | Reduced | Redeployed | Committed |","|---|---|---|---|---|---|---|");R.pf.years.forEach(v=>L.push(`| ${v.n} | ${fmt(v.dL2*100,1)}% | ${fmt(v.dL3*100,1)}% | ${fmt(v.gross,2)} | ${fmt(v.reduce,2)} | ${fmt(v.redeploy,2)} | ${fmt(v.commit,2)} |`));}
   if(R.trans.ktW+R.trans.parW){const T=R.trans;L.push("","### Transition (one-off, before service start)",`- Knowledge transfer ${T.ktW} weeks × ${fmt(T.ktP*100,0)}% of the Year 1 team: ${fmt(T.kt,1)} FTE-months`,`- Parallel run ${T.parW} weeks × full team: ${fmt(T.par,1)} FTE-months`,`- Transition management ${fmt(T.mgr,1)} FTE: ${fmt(T.mg,1)} FTE-months`,`- **Transition effort ${fmt(T.total,1)} FTE-months**, average ${fmt(T.avg,1)} FTE, peak ${fmt(T.peak,1)} FTE`);}
+  {const Y=R.shapeY.years.slice(0,R.term);L.push("","### Indicative team shape by year (DAMO roles guidance map)","",`| Role | ${Y.map(y=>"Year "+y.n).join(" | ")} |`,`|---|${Y.map(()=>"---").join("|")}|`);
+   R.shapeY.base.rows.forEach(r=>L.push(`| ${r.name} | ${Y.map(y=>fmt(y.by[r.id],2)).join(" | ")} |`));
+   L.push(`| **Total** | ${Y.map(y=>"**"+fmt(y.total,2)+"**").join(" | ")} |`)}
   L.push("","| Year | Run team | Transformation capacity | Total |","|---|---|---|---|");R.years.slice(0,R.term).forEach((v,i)=>L.push(`| Year ${v.n} | ${fmt(R.run.years[i].fte,2)} | ${sgn(v.fte-R.run.years[i].fte,2)} | ${fmt(v.fte,2)} |`));
   rows("s7");
   {const ex=S.ex||{}, n=k=>Math.max(0,+ex[k]||0), exTot=EX_TIERS.reduce((x,[k])=>x+n(k),0);
