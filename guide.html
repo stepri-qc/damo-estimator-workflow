@@ -191,14 +191,14 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(P))}catch(e){}};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt=(x,d=2)=>(Math.round(x*10**d)/10**d).toFixed(d);
-const tryTool=(n,text)=>`<div class="try"><a class="btn sm primary" href="index.html#stage=${n}" target="_blank" rel="noopener">Open ${n===0?"Documents":"step "+({1:1,2:2,3:5,4:9,5:4,6:8,7:10,8:11,9:3,10:12,11:6,12:7})[n]} in the tool ↗</a><span>${text}</span></div>`;
+const tryTool=(n,text)=>`<div class="try"><a class="btn sm primary" href="index.html#stage=${n}" target="_blank" rel="noopener">Open ${n===0?"Documents":"step "+({1:1,2:2,3:5,4:10,5:4,6:8,7:11,8:13,9:3,10:14,11:6,12:7,13:9,14:12})[n]} in the tool ↗</a><span>${text}</span></div>`;
 
 /* ================= chapters ================= */
 const CH=[
 {id:"welcome",grp:"Start here",t:"What the tool does",html:()=>`
 <span class="eyebrow">Start here · 5 min</span>
 <h1>What the Estimation Workflow does</h1>
-<p class="lead">It sizes a DAMO managed-service team in FTE, one step at a time, so a deal review can see exactly how the number was built: every input, formula, assumption and risk. The twelve steps run in three stages, then a review: <b>Stage 1</b> sizes the team, <b>Stage 2</b> qualifies it, <b>Stage 3</b> adds transformation capacity and productivity.</p>
+<p class="lead">It sizes a DAMO managed-service team in FTE, one step at a time, so a deal review can see exactly how the number was built: every input, formula, assumption and risk. The fourteen steps run in three stages, then a review: <b>Stage 1</b> sizes the team, <b>Stage 2</b> qualifies it, <b>Stage 3</b> adds transformation capacity and productivity.</p>
 <h2>The one idea to understand first</h2>
 <p>Stage 1 sizes the team from what the service needs, not from what the client has today. The base team and the work team are built from two different questions and the larger is kept; they are compared, not added. The team running the estate today is a <b>reference range</b>, not a driver.</p>
 <div class="teams">
@@ -223,17 +223,19 @@ const CH=[
 <tr><td>6</td><td>Location distribution</td><td>Where the team sits across locations, and the overlap between them</td></tr>
 <tr><td>7</td><td>Managerial capacity</td><td>SDM ratio and location, tech lead</td></tr>
 <tr><td>8</td><td>Complexity, seniority and contingency</td><td>Complexity, grade pyramid (mix only), contingency, confidence score. Result: the <b>run team</b></td></tr>
+<tr><td>9</td><td>Team shape: Year 1</td><td>The Year 1 team by role from the DAMO roles guidance map: the screen for a solution architect to review the team overall</td></tr>
 <tr><td colspan="3"><b>Stage 3 · Transformation and productivity</b></td></tr>
-<tr><td>9</td><td>Transformation</td><td>Client AI adoption, application life stage, client appetite, clarity of improvement pathways → POD share</td></tr>
-<tr><td>10</td><td>Capacity ramp and savings</td><td>Contract term, Year 2+ savings, optional transition. Year 1 shows the run team and the transformation capacity as two lines</td></tr>
+<tr><td>10</td><td>Transformation</td><td>Client AI adoption, application life stage, client appetite, clarity of improvement pathways → POD share</td></tr>
+<tr><td>11</td><td>Capacity ramp and savings</td><td>Contract term, Year 2+ savings, optional transition. Year 1 shows the run team and the transformation capacity as two lines</td></tr>
+<tr><td>12</td><td>Team shape by year</td><td>The team by role for every year of the term</td></tr>
 <tr><td colspan="3"><b>Review and commercial</b></td></tr>
-<tr><td>11</td><td>Final fact check &amp; approval</td><td>The final team against the existing team, assumptions register, roles, allowances, approval, exports</td></tr>
-<tr><td>12</td><td>Commercial position</td><td>Optional proposed final number, risks and commercial options</td></tr>
+<tr><td>13</td><td>Final fact check &amp; approval</td><td>The final team against the existing team, assumptions register, roles, allowances, approval, exports</td></tr>
+<tr><td>14</td><td>Commercial position</td><td>Optional proposed final number, risks and commercial options</td></tr>
 </tbody></table></div>
 <h2>What stays true everywhere</h2>
 <ul>
 <li><b>FTE only.</b> No rates, cost or price. The pricing sheet takes the FTE by grade and location.</li>
-<li><b>After every step:</b> assumptions and risks. Assumptions are grouped by category (coverage, demand, scope, SLA, effort, skills, transformation, governance, seniority, term, client responsibilities) and gathered in one register at step 11. Risks carry an FTE modifier %; suggested ones start switched off.</li>
+<li><b>After every step:</b> assumptions and risks. Assumptions are grouped by category (coverage, demand, scope, SLA, effort, skills, transformation, governance, seniority, term, client responsibilities) and gathered in one register at step 13. Risks carry an FTE modifier %; suggested ones start switched off.</li>
 <li><b>The bar at the bottom</b> shows the team after the step you're on: the Stage 1 team at steps 1 to 4, the run team through Stage 2, and from Stage 3 the transformation capacity on top, giving the Year 1 team.</li>
 <li><b>Sources are tagged</b> <code>[F]</code> framework, <code>[P]</code> pricing sheet, or <code>proposed</code> where the framework is silent.</li>
 <li><b>Your work is saved in your browser</b> automatically. The <span class="ui">File</span> menu has Open file, Save file and Reset; the <span class="ui">Export</span> menu has the deal-review summary, the customer summary, the Excel workbook and Copy summary.</li>
@@ -242,7 +244,7 @@ const CH=[
 <div class="quiz" data-quiz="welcome"></div>`,
 quiz:[
  {q:"The base team is 8 FTE and the work team (without AI engineers) is 12 FTE. What is the delivery team before SDM?",o:["20 FTE: they are added","12 FTE: the larger one","8 FTE: the base team is the floor"],a:1,why:"The two are compared, not added. The work team's people staff the shifts as part of doing the work."},
- {q:"Where do rates and price come in?",o:["Step 10","Step 11","Not in this tool: it sizes FTE only"],a:2,why:"The tool produces FTE by role, grade and location. Pricing happens in the pricing sheet."}
+ {q:"Where do rates and price come in?",o:["Step 11","Step 13","Not in this tool: it sizes FTE only"],a:2,why:"The tool produces FTE by role, grade and location. Pricing happens in the pricing sheet."}
 ]},
 
 {id:"prep",grp:"Start here",t:"Before you start",html:()=>`
@@ -266,7 +268,7 @@ quiz:[
 </ol>
 <h2>What Claude can propose</h2>
 <p>Deal name; coverage window and P1s a month; towers with who provides L1/L2/L3, SLAs, priority mix, ticket volumes (and where they're counted) or estate size, enhancements, SRE and AIOps scope, skill sets; AI adoption; complexity; term; existing team; assumptions, risks and open questions for the client.</p>
-<div class="note"><b>Where the inputs came from</b> Every applied input keeps its source and quote. It shows under the coverage window, on each tower card, and in Step 11's <span class="ui">Where the inputs came from</span> table. If someone edits it later it's flagged <i>edited since</i>.</div>
+<div class="note"><b>Where the inputs came from</b> Every applied input keeps its source and quote. It shows under the coverage window, on each tower card, and in Step 13's <span class="ui">Where the inputs came from</span> table. If someone edits it later it's flagged <i>edited since</i>.</div>
 <div class="warn"><b>Always check the proposals</b> Claude only proposes what the documents support, but it can misread a table. Applied risks arrive switched off at 0%, and open questions become Step 1 assumptions to confirm with the client.</div>
 ${tryTool(0,"Drop in an RFP and see what it proposes.")}
 <div class="quiz" data-quiz="docs"></div>`,
@@ -358,7 +360,7 @@ quiz:[
 <li><div>Read the <b>verdict</b>: it says which of ticket volume and coverage sets the number, whether the existing team agrees, and how far apart the three views are.</div></li>
 </ol>
 <div class="note"><b>The existing team never changes the number</b> It is a reference range of today's team ± the tolerance, and the verdict says whether our number sits below, inside or above it. It is evidence, not an input to the calculation. If it is far above ours, check scope, the window it covers and hidden capacity. If it is far below, check for out-of-scope work in today's team before presenting a saving.</div>
-<div class="tip"><b>Two places for the fact check</b> This step checks the Stage 1 team against today. Step 11 checks the final Year 1 team, and each year of the term, against the same numbers.</div>
+<div class="tip"><b>Two places for the fact check</b> This step checks the Stage 1 team against today. Step 13 checks the final Year 1 team, and each year of the term, against the same numbers.</div>
 ${tryTool(9,"Enter the existing team and read the verdict.")}
 <div class="quiz" data-quiz="s9"></div>`,
 quiz:[
@@ -380,8 +382,6 @@ quiz:[
   </div>
   <div class="out" id="reOut"></div>
 </div>
-<h2>Indicative team shape</h2>
-<p>Below the working, the step groups the Stage 1 team by the <b>DAMO roles guidance map</b>: System Support Engineer (AMS), Infra Support Engineer (IMS), Data Analyst and Data Engineer (DMS), Developer, Mobile Developer, Service Reliability Engineer, and the Service Delivery Manager. <b>Cross-cutting roles</b> come from ratios you can edit: one Product Support Engineer per tower and a Solution Architect at 10% of an FTE once per deal are prefilled from the map; Quality Analyst, Business Analyst and extra SRE start blank. They are carved out of the core-stream roles, so the total never changes.</p>
 <div class="note"><b>Why AI engineers stay on top</b> They build automation; they don't staff shifts. So the base team can't stand in for them when it's the larger team.</div>
 ${tryTool(5,"See the comparison bars and the verdict sentence.")}`},
 
@@ -443,8 +443,20 @@ quiz:[
  {q:"A driver scored 2. What should happen?",o:["Nothing","It becomes a due diligence item or a commercial caveat","Contingency doubles"],a:1,why:"Annexure 1 Step 4: drivers scored 1–2 become explicit assessment items."}
 ]},
 
-{id:"s4",grp:"Stage 3 · Transformation and productivity",t:"Step 9 · Transformation",html:()=>`
-<span class="eyebrow">Stage 3 · Step 9</span>
+{id:"s13",grp:"Stage 2 · Qualify the team",t:"Step 9 · Team shape: Year 1",html:()=>`
+<span class="eyebrow">Stage 2 · Step 9</span>
+<h1>Team shape: Year 1</h1>
+<p class="lead">The Year 1 team by role, from the DAMO roles guidance map. This is the screen where a solution architect reviews the team overall. It groups the same FTE by role; it never changes the number.</p>
+<ol class="steps">
+<li><div>Read the <b>team by role</b> table: the run team that Stages 1 and 2 qualified, beside the Year 1 team once Stage 3's transformation capacity is added, with each role's description and guidance from the map.</div></li>
+<li><div>Core-stream roles come from the estimate: System Support Engineer (AMS), Infra Support Engineer (IMS), Data Analyst (DMS L2) and Data Engineer (DMS L3), Developer, Mobile Developer, and the Service Reliability Engineer. On an AMS tower the change-request and enhancement effort becomes Developer.</div></li>
+<li><div>Set the <b>cross-cutting ratios</b>: Product Support Engineer 1 per tower and Solution Architect 10% of an FTE once per deal (0.8 hours of an 8-hour day) come from the map. Quality Analyst, Business Analyst and extra SRE start blank (per 10 delivery FTE). They are carved out of the core-stream roles, capped at 60% of them, so the total never changes.</div></li>
+</ol>
+<div class="note"><b>The Year 1 column moves with Stage 3</b> It includes the AI engineers (AIOps) and the rest of the transformation capacity, so it changes as you answer Step 10. The Service Delivery Manager follows the ratio in Step 7 (default 1 per 12 FTE, as in the map).</div>
+${tryTool(13,"Review the Year 1 team by role.")}`},
+
+{id:"s4",grp:"Stage 3 · Transformation and productivity",t:"Step 10 · Transformation",html:()=>`
+<span class="eyebrow">Stage 3 · Step 10</span>
 <h1>Transformation capacity</h1>
 <p class="lead">Stage 3 adds transformation capacity on top of the run team. Year 1 shows two lines: the run team and the transformation capacity.</p>
 <p class="lead">The framework scenario is worked out, not picked: client AI adoption × whether volumetrics are available (towers sized from ticket history carry at least half the tower FTE).</p>
@@ -459,35 +471,44 @@ quiz:[
   <div class="out" id="scOut"></div>
 </div>
 <p>Three answers move the result, all <code>proposed</code> and editable under Benchmarks. <b>Application life stage</b> and the client's <b>appetite</b> scale the POD share (growth 125%, steady 100%, sunset 50%; low appetite 50%, medium 100%, high 125%). <b>Clarity of improvement pathways</b> sets how much of the Year 2+ savings target is credited (clear 100%, partial 75%, unclear 50%). Unanswered means 100%, so nothing moves until you answer. A POD share typed by hand overrides the first two.</p>
-<p>The Transformation POD covers SRE, automation, CI/CD and AI adoption. AI engineers from Step 2 sit inside the POD, so Step 9 adds only the part they don't already cover. AIOps is never counted twice.</p>
+<p>The Transformation POD covers SRE, automation, CI/CD and AI adoption. AI engineers from Step 2 sit inside the POD, so Step 10 adds only the part they don't already cover. AIOps is never counted twice.</p>
 ${tryTool(4,"Choose the client's AI adoption.")}
 <div class="quiz" data-quiz="s4"></div>`,
 quiz:[
  {q:"Moderate AI adoption, and 70% of tower FTE is from ticket history. Scenario?",o:["1","2","3","4"],a:3,why:"Moderate AI + volumetrics available = Scenario 4 (POD 20%+, AIOps 1:8)."},
- {q:"POD is 2.5 FTE and Step 2 already added 4 AI engineers. What does Step 9 add?",o:["2.5","6.5","0"],a:2,why:"AI engineers sit inside the POD; they already exceed it, so nothing more is added."}
+ {q:"POD is 2.5 FTE and Step 2 already added 4 AI engineers. What does Step 10 add?",o:["2.5","6.5","0"],a:2,why:"AI engineers sit inside the POD; they already exceed it, so nothing more is added."}
 ]},
 
-{id:"s7",grp:"Stage 3 · Transformation and productivity",t:"Step 10 · Capacity ramp and savings",html:()=>`
-<span class="eyebrow">Stage 3 · Step 10</span>
+{id:"s7",grp:"Stage 3 · Transformation and productivity",t:"Step 11 · Capacity ramp and savings",html:()=>`
+<span class="eyebrow">Stage 3 · Step 11</span>
 <h1>Capacity ramp: term, Year 2+ savings and transition</h1>
-<p class="lead">Year 1 is the run team from Step 8 plus the transformation capacity from Step 9, shown as two lines, with the same two lines for every year of the term. From Year 2 the team shrinks; a longer term captures more of those years, so the average team per year falls.</p>
+<p class="lead">Year 1 is the run team from Step 8 plus the transformation capacity from Step 10, shown as two lines, with the same two lines for every year of the term. From Year 2 the team shrinks; a longer term captures more of those years, so the average team per year falls.</p>
 <h2>Two ways to work out savings</h2>
 <div class="cols2">
   <div class="card"><h3>Scenario YoY %</h3>A flat % a year from Year 2 (Scenario 1/3: 13.5%, 2: 11%, 4: 17.5%), applied above the coverage floor. Simple and framework-aligned.</div>
   <div class="card"><h3>AIOps use cases</h3>Pick what the AI engineers build (14 use cases with build effort, deflection, start year and ramp). The panel shows FTE freed, net of the engineers, and whether they can build it in time.</div>
 </div>
 <div class="warn"><b>Heads-up</b> With the default seven use cases, the portfolio usually frees less than the scenario target, and can be less than the AI engineers it takes. The verdict panel shows the net figure; use it to challenge the AIOps ratio or the use-case list.</div>
-<h2>Indicative team shape by year</h2>
-<p>After the ramp the step lists the team by role for every year of the term, using the DAMO roles guidance map. Year 1 is the full team; later years scale every role with that year's team, except the AI engineers, who stay to build and run the use cases. It is indicative: a planning aid for the pricing sheet and the delivery plan, not a roster.</p>
 <h2>Transition (optional)</h2>
 <p>Knowledge-transfer weeks (team 50% present), parallel-run weeks (full team) and a transition manager, in FTE-months. It's a one-off before service start and is <b>not</b> added to the Year 1 team.</p>
 ${tryTool(7,"Choose the term and compare the 1–5 year table.")}`},
 
-{id:"s8",grp:"Review and commercial",t:"Step 11 · Final fact check & approval",html:()=>`
-<span class="eyebrow">Review · Step 11</span>
+{id:"s14",grp:"Stage 3 · Transformation and productivity",t:"Step 12 · Team shape by year",html:()=>`
+<span class="eyebrow">Stage 3 · Step 12</span>
+<h1>Team shape by year</h1>
+<p class="lead">The team by role for every year of the term, after the capacity ramp. Year 1 is the full team; later years scale every role with that year's team, except the AI engineers (AIOps), who stay to build and run the use cases.</p>
+<ol class="steps">
+<li><div>Read the table by year, with the totals and the two lines underneath: the run team and the transformation capacity.</div></li>
+<li><div>The transformation line is net of any AIOps savings, so it can fall below zero in later years.</div></li>
+</ol>
+<div class="tip"><b>Indicative, not a roster</b> It is a planning aid for the pricing sheet and the delivery plan. Change the term, savings or the cross-cutting ratios and it updates.</div>
+${tryTool(14,"Read the team by role for every year of the term.")}`},
+
+{id:"s8",grp:"Review and commercial",t:"Step 13 · Final fact check & approval",html:()=>`
+<span class="eyebrow">Review · Step 13</span>
 <h1>Final fact check, overall estimate and approval</h1>
 <p class="lead">Compare the final team with the team running the estate today (entered at step 3), then read the Overall estimate the way a deal desk will.</p>
-<div class="tip"><b>Commercial position is a separate step</b> The numbers on this step are the modelled ones. A proposed final number and the commercial options live in Step 12, which is optional and never changes steps 1 to 9.</div>
+<div class="tip"><b>Commercial position is a separate step</b> The numbers on this step are the modelled ones. A proposed final number and the commercial options live in Step 14, which is optional and never changes steps 1 to 9.</div>
 <h2>In the Overall estimate panel</h2>
 <div class="tbl"><table><thead><tr><th>View</th><th>What to look for</th></tr></thead><tbody>
 <tr><td>How each step built the team</td><td>The build-up from the base team to the Stage 1 team, then what skill cover, transformation, the SDM re-base and contingency added, with rounding and transition</td></tr>
@@ -507,13 +528,13 @@ ${tryTool(7,"Choose the term and compare the 1–5 year table.")}`},
 <p><span class="ui">Save current as a scenario</span>, change inputs (e.g. 24×7 instead of 16×5), save again, and tick to compare side by side. <span class="ui">Run checks</span> verifies the engine against the framework's worked examples and that this estimate adds up.</p>
 ${tryTool(8,"Read the allowances and run the checks.")}`},
 
-{id:"s10",grp:"Review and commercial",t:"Step 12 · Commercial position",html:()=>`
-<span class="eyebrow">Review · Step 12</span>
+{id:"s10",grp:"Review and commercial",t:"Step 14 · Commercial position",html:()=>`
+<span class="eyebrow">Review · Step 14</span>
 <h1>Commercial position</h1>
 <p class="lead">Optional. Set a proposed final number for a client budget or to win on price, see the risks it creates, and see which commercial shape the data supports. Steps 1 to 9 stay as modelled.</p>
 <h2>A proposed final number</h2>
 <p>Tick <span class="ui">Adjust the final number</span> and choose how to set it: <b>Year 1 FTE</b> (type the number you want, for example 7 where the tool models 10; every later year moves by the same proportion), <b>% change</b> (a negative number adds capacity), or <b>Per year</b> (set each year yourself). Choose a <b>reason</b>: nothing changes until one is on record. The cut comes out of contingency first, then the delivery team (SDM included). The panel shows modelled against proposed by year and the implied utilisation, the risks the numbers create (the team runs hotter than planned, below the Step 1 base team, contingency used up, well below the existing team, relying on faster AI savings, scope unchanged while capacity falls) and mitigations you can tick, reword or add to.</p>
-<p>The proposed number drives the client summary, which shows it and nothing else from this step, and the Excel workbook. The summary document keeps the modelled steps and adds this step with the reason, the risks and the mitigations. Step 11 and the Overall estimate always show the modelled numbers.</p>
+<p>The proposed number drives the client summary, which shows it and nothing else from this step, and the Excel workbook. The summary document keeps the modelled steps and adds this step with the reason, the risks and the mitigations. Step 13 and the Overall estimate always show the modelled numbers.</p>
 <h2>Commercial options</h2>
 <p>Four optional inputs (months of ticket history, a measurable baseline, the client's Year 1 budget ceiling, price pressure) feed a rating of four commercial shapes: <b>fixed fee</b>, <b>outcome-based terms</b> (as an add-on), <b>time and materials with a cap</b>, and an <b>assessment-led start</b>. It starts from the framework's recommendation for the scenario and adjusts for the data you have, with reasons, guardrails and what would move each option up. If the budget ceiling is below the modelled Year 1 team, a button sets the ceiling as the proposed Year 1 team. Model level only: no price, and not in the client summary.</p>
 ${tryTool(10,"Set a proposed Year 1 team and read the risks and the commercial options.")}`},
@@ -568,7 +589,7 @@ const EXAMPLE=[
  ["Step 2 tower team","19.82 FTE","Support incl. leave backfill. The 4.36 AI engineers at 1:4 are counted in Stage 3, not here"],
  ["Stage 1 team (step 4)","21.47 FTE","Work team 19.82 beats base 6.14; + 1.65 SDM (1:12). Coverage is not binding: ticket volume is"],
  ["Run team (step 8)","23.08 FTE","Stage 1 team + SDM re-base + 7.5% contingency (Medium)"],
- ["Transformation capacity (step 9)","5.08 FTE","POD 12.5% of 19.82 = 2.48 is less than the 4.36 AI engineers inside it, so the AI engineers set it; plus the SDM and contingency that follow"],
+ ["Transformation capacity (step 10)","5.08 FTE","POD 12.5% of 19.82 = 2.48 is less than the 4.36 AI engineers inside it, so the AI engineers set it; plus the SDM and contingency that follow"],
  ["Year 1 team","28.15 FTE · 29 people","Run team 23.08 + transformation 5.08"],
  ["SRE","0.80 FTE","78% of the IMS tower's L3 FTE (incl. contingency share)"],
  ["3-year average","25.15 FTE a year","28.2 → 24.9 → 22.4; 13.5% a year above the floor"],
@@ -577,11 +598,11 @@ const EXAMPLE=[
 
 const FAQ=[
  ["Why did my team jump when I added a tower?","Once the work team is larger than the base team, the work sets the size. Before that, extra work is absorbed by people who are already needed to cover shifts. Look at the Step 4 verdict sentence."],
- ["The bar at the bottom shows a different number from the final estimate.","The bar shows the team after the stage you're on. It becomes the final Year 1 team once Stage 3 has added the transformation capacity (Step 11)."],
+ ["The bar at the bottom shows a different number from the final estimate.","The bar shows the team after the stage you're on. It becomes the final Year 1 team once Stage 3 has added the transformation capacity (Step 13)."],
  ["Why is rounding adding so much?","People are rounded up in each location and tier (L2, L3, SDM). A small team spread over two locations can gain 2–3 people. Change rounding in Step 1 to see the effect."],
  ["We don't have ticket data. Can we still estimate?","Yes: use structural complexity (T-shirt sizing) or monthly active users. The confidence score will be lower and the range wider; list 'ticket history' as a due diligence item."],
  ["Should I use flat YoY savings or AIOps use cases?","Flat YoY follows the framework's scenario targets and is the default. Use cases show what the AI engineers would actually build; use them to test whether the savings claim is backed."],
- ["Is transition in the Year 1 team?","No. It's a one-off effort before service start, shown in FTE-months in Step 10, the Overall estimate and the customer summary."],
+ ["Is transition in the Year 1 team?","No. It's a one-off effort before service start, shown in FTE-months in Step 11, the Overall estimate and the customer summary."],
  ["How do I share an estimate with a colleague?","Save file, send the .damo.json, and they use Open file. Saved scenarios travel inside the file."],
  ["What does 'Changed since approval' mean?","Someone edited an input after the estimate was approved. Approve again or set the status back to Draft."],
  ["Extract with AI says the passphrase is wrong.","Ask the tool owner for the current passphrase; it's set on the Netlify project as INTAKE_PASSPHRASE."],
@@ -653,7 +674,7 @@ function calcSc(){
   $("scOut").innerHTML=`<div class="row tot"><span>Framework scenario</span><span>${sc}</span><div class="f">${mod?"Moderate":"Low"} AI · volumetrics ${vol?"available":"unavailable"}</div></div>
    <div class="row"><span>POD share · AIOps ratio</span><span>${pod}% · 1:${ratio}${ratio===8?" (1:6 over 20 FTE)":""}</span></div>
    <div class="row"><span>Transformation POD</span><span>${fmt(P,2)} FTE</span></div>
-   <div class="row tot"><span>Step 9 adds</span><span>${fmt(add,2)} FTE</span><div class="f">POD ${fmt(P,2)} − AI engineers ${fmt(ai,2)}${ai>=P&&ai>0?": the AI engineers already cover the POD":""}</div></div>`;
+   <div class="row tot"><span>Step 10 adds</span><span>${fmt(add,2)} FTE</span><div class="f">POD ${fmt(P,2)} − AI engineers ${fmt(ai,2)}${ai>=P&&ai>0?": the AI engineers already cover the POD":""}</div></div>`;
 }
 function calcRe(){
   const B=Math.max(0,+$("reB").value||0), W=Math.max(0,+$("reW").value||0), A=Math.max(0,+$("reA").value||0), r=Math.max(1,+$("reS").value||12);

@@ -21,9 +21,9 @@ Step 1 opens with a working base-team example (24×5 laid out over India and Rom
 
 - **Step 2:** no towers. A new tower has no name, unanswered questions, blank numbers and no skill sets. Until a tower's questions are answered it adds nothing.
 - **Step 5:** no live windows picked.
-- **Step 9:** AI adoption not chosen (Low is used until it is).
+- **Step 10:** AI adoption not chosen (Low is used until it is).
 - **Step 8:** complexity not chosen (no contingency until it is).
-- **Step 10:** term not chosen (1 year is shown until it is).
+- **Step 11:** term not chosen (1 year is shown until it is).
 - **Step 3:** the existing team is blank.
 - **Steps 2 and 9:** the sizing basis (volumetrics or thin slices), life stage, client appetite and pathway clarity are unanswered, which leaves the numbers unchanged.
 - **Suggested risks** for steps 2–9 are listed but switched off, so none changes FTE until turned on.
@@ -47,7 +47,7 @@ Both get the same utilisation and leave backfill. At step 4 they are compared, n
 - **Base team larger:** the work doesn't need that many people, but the shifts do. The team is lifted to the base team; the spare time is available for enhancements or transformation.
 - **AI engineers are the exception:** they build automation and don't staff shifts, so they are left out of the comparison and always kept on top.
 
-So `delivery team = max(work team, base team)`, and `Stage 1 team = delivery team + SDM`. AI engineers (AIOps) belong to transformation capacity in Stage 3, not to the run team. Stage 2 then tests that team: specialist skill cover uses the spare capacity first and adds headcount only for the rest (step 5), the SDM is re-based on the final delivery team (step 7) and contingency is added (step 8). That is the **run team**. Stage 3 adds transformation capacity on top (step 9). The extra headcount each step adds is shown in the final build-up.
+So `delivery team = max(work team, base team)`, and `Stage 1 team = delivery team + SDM`. AI engineers (AIOps) belong to transformation capacity in Stage 3, not to the run team. Stage 2 then tests that team: specialist skill cover uses the spare capacity first and adds headcount only for the rest (step 5), the SDM is re-based on the final delivery team (step 7) and contingency is added (step 8). That is the **run team**. Stage 3 adds transformation capacity on top (step 10). The extra headcount each step adds is shown in the final build-up.
 
 ## Steps
 
@@ -62,10 +62,12 @@ So `delivery team = max(work team, base team)`, and `Stage 1 team = delivery tea
 | 6 | 2 | Location distribution of the team and the overlap between locations | Built |
 | 7 | 2 | Managerial capacity: SDM ratio and location, tech lead | Built |
 | 8 | 2 | Complexity, seniority pyramid, grade-mix check and contingency: the **run team** | Built |
-| 9 | 3 · Transformation and productivity | Transformation capacity: scenario, life stage, client appetite, POD share | Built |
-| 10 | 3 | Capacity ramp: term, YoY savings (credited by pathway clarity), transition | Built |
-| 11 | Review | Final fact check against the existing team, assumptions register, approval | Built |
-| 12 | Review | Commercial position: proposed final number, risks, commercial options | Built |
+| 9 | 2 | Team shape: Year 1: the run team and the Year 1 team by role (DAMO roles guidance map) | Built |
+| 10 | 3 · Transformation and productivity | Transformation capacity: scenario, life stage, client appetite, POD share | Built |
+| 11 | 3 | Capacity ramp: term, YoY savings (credited by pathway clarity), transition | Built |
+| 12 | 3 | Team shape by year: the team by role for every year of the term | Built |
+| 13 | Review | Final fact check against the existing team, assumptions register, approval | Built |
+| 14 | Review | Commercial position: proposed final number, risks, commercial options | Built |
 
 The step numbers are what you see on screen. Internally each section keeps its original id (for example risks and assumptions for skill coverage are stored under `s3`), so saved estimates and deep links (`index.html#stage=N`) keep working.
 
@@ -79,7 +81,7 @@ AMS and DMS towers ask **Proceed with volumetrics or thin slices?** A thin slice
 
 ## Life stage, appetite and pathway clarity
 
-Three answers in Step 9, all proposed and editable in Benchmarks: **application life stage** (growth 125%, steady 100%, sunset 50%) and **client appetite** (low 50%, medium 100%, high 125%) scale the scenario's POD share (capped at 50%); **clarity of improvement pathways** (clear 100%, partial 75%, unclear 50%) sets how much of the Year 2+ savings target is credited (flat percentage, or the AIOps use-case deflections). Unanswered means 100%, so nothing moves until answered. A POD share or a savings percentage typed by hand overrides the multipliers.
+Three answers in Step 10, all proposed and editable in Benchmarks: **application life stage** (growth 125%, steady 100%, sunset 50%) and **client appetite** (low 50%, medium 100%, high 125%) scale the scenario's POD share (capped at 50%); **clarity of improvement pathways** (clear 100%, partial 75%, unclear 50%) sets how much of the Year 2+ savings target is credited (flat percentage, or the AIOps use-case deflections). Unanswered means 100%, so nothing moves until answered. A POD share or a savings percentage typed by hand overrides the multipliers.
 
 ## Current team as a reference range
 
@@ -87,9 +89,9 @@ Step 3 shows today's team as a range (today ± the tolerance, default 10%). It n
 
 ## Indicative team shape
 
-The DAMO roles guidance map turns the team into an indicative shape: System Support Engineer (AMS), Infra Support Engineer (IMS), Data Analyst and Data Engineer (DMS), Developer, Mobile Developer, Service Reliability Engineer, AI Engineer (AIOps), and the cross-cutting Product Support Engineer, Quality Analyst, Business Analyst, Solution Architect and Service Delivery Manager. It is shown twice: **Year 1 after Stage 1** (Step 4, from the run team, before skill cover, transformation and contingency) and **by year after Stage 3** (Step 10, Year 1 is the full team; later years scale every role with the year's team, except the AI engineers, who stay).
+The DAMO roles guidance map turns the team into an indicative shape, on its own screens (Step 9 and Step 12): System Support Engineer (AMS), Infra Support Engineer (IMS), Data Analyst and Data Engineer (DMS), Developer, Mobile Developer, Service Reliability Engineer, AI Engineer (AIOps), and the cross-cutting Product Support Engineer, Quality Analyst, Business Analyst, Solution Architect and Service Delivery Manager. It is shown twice: **Year 1 after Stage 1** (Step 4, from the run team, before skill cover, transformation and contingency) and **by year after Stage 3** (Step 11, Year 1 is the full team; later years scale every role with the year's team, except the AI engineers, who stay).
 
-The shape groups the same FTE, so no total moves. Skill sets map to roles (Systems Support Engineer to System Support Engineer, Infra support engineer to Infra Support Engineer, Full stack / Back-end / Front-end to Developer, Mobile dev to Mobile Developer, L1 support to Product Support Engineer, Data Support Engineer split into Data Analyst (L2) and Data Engineer (L3), Database and Data engineering to Data Engineer, the AI platform skills to AI Engineer). On an AMS tower the change-request and enhancement effort becomes Developer. Shift cover added to reach the base team is spread over the core-stream roles. The cross-cutting ratios are editable in Step 4: Product Support Engineer 1 per tower and Solution Architect 10% of an FTE once per deal come from the map, Quality Analyst, Business Analyst and extra SRE start blank (per 10 delivery FTE). They are carved out of the core-stream roles, capped at 60% of them. The SDM ratio default is 1 per 12 FTE, as in the map.
+The shape groups the same FTE, so no total moves. Skill sets map to roles (Systems Support Engineer to System Support Engineer, Infra support engineer to Infra Support Engineer, Full stack / Back-end / Front-end to Developer, Mobile dev to Mobile Developer, L1 support to Product Support Engineer, Data Support Engineer split into Data Analyst (L2) and Data Engineer (L3), Database and Data engineering to Data Engineer, the AI platform skills to AI Engineer). On an AMS tower the change-request and enhancement effort becomes Developer. Shift cover added to reach the base team is spread over the core-stream roles. The cross-cutting ratios are editable in Step 9: Product Support Engineer 1 per tower and Solution Architect 10% of an FTE once per deal come from the map, Quality Analyst, Business Analyst and extra SRE start blank (per 10 delivery FTE). They are carved out of the core-stream roles, capped at 60% of them. The SDM ratio default is 1 per 12 FTE, as in the map.
 
 ## Step 0: documents and AI extraction
 
@@ -234,7 +236,7 @@ AI engineers       = Σ support FTE(towers with AIOps in scope) ÷ N
 stage 2 tower team = support FTE + AI engineers
 ```
 
-The ratio panel appears once a tower has AIOps in scope. It sets client AI adoption, the same input step 9 uses for the scenario. AI engineers count as L3 engineering, are spread across locations like the step 1 roster, get no shift cover in step 5, and are kept on top of the base team at reconciliation (they build automation; they do not staff shifts). The Documents page proposes AIOps scope per tower when the documents mention it.
+The ratio panel appears once a tower has AIOps in scope. It sets client AI adoption, the same input step 10 uses for the scenario. AI engineers count as L3 engineering, are spread across locations like the step 1 roster, get no shift cover in step 5, and are kept on top of the base team at reconciliation (they build automation; they do not staff shifts). The Documents page proposes AIOps scope per tower when the documents mention it.
 
 Default example: AMS "Customer apps" (2 S, 3 M, 1 L apps), IMS "Cloud platform" (4 environments, 2 hosting platforms, 4 databases, security) and DMS "Analytics platform" (4 data products, 10 pipelines, 3 integrations, 3 upstream, 2 downstream). That is 172 tickets a month and 5.53 tower FTE, or 6.36 after 15% risk.
 
@@ -297,7 +299,7 @@ The SDM is a separate governance tier (not L2/L3) and is based in one step 1 loc
 
 Default example: the work team is 9.70 and the base team is 8.65, so the work sets the team (+12%) and 9.70 is kept. The SDM is 9.70 ÷ 12 = 0.81. If the work team were smaller, for example 2.59 with only one small tower, it would be lifted by +6.05 to 8.65.
 
-**The Stage 1 team** is `delivery team + SDM`. It is shown on its own here, at the triangulation step, and as the first anchor of the final build-up. Stage 2 then tests it: skill cover is absorbed by any spare capacity or adds headcount (step 5), transformation is added after spare capacity (step 9), the SDM is **re-based** on the final delivery team, and contingency is added (step 8). The final build-up table lists every one of these as a row, so the Year 1 number can be walked back to the Stage 1 team.
+**The Stage 1 team** is `delivery team + SDM`. It is shown on its own here, at the triangulation step, and as the first anchor of the final build-up. Stage 2 then tests it: skill cover is absorbed by any spare capacity or adds headcount (step 5), transformation is added after spare capacity (step 10), the SDM is **re-based** on the final delivery team, and contingency is added (step 8). The final build-up table lists every one of these as a row, so the Year 1 number can be walked back to the Stage 1 team.
 
 ## Stage 1 · Step 3: current team as a reference range
 
@@ -311,7 +313,7 @@ This step **does not change the estimate**. It puts three independent views of t
 
 The Stage 1 number is still the larger of the first two, plus the SDM. The existing team is entered here: L2, L3, SRE / automation, managers and other roles, where the numbers came from (org chart, RFP / handover pack, or verbal estimate) and a tolerance (default ±10%). Bars show the three views next to our Stage 1 support team; a table compares each tier (L2, L3 incl. SRE / automation and AI engineers, SDM, other) with Stage 1.
 
-The generated verdict says **which view sets the number** (the support window or the ticket volume), whether the existing team agrees within the tolerance (above, below or consistent, with what to check in each case), and how far apart the three views are. If the existing team is blank it says the triangulation is incomplete. Verbal estimates are flagged as directional. The same existing-team numbers feed the final fact check at step 11.
+The generated verdict says **which view sets the number** (the support window or the ticket volume), whether the existing team agrees within the tolerance (above, below or consistent, with what to check in each case), and how far apart the three views are. If the existing team is blank it says the triangulation is incomplete. Verbal estimates are flagged as directional. The same existing-team numbers feed the final fact check at step 13.
 
 ## Stage 2 · Step 5: skill type, is the Stage 1 team enough?
 
@@ -338,7 +340,7 @@ If the base team already has spare time, skill cover is absorbed by it and nothi
 
 Default example: Database (IMS) and Data engineering (DMS) are live on shift 1 (India) and on call on shifts 2–3. Each has a floor of 1.72 FTE. Database has 0.47 FTE of effort, so it adds 1.25. Data engineering already has 1.98, so it adds nothing. With a 5% risk, step 5 adds 1.32. The run team from the work is 6.36 + 1.32 = 7.68 FTE.
 
-## Stage 3 · Step 9: transformation capacity
+## Stage 3 · Step 10: transformation capacity
 
 The framework scenario ([F] Part 2–3) is worked out, not picked:
 
@@ -362,7 +364,7 @@ With no tower in AIOps scope the whole POD is added. With AIOps in scope, the PO
 
 Transformation FTE is counted as L3 and spread across locations like the step 1 roster. The stage also shows the scenario's guidance from the comparison matrix (confidence, Y1 contingency, team shape, AIOps timeline, commercial model, volume band clause, YoY savings target) for the deal review.
 
-Default example: no tower has ticket history and AI adoption is Low, so this is Scenario 1. The support team is 7.68 and the POD is 0.96. If AIOps is in scope for all three towers, step 2 already added 6.36 ÷ 4 = 1.59 AI engineers, which exceed the POD, so step 9 adds nothing. Without AIOps, step 9 adds the POD: 0.96, or 1.01 with a 5% risk. (Examples from step 4 on were worked before AIOps moved into the towers; they show the method, not these exact numbers.)
+Default example: no tower has ticket history and AI adoption is Low, so this is Scenario 1. The support team is 7.68 and the POD is 0.96. If AIOps is in scope for all three towers, step 2 already added 6.36 ÷ 4 = 1.59 AI engineers, which exceed the POD, so step 10 adds nothing. Without AIOps, step 10 adds the POD: 0.96, or 1.01 with a 5% risk. (Examples from step 4 on were worked before AIOps moved into the towers; they show the method, not these exact numbers.)
 
 ## Stage 2 · Step 8: complexity, seniority and contingency
 
@@ -409,7 +411,7 @@ Step 8 scores the framework's nine confidence drivers from 1 to 5, with the Anne
 
 **Range** (`proposed`): the engine is re-run with demand (tickets and enhancement hours) moved ±25% (Low), ±15% (Medium), ±10% (High) or ±5% (Highest). The coverage floor doesn't move, so the range narrows where the base team sets the size. Confidence and range replace the scenario tile in the Overall estimate.
 
-## Stage 3 · Step 10: capacity ramp, term and YoY savings
+## Stage 3 · Step 11: capacity ramp, term and YoY savings
 
 This stage is **FTE only**. No cost or rate factors are used anywhere in the tool.
 
@@ -428,7 +430,7 @@ Default example (3-year term): 11.7 → 11.2 → 11.0, averaging 11.31 FTE a yea
 
 ### Year 2+ savings from AIOps use cases
 
-Step 10 offers two ways to work out Year 2+ savings: the **scenario YoY %** (as before) or the **AIOps use-case portfolio**. The portfolio is the damo-estimator catalogue (14 use cases, each with build person-weeks, deflection %, level, prerequisites; the seven core L2 ones on by default), with a start year (default: the scenario's AIOps timeline, Year 1 for Scenarios 2 and 4, Year 2 for 1 and 3) and a ramp in months:
+Step 11 offers two ways to work out Year 2+ savings: the **scenario YoY %** (as before) or the **AIOps use-case portfolio**. The portfolio is the damo-estimator catalogue (14 use cases, each with build person-weeks, deflection %, level, prerequisites; the seven core L2 ones on by default), with a start year (default: the scenario's AIOps timeline, Year 1 for Scenarios 2 and 4, Year 2 for 1 and 3) and a ramp in months:
 
 ```
 tier FTE        = L2 (or L3) FTE of towers with AIOps in scope, after backfill and step 2 risk
@@ -442,7 +444,7 @@ Freed capacity splits into reduce / redeploy / commit (default 50 / 30 / 20; red
 
 ### Transition (optional)
 
-A one-off panel in step 10, not part of the Year 1 team (`proposed` method):
+A one-off panel in step 11, not part of the Year 1 team (`proposed` method):
 
 ```
 knowledge transfer = KT weeks × team present during KT (default 50%) × Year 1 team
@@ -453,9 +455,9 @@ transition effort  = sum, in FTE-months (weeks × 12 ÷ 52), with average and pe
 
 It appears in the Overall estimate, both summaries and the customer summary's Transition section.
 
-## Review · Step 11: final fact check against the existing team
+## Review · Step 13: final fact check against the existing team
 
-This step **does not change the estimate**, and neither does anything after it: the optional proposed final number lives in Step 12. The team running the estate today (client or incumbent), the source and the tolerance are entered once, at step 3, and reused here, so the fact check happens in two places: step 3 checks the Stage 1 team, and this step checks the **final** Year 1 team and the term.
+This step **does not change the estimate**, and neither does anything after it: the optional proposed final number lives in Step 14. The team running the estate today (client or incumbent), the source and the tolerance are entered once, at step 3, and reused here, so the fact check happens in two places: step 3 checks the Stage 1 team, and this step checks the **final** Year 1 team and the term.
 
 | Existing | Compared with |
 |---|---|
@@ -474,15 +476,15 @@ It always ends with where the team lands by the end of the term against today, a
 
 Default example: the existing team is 13 FTE (6 L2, 4 L3, 1 SRE, 1 manager, 1 other). Our Year 1 is 11.7 (−10%, consistent), and Year 3 is 11.0 (−15% against today).
 
-## Review · Step 12: commercial position, an editable final number and commercial options
+## Review · Step 14: commercial position, an editable final number and commercial options
 
-Optional, and its own step (stage 10, Part 3) so it is never mixed with the final fact check: Step 11 and the Overall estimate always show the modelled numbers, with a pointer to Step 12 when a proposed number is applied. `compute()` returns `R.fin`: the modelled Year 1 team and years, or the proposed ones once `S.adj` is on with a reason and a change (`S.adj.mode` is `fte` (a proposed Year 1 FTE; every later year moves by the same proportion), `pct` or `year`; `S.adj.fte`, `S.adj.pct`, `S.adj.y[]`). Steps 1 to 8 are never changed. The cut comes out of contingency first, then the delivery team with the SDM (capped at the team); the Year 1 location cells, roles and rounded people are rebuilt from it so they add up to the proposed total, and each year keeps `adj` (modelled total, cut, from contingency, from delivery). The client summary and the Excel workbook read `R.fin` (the client summary shows the proposed number only); the fact check, the final panel and the summary document keep the modelled steps and add Step 12. The risks (`adjRisks()`: implied utilisation amber 90% and red 100%, below the Step 1 base team, contingency used up, below the existing team, faster AI savings, scope unchanged, capped, above the model) and the mitigation library (`ADJ_MITS`, tickable, rewordable, with your own additions in `S.adj.extra`) go into the summary document and Excel.
+Optional, and its own step (stage 10, Part 3) so it is never mixed with the final fact check: Step 13 and the Overall estimate always show the modelled numbers, with a pointer to Step 14 when a proposed number is applied. `compute()` returns `R.fin`: the modelled Year 1 team and years, or the proposed ones once `S.adj` is on with a reason and a change (`S.adj.mode` is `fte` (a proposed Year 1 FTE; every later year moves by the same proportion), `pct` or `year`; `S.adj.fte`, `S.adj.pct`, `S.adj.y[]`). Steps 1 to 8 are never changed. The cut comes out of contingency first, then the delivery team with the SDM (capped at the team); the Year 1 location cells, roles and rounded people are rebuilt from it so they add up to the proposed total, and each year keeps `adj` (modelled total, cut, from contingency, from delivery). The client summary and the Excel workbook read `R.fin` (the client summary shows the proposed number only); the fact check, the final panel and the summary document keep the modelled steps and add Step 14. The risks (`adjRisks()`: implied utilisation amber 90% and red 100%, below the Step 1 base team, contingency used up, below the existing team, faster AI savings, scope unchanged, capped, above the model) and the mitigation library (`ADJ_MITS`, tickable, rewordable, with your own additions in `S.adj.extra`) go into the summary document and Excel.
 
 `commercialOptions()` rates fixed fee, outcome-based terms (an add-on), T&M with a cap and an assessment-led start from the framework's scenario recommendation (`SCENARIOS[n].comm`) plus proposed rules on months of ticket history, a measurable baseline, the confidence band, complexity or a legacy estate, a takeover, term, AIOps in scope, a Year 1 budget ceiling, an applied cut above 15% and price pressure (`S.cm`). Model level only: no price. Internal: in the summary document, Excel and copy summary, never in the client summary.
 
 ## Assumptions by category
 
-Assumptions are grouped by category wherever they are shown: coverage and locations, demand and volumes, service scope and ownership, SLA and service levels, effort benchmarks, skills and specialists, transformation and AIOps, governance and SDM, seniority and contingency, term and savings, triangulation and fact check, client responsibilities, other. Each built-in assumption (A1–A7, B1…, C1…) has a fixed category; each assumption added by the deal team (U1…) has a category picker, defaulting to the step's own. Every step lists its assumptions under category headings, and the **Assumptions register** at step 11 gathers all of them, across steps, in one grouped list. The register is also in the downloaded summary, the copied summary and the Excel workbook (an "Assumptions register" sheet), and the customer summary groups the deal team's assumptions by category.
+Assumptions are grouped by category wherever they are shown: coverage and locations, demand and volumes, service scope and ownership, SLA and service levels, effort benchmarks, skills and specialists, transformation and AIOps, governance and SDM, seniority and contingency, term and savings, triangulation and fact check, client responsibilities, other. Each built-in assumption (A1–A7, B1…, C1…) has a fixed category; each assumption added by the deal team (U1…) has a category picker, defaulting to the step's own. Every step lists its assumptions under category headings, and the **Assumptions register** at step 13 gathers all of them, across steps, in one grouped list. The register is also in the downloaded summary, the copied summary and the Excel workbook (an "Assumptions register" sheet), and the customer summary groups the deal team's assumptions by category.
 
 ## Header and navigation
 
@@ -508,7 +510,7 @@ Each stage ends with a **"Team after Stage N"** strip: FTE, people, the change f
 
 ## Overall estimate: deal desk views
 
-The Overall estimate panel at step 11 adds three views for approval:
+The Overall estimate panel at step 13 adds three views for approval:
 
 - **Year 1 team by role.** Every FTE traced to the skill set and tower that asked for it, plus AI engineers, transformation, shift cover (when the base team is larger) and SDM. Contingency is spread over the delivery roles. The rows add up to the Year 1 team.
 - **Allowances in the Year 1 team.** Productive need, then the productive-time allowance (utilisation), leave backfill, contingency and risk, each measured by switching it off in turn and re-running the engine, so they add up even though reconciliation keeps the larger of two teams. The headline is the buffer above productive capacity (leave + contingency + risk) in FTE and %, plus rounding.
@@ -526,7 +528,7 @@ The panel also holds version, prepared by, status (Draft / Submitted for approva
 
 ## Scenarios
 
-Step 11 can save the estimate on screen as a named scenario, then compare up to four scenarios side by side with it: Year 1 team and people, coverage, towers, tickets, base and work team, AI engineers, SDM, contingency, framework scenario, term and savings, final-year and average team, confidence and range, transition. **Load** replaces the estimate on screen. Scenarios are kept in the browser and travel inside saved estimate files.
+Step 13 can save the estimate on screen as a named scenario, then compare up to four scenarios side by side with it: Year 1 team and people, coverage, towers, tickets, base and work team, AI engineers, SDM, contingency, framework scenario, term and savings, final-year and average team, confidence and range, transition. **Load** replaces the estimate on screen. Scenarios are kept in the browser and travel inside saved estimate files.
 
 ## Excel export
 
@@ -534,7 +536,7 @@ Step 11 can save the estimate on screen as a named scenario, then compare up to 
 
 ## Verify against the framework
 
-**Run checks** in step 11 runs the engine on the framework's worked examples and checks the estimate on screen adds up: the p.3 coverage roster (6 FTE for 24×5 at 2 per shift), the 100-ticket cascade (30 / 70 / 14, 420.6 h, 3.29 FTE), the SLA uplift range and cap, coordination uplift, AIOps ratios (1:4, 1:8, 1:6 over 20 FTE), the scenario matrix, contingency by complexity, the Annexure 1 illustration (64.8, High), SDM 1:12, and invariants (roles, locations and allowances each add up to the Year 1 team; Year 1 of the term and the step 8 bar equal it). The result is included in the summary and the Excel workbook.
+**Run checks** in step 13 runs the engine on the framework's worked examples and checks the estimate on screen adds up: the p.3 coverage roster (6 FTE for 24×5 at 2 per shift), the 100-ticket cascade (30 / 70 / 14, 420.6 h, 3.29 FTE), the SLA uplift range and cap, coordination uplift, AIOps ratios (1:4, 1:8, 1:6 over 20 FTE), the scenario matrix, contingency by complexity, the Annexure 1 illustration (64.8, High), SDM 1:12, and invariants (roles, locations and allowances each add up to the Year 1 team; Year 1 of the term and the step 8 bar equal it). The result is included in the summary and the Excel workbook.
 
 ## Customer summary
 
@@ -551,7 +553,7 @@ It leaves out contingency, risk modifiers, rounding lines, framework references 
 
 ## Summary document
 
-Step 11 ends with an **Overall estimate** panel: headline figures (Year 1 team, rostered people, term average, scenario) and a table of how each stage built the team. **Download summary** (in that panel and in the header) produces a self-contained HTML document containing:
+Step 13 ends with an **Overall estimate** panel: headline figures (Year 1 team, rostered people, term average, scenario) and a table of how each stage built the team. **Download summary** (in that panel and in the header) produces a self-contained HTML document containing:
 
 - the headline figures and the stage-by-stage build table, with rounding and the final Year 1 team
 - the final team by location and tier
