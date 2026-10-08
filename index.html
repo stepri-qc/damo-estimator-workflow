@@ -824,6 +824,14 @@ tr.sel td{background:var(--accent-soft)}
             <tbody id="towerCalc"></tbody>
           </table>
         </div>
+        <div id="xcheckWrap" hidden>
+          <h4 style="margin:14px 0 6px">Cross-check of the two sizing bases</h4>
+          <div class="loc-table"><table>
+            <thead><tr><th>Tower</th><th>Basis used</th><th class="r">Used FTE</th><th>Cross-check</th><th class="r">Cross-check FTE</th><th class="r">Difference</th><th>Read</th></tr></thead>
+            <tbody id="xcheck"></tbody>
+          </table></div>
+          <div class="hint" style="margin-top:6px">AMS and DMS towers can be sized from volumetrics or from thin slices (an application or a data product, by criticality). The basis you choose drives the number; the other is only a sanity check, flagged when it is more than 25% away (proposed).</div>
+        </div>
         <div class="loc-table">
           <table>
             <thead><tr><th>Skill set</th><th class="r">Share</th><th class="r">FTE</th><th>Base has skill</th></tr></thead>
@@ -1646,7 +1654,8 @@ function defaultBench(){return {
   tpa:{S:4,M:10,L:17.5,XL:30,XXL:50},                                              /* [F] Sc.1 midpoints */
   ims:{wEnv:1,wHost:1.5,wDb:1,sec:3,tpp:4.5},                                      /* proposed, from damo-estimator */
   dms:{wDp:1,wPipe:0.5,wInt:1,wUp:0.75,wDown:0.75,tpp:3.4},                        /* proposed */
-  ai:{wAgent:2,wModel:1.5,wTool:0.5,wKs:0.75,risk:4,tpp:3.5}                       /* proposed */
+  ai:{wAgent:2,wModel:1.5,wTool:0.5,wKs:0.75,risk:4,tpp:3.5},                      /* proposed */
+  thin:{amsCrit:0.6,amsImp:0.3,amsStd:0.12,dmsCrit:0.5,dmsImp:0.25,dmsStd:0.1,l3:35} /* proposed: FTE per thin slice by criticality (an application for AMS, a data product for DMS), and the share of it that is L3 */
 }}
 
 function uid(){return Math.random().toString(36).slice(2,9)}
@@ -1721,7 +1730,7 @@ function mkTower(kind){
     env:null,host:null,db:null,sec:false,
     dp:null,pipe:null,integ:null,up:null,down:null,
     agents:null,models:null,tools:null,ksrc:null,hiRisk:false,
-    aiops:null,sre:null,levels:null,tktLevel:null,enh:null,
+    aiops:null,sre:null,levels:null,tktLevel:null,enh:null,basis:null,thin:{crit:null,imp:null,std:null},
     own:null,mix:null,sla:{P1r:null,P1x:null,P2r:null,P2x:null},avail:null,slaTier:"",
     skills:[]};
 }
@@ -1836,7 +1845,7 @@ function migrate(p){
       st.cov=p.cov||{};
       if(!Array.isArray(p.towers)||p.towers.some(t=>!t.kind))st.towers=defaults().towers;
       const db=defaultBench(), pb=p.bench||{};
-      st.bench=Object.assign(db,pb,{tpa:Object.assign(db.tpa,pb.tpa||{}),ims:Object.assign(db.ims,pb.ims||{}),dms:Object.assign(db.dms,pb.dms||{}),ai:Object.assign(db.ai,pb.ai||{}),sla:Object.assign(db.sla,pb.sla||{}),routing:Object.assign(db.routing,pb.routing||{}),srLvl:Object.assign(db.srLvl,pb.srLvl||{}),crLvl:Object.assign(db.crLvl,pb.crLvl||{})});
+      st.bench=Object.assign(db,pb,{tpa:Object.assign(db.tpa,pb.tpa||{}),ims:Object.assign(db.ims,pb.ims||{}),dms:Object.assign(db.dms,pb.dms||{}),ai:Object.assign(db.ai,pb.ai||{}),sla:Object.assign(db.sla,pb.sla||{}),routing:Object.assign(db.routing,pb.routing||{}),srLvl:Object.assign(db.srLvl,pb.srLvl||{}),crLvl:Object.assign(db.crLvl,pb.crLvl||{}),thin:Object.assign(db.thin,pb.thin||{})});
       /* towers saved before a field existed get its default; the old L2/L3 choice becomes tier ownership */
       st.towers=st.towers.map(t=>{const n=Object.assign(mkTower(t.kind),t);n.sla=Object.assign(mkTower(t.kind).sla,t.sla||{});
         if(!t.own&&t.levels)n.own={both:{L1:"customer",L2:"us",L3:"us"},l2:{L1:"customer",L2:"us",L3:"vendor"},l3:{L1:"customer",L2:"customer",L3:"us"}}[t.levels]||null;return n});
@@ -1976,15 +1985,23 @@ function compute(){
     /* C: enhancements and minor change, hours a month; engineering work, so L3 when we own L3, else L2; none if we own neither */
     const enhH=(ours("L2")||ours("L3"))?n0(t.enh)*dm:0, C=enhH/u;
     /* L1 effort is counted in the support tier with L2 */
-    const fte1=A1*(1+bp)/B.hrsMonth;
-    const fte2=fte1+(A2*(1+bp)+(ours("L3")?0:C))/B.hrsMonth, fte3=(A3*(1+bp)+(ours("L3")?C:0))/B.hrsMonth, fte=fte2+fte3;
+    const fteV1=A1*(1+bp)/B.hrsMonth;
+    const fteV2=fteV1+(A2*(1+bp)+(ours("L3")?0:C))/B.hrsMonth, fteV3=(A3*(1+bp)+(ours("L3")?C:0))/B.hrsMonth, fteV=fteV2+fteV3;
+    /* thin slices (AMS applications, DMS data products) by criticality: FTE per slice from Benchmarks, split L2/L3. Chosen per tower; the other basis stays as a cross-check */
+    const thinK=t.kind==="AMS"||t.kind==="DMS", TH=B.thin||{}, thc=t.thin||{};
+    const thinCnt=thinK?[n0(thc.crit),n0(thc.imp),n0(thc.std)]:[0,0,0];
+    const thinRate=t.kind==="AMS"?[TH.amsCrit,TH.amsImp,TH.amsStd]:[TH.dmsCrit,TH.dmsImp,TH.dmsStd];
+    const thinFte=thinCnt.reduce((x,v,i)=>x+v*(+thinRate[i]||0),0), thinN=thinCnt[0]+thinCnt[1]+thinCnt[2];
+    const thinOn=thinK&&t.basis==="thin", thinL3=Math.max(0,Math.min(100,+TH.l3||0))/100;
+    if(thinOn)src=`Thin slices (${thinN} ${t.kind==="AMS"?"applications":"data products"})`;
+    const fte1=thinOn?0:fteV1, fte2=thinOn?thinFte*(1-thinL3):fteV2, fte3=thinOn?thinFte*thinL3:fteV3, fte=fte2+fte3;
     const shareSum=t.skills.reduce((s2,k)=>s2+n0(k.share),0);
     const sreOn=t.kind==="IMS"&&t.sre===true&&fte3>0, sreF=sreOn?fte3*SRE_SHARE:0;
     const rF2=fte2, rF3=fte3-sreF, rF=rF2+rF3;
     const skills=t.skills.map(k=>{const sh=shareSum>0?n0(k.share)/shareSum:1/t.skills.length;return {...k,name:skillName(k),tower:t.name,towerId:t.id,norm:rF>0&&fte>0?rF*sh/fte:0,fte:rF*sh,f2:rF2*sh,f3:rF3*sh}});
     if(sreOn)skills.unshift({id:"sre-"+t.id,skill:"sre",name:"Service Reliability Engineer (SRE)",share:0,absorb:true,synthetic:true,tower:t.name,towerId:t.id,norm:sreF/fte,fte:sreF,f2:0,f3:sreF});
     const userSkills=t.skills.length, unassigned=userSkills?0:rF;
-    return {...t,sreOn,sreF,userSkills,unassigned,tickets,src,score,lvl,sv,own,bnd,hand,sm,slaAdd,handAdd,entry:[e1,e2,e3],mixUsed:!!(mx&&lvl==="l1"),l1Unknown,l2Unknown,l1t,l2t,l3t,A,Bh,bp,enhH,C,fte1,fte,fte2,fte3,shareSum,skills,incN:hist?n0(t.inc):0,srN:hist?n0(t.sr):0,crN:hist?n0(t.cr):0,srHrs:srH[0]+srH[1]+srH[2],crHrs:crH,srSh,crSh};
+    return {...t,thinOn,thinK,thinN,thinFte,volFte:fteV,sreOn,sreF,userSkills,unassigned,tickets,src,score,lvl,sv,own,bnd,hand,sm,slaAdd,handAdd,entry:[e1,e2,e3],mixUsed:!!(mx&&lvl==="l1"),l1Unknown,l2Unknown,l1t,l2t,l3t,A,Bh,bp,enhH,C,fte1,fte,fte2,fte3,shareSum,skills,incN:hist?n0(t.inc):0,srN:hist?n0(t.sr):0,crN:hist?n0(t.cr):0,srHrs:srH[0]+srH[1]+srH[2],crHrs:crH,srSh,crSh};
   });
   const skills=towers.flatMap(t=>t.skills);
   const demand=sum(towers,"fte");
@@ -2047,7 +2064,7 @@ function compute(){
   const runTeam=sub3-ai2; /* support team that staffs the shifts */
 
   /* Step 9: scenario from AI maturity × volumetric availability; Transformation POD % vs AIOps ratio, AIOps inside the POD */
-  const volFte=towers.filter(t=>t.vol===true).reduce((x,t)=>x+t.fte,0);
+  const volFte=towers.filter(t=>t.vol===true&&!t.thinOn).reduce((x,t)=>x+t.fte,0);
   const volShare=demand>0?volFte/demand:0;
   const volAvail=towers.length>0&&volShare>=0.5;
   const mod=S.aiMaturity==="moderate";
@@ -2317,7 +2334,7 @@ function slaText(t){const q=t.sla||{},p=[];const m=v=>v>=60&&v%60===0?`${v/60} h
 function ownedText(t){const o=ownOf(t);const k=["L1","L2","L3"].filter(x=>o[x]==="us");return k.length?k.join(", ").replace(/, (L\d)$/," and $1"):"none"}
 
 /* ---------- provenance: inputs applied from documents ---------- */
-const TOWER_KEYS=["sre","vol","inc","sr","cr","srMix","crMix","tktLevel","levels","own","sla","avail","mix","cpx","apps","env","host","db","sec","dp","pipe","integ","up","down","agents","models","tools","ksrc","hiRisk","mau","estate","aiops","enh"];
+const TOWER_KEYS=["sre","vol","inc","sr","cr","srMix","crMix","tktLevel","levels","own","sla","avail","mix","cpx","apps","env","host","db","sec","dp","pipe","integ","up","down","agents","models","tools","ksrc","hiRisk","mau","estate","aiops","enh","basis","thin"];
 function provVal(key){
   if(key==="client")return S.deal;
   if(key==="coverage")return `${S.hours}x${S.days}|${S.locations.flatMap(l=>(l.win||[]).map(w=>w.m)).join(",")}|${S.weekendMode}`;
@@ -2630,6 +2647,9 @@ function runSelfTests(){
   withState(testState(st=>{st.towers=[amsTower(100,{own:{L1:"customer",L2:"us",L3:"vendor"}})]}),R=>add("Coordination uplift, us L2 only","2 interfaces × 4% = +8%",`+${fmt(R.towers[0].hand*100,0)}%`,near(R.towers[0].hand,0.08),"proposed"));
   withState(testState(st=>{const t=Object.assign(mkTower("IMS"),{vol:true,inc:200,sr:0,estate:"modern",sre:true,skills:[mkSkill("infra",100)]});st.towers=[t]}),R=>{const t=R.towers[0], sum=t.skills.reduce((x,k)=>x+k.fte,0);
     add("SRE takes 78% of IMS L3, no extra headcount",`SRE ${fmt(t.fte3*SRE_SHARE,2)}; skills sum ${fmt(t.fte,2)}`,`SRE ${fmt(t.sreF,2)}; skills sum ${fmt(sum,2)}`,near(t.sreF,t.fte3*SRE_SHARE)&&near(sum,t.fte),"damo-estimator role policy")});
+  withState(testState(st=>{const t=amsTower(300,{});t.basis="thin";t.thin={crit:4,imp:10,std:20};st.towers=[t]}),R=>{const t=R.towers[0], B=S.bench.thin, exp=4*B.amsCrit+10*B.amsImp+20*B.amsStd;add("Thin slices: AMS applications by criticality at the FTE per slice","4 Critical, 10 Important, 20 Standard = 7.80 FTE, 35% L3",`${fmt(t.fte,2)} FTE, L3 ${fmt(t.fte3/t.fte*100,0)}%`,Math.abs(t.fte-exp)<1e-9&&Math.abs(t.fte3/t.fte-0.35)<1e-9&&t.thinOn&&R.sc===1,"proposed")});
+  withState(testState(st=>{const t=amsTower(300,{});t.thin={crit:4,imp:10,std:20};st.towers=[t]}),R=>{const t=R.towers[0], x=xcheckOf(t);add("Volumetrics basis is unchanged by thin slices, which only cross-check","FTE as without slices; cross-check shows the slice number",`${fmt(t.fte,2)} used, ${x?fmt(x.other,2):"–"} cross-check`,!t.thinOn&&Math.abs(t.fte-t.volFte)<1e-9&&x&&Math.abs(x.other-t.thinFte)<1e-9,"proposed")});
+  withState(testState(st=>{const t=Object.assign(mkTower("DMS"),{vol:true,inc:100,own:{L1:"customer",L2:"us",L3:"us"},basis:"thin",thin:{crit:2,imp:0,std:0}});const i=Object.assign(mkTower("IMS"),{vol:true,inc:100,own:{L1:"customer",L2:"us",L3:"us"},basis:"thin",thin:{crit:5}});st.towers=[t,i]}),R=>{const d=R.towers[0], i=R.towers[1];add("Thin slices apply to DMS data products; other towers ignore them","DMS 2 Critical = 1.00 FTE; IMS stays on volumetrics",`DMS ${fmt(d.fte,2)} · IMS ${fmt(i.fte,2)} (${i.src})`,Math.abs(d.fte-2*S.bench.thin.dmsCrit)<1e-9&&!i.thinOn&&i.src==="Ticket history","proposed")});
   withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>{const rr=runCompute(), tr=R.total-rr.total;add("Run team excludes AI engineers and the transformation POD","run team has 0 AI engineers; Year 1 = run team + transformation",`AI ${fmt(rr.ai2,2)} · ${fmt(rr.total,2)} + ${fmt(tr,2)} = ${fmt(R.total,2)}`,rr.ai2===0&&tr>0&&Math.abs(rr.total+tr-R.total)<1e-9&&rr.total<R.total,"proposed")});
   withState(testState(st=>{st.towers=[amsTower(300,{})];st.transPct=0}),R=>{const rr=runCompute();add("With no transformation and no AIOps the run team is the whole team","run team = Year 1 team",`${fmt(rr.total,3)} vs ${fmt(R.total,3)}`,Math.abs(rr.total-R.total)<1e-9,"proposed")});
   withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>add("AIOps ratio, low AI adoption","1 : 4",`1 : ${R.ratio}`,R.ratio===4,"[F] Part 3"));
@@ -2776,7 +2796,7 @@ const BENCH_LBL={are1:"L1 hours per incident",handoff:"Coordination uplift % per
   "tpa.S":"AMS tickets per S app","tpa.M":"AMS tickets per M app","tpa.L":"AMS tickets per L app","tpa.XL":"AMS tickets per XL app","tpa.XXL":"AMS tickets per XXL app",
   "ims.wEnv":"IMS points per environment","ims.wHost":"IMS points per hosting platform","ims.wDb":"IMS points per database","ims.sec":"IMS points for security","ims.tpp":"IMS tickets per point",
   "dms.wDp":"DMS points per data product","dms.wPipe":"DMS points per pipeline","dms.wInt":"DMS points per integration","dms.wUp":"DMS points per upstream","dms.wDown":"DMS points per downstream","dms.tpp":"DMS tickets per point",
-  "ai.wAgent":"AI points per agent","ai.wModel":"AI points per model","ai.wTool":"AI points per tool integration","ai.wKs":"AI points per knowledge source","ai.risk":"AI points for high-risk use","ai.tpp":"AI tickets per point","srLvl.low":"Service request hours, Low complexity","srLvl.medium":"Service request hours, Medium complexity","srLvl.high":"Service request hours, High complexity","crLvl.low":"Change request hours, Low complexity","crLvl.medium":"Change request hours, Medium complexity","crLvl.high":"Change request hours, High complexity"};
+  "ai.wAgent":"AI points per agent","ai.wModel":"AI points per model","ai.wTool":"AI points per tool integration","ai.wKs":"AI points per knowledge source","ai.risk":"AI points for high-risk use","ai.tpp":"AI tickets per point","srLvl.low":"Service request hours, Low complexity","srLvl.medium":"Service request hours, Medium complexity","srLvl.high":"Service request hours, High complexity","crLvl.low":"Change request hours, Low complexity","crLvl.medium":"Change request hours, Medium complexity","crLvl.high":"Change request hours, High complexity","thin.amsCrit":"Thin slice FTE, AMS Critical application","thin.amsImp":"Thin slice FTE, AMS Important application","thin.amsStd":"Thin slice FTE, AMS Standard application","thin.dmsCrit":"Thin slice FTE, DMS Critical data product","thin.dmsImp":"Thin slice FTE, DMS Important data product","thin.dmsStd":"Thin slice FTE, DMS Standard data product","thin.l3":"Thin slice, L3 share %"};
 function deviations(){
   const out=[], add=(l,d,u,src)=>{if(String(d)!==String(u))out.push([l,d,u,src])};
   add("Utilisation per resource (Step 1) %",85,S.util1,"[F] G6");
@@ -2934,6 +2954,14 @@ function renderS2(){
     if(t.vol===false)demand+=`<div class="q ${step===2?"on":""}"><span class="qh"><i>2</i>Do you know the structural complexity of the ${t.kind==="AMS"?"application estate":t.kind==="IMS"?"infrastructure estate":t.kind==="AI"?"AI platform estate":"data estate"}?</span>${yn("data-tcpx",cs,t.kind==="AMS"?"Yes, T-shirt size it":"Yes, enter it","No")}${known?cpxInputs:""}</div>`;
     if(t.vol===false&&cs===false)demand+=`<div class="q on"><span class="qh"><i>3</i>Use monthly active users to work out demand and complexity</span>${mauInputs}</div>`;
     demand+=`</div>`;
+    const thinKind=t.kind==="AMS"||t.kind==="DMS", unit=t.kind==="AMS"?"applications":"data products", TH=S.bench.thin||{}, th=t.thin||{};
+    const rate=t.kind==="AMS"?[TH.amsCrit,TH.amsImp,TH.amsStd]:[TH.dmsCrit,TH.dmsImp,TH.dmsStd];
+    const basisSec=thinKind?`<div class="tsec"><span class="h">Sizing basis</span>
+        <div class="q ${t.basis==null?"on":""}" style="margin:0"><span class="qh">Proceed with volumetrics or thin slices?</span><div class="seg" role="group" aria-label="Sizing basis">${[["vol","Volumetrics"],["thin","Thin slices"]].map(([k,l])=>`<button type="button" data-tbasis="${k}" aria-pressed="${t.basis===k}">${l}</button>`).join("")}</div></div>
+        <div class="hint">Volumetrics sizes from ticket history or estate size (below). Thin slices size from the ${unit} by criticality, each slice carrying a fixed FTE from Benchmarks. Fill in both if you can: the one not used shows as a cross-check.</div>
+        <span class="qh" style="margin-top:10px">${t.kind==="AMS"?"Applications":"Data products"} by criticality${t.basis==="thin"?"":" (optional cross-check)"} <span class="tag">proposed</span></span>
+        <div class="tgrid" style="grid-template-columns:repeat(3,minmax(0,1fr))">${[["crit","Critical"],["imp","Important"],["std","Standard"]].map(([k,l],i)=>`<label for="t-${t.id}-th-${k}">${l} <span style="font-size:11px">${fmt(+rate[i]||0,2)} FTE each</span><input type="number" id="t-${t.id}-th-${k}" data-tthin="${k}" min="0" max="10000" step="1" value="${th[k]??""}"></label>`).join("")}</div>
+        <div class="hint" id="tx-${t.id}"></div></div>`:"";
     const used=new Set(t.skills.map(k=>k.skill));
     const avail=SKILL_CATALOG.filter(k=>k.id==="spec"||!used.has(k.id));
     const groups=[...new Set(avail.map(k=>k.g))];
@@ -2958,7 +2986,8 @@ function renderS2(){
         </div>
         <div class="hint" id="tsh-${t.id}"></div>
       </div>
-      <div class="tsec"><span class="h">Demand</span>
+      ${basisSec}
+      <div class="tsec"><span class="h">Demand${t.basis==="thin"&&(t.kind==="AMS"||t.kind==="DMS")?" · volumetrics (cross-check)":""}</span>
         ${demand}
       </div>
       <div class="tsec"><span class="h">Enhancement pool <span style="text-transform:none;letter-spacing:0;font-weight:400">(optional)</span></span>
@@ -3000,6 +3029,8 @@ function renderS2(){
     ${bi("p12","L1 → L2 pass-through %",B.p12,1,100)}${bi("p23","L2 → L3 pass-through %",B.p23,1,100)}
     ${bi("util","Utilisation %",B.util,1,100)}${bi("hrsMonth","Hours per FTE a month",B.hrsMonth,1,220)}${bi("bModern","Non-ticketing B, modern %",B.bModern,1,100)}${bi("bLegacy","Non-ticketing B, legacy %",B.bLegacy,1,100)}</div>
     <h4>AMS tickets per app a month · [F] Sc.1 midpoints</h4><div class="tgrid">${SIZES.map(z=>bi("tpa."+z,z,B.tpa[z],0.5,200)).join("")}</div>
+    <h4>Thin slices, FTE per slice · proposed</h4>
+    <div class="hint">AMS: an application. DMS: a data product. By criticality; L3 share is the part of a slice's FTE that is L3 work.</div><div class="tgrid">${bi("thin.amsCrit","AMS Critical",B.thin.amsCrit,0.05,20)}${bi("thin.amsImp","AMS Important",B.thin.amsImp,0.05,20)}${bi("thin.amsStd","AMS Standard",B.thin.amsStd,0.05,20)}${bi("thin.dmsCrit","DMS Critical",B.thin.dmsCrit,0.05,20)}${bi("thin.dmsImp","DMS Important",B.thin.dmsImp,0.05,20)}${bi("thin.dmsStd","DMS Standard",B.thin.dmsStd,0.05,20)}${bi("thin.l3","L3 share of a slice %",B.thin.l3,1,100)}</div>
     <h4>IMS complexity points · proposed</h4><div class="tgrid">${bi("ims.wEnv","Per environment",B.ims.wEnv,0.25,20)}${bi("ims.wHost","Per hosting platform",B.ims.wHost,0.25,20)}${bi("ims.wDb","Per database",B.ims.wDb,0.25,20)}${bi("ims.sec","Security in scope",B.ims.sec,0.5,50)}${bi("ims.tpp","Tickets per point",B.ims.tpp,0.1,50)}</div>
     <h4>DMS complexity points · proposed</h4><div class="tgrid">${bi("dms.wDp","Per data product",B.dms.wDp,0.25,20)}${bi("dms.wPipe","Per pipeline",B.dms.wPipe,0.05,20)}${bi("dms.wInt","Per integration",B.dms.wInt,0.25,20)}${bi("dms.wUp","Per upstream",B.dms.wUp,0.25,20)}${bi("dms.wDown","Per downstream",B.dms.wDown,0.25,20)}${bi("dms.tpp","Tickets per point",B.dms.tpp,0.1,50)}</div>
     <h4>AI platform complexity points · proposed</h4><div class="tgrid">${bi("ai.wAgent","Per agent / workflow",B.ai.wAgent,0.25,20)}${bi("ai.wModel","Per model served",B.ai.wModel,0.25,20)}${bi("ai.wTool","Per tool integration",B.ai.wTool,0.05,20)}${bi("ai.wKs","Per knowledge source",B.ai.wKs,0.25,20)}${bi("ai.risk","Regulated / high-risk",B.ai.risk,0.5,50)}${bi("ai.tpp","Tickets per point",B.ai.tpp,0.1,50)}</div>`;
@@ -3154,13 +3185,22 @@ function updateS1(){
     ["A7","The tool sizes FTE only. Rates, cost and price are out of scope.","agreed"]
   ]);
 }
+/* The other sizing basis, for AMS and DMS towers where both are filled in: how far the basis used is from it */
+function xcheckOf(t){
+  if(!t.thinK)return null;
+  const used=t.fte, other=t.thinOn?t.volFte:t.thinFte, hasOther=other>1e-9&&(t.thinOn?t.tickets>0:t.thinN>0);
+  if(!hasOther||!(used>0))return null;
+  const diff=(used-other)/other, agree=Math.abs(diff)<=0.25, name=t.thinOn?"volumetrics":"thin slices";
+  return {used,other,diff,agree,name,read:agree?`Cross-check: ${name} give ${fmt(other,2)} FTE, within 25% of the ${fmt(used,2)} used. The two bases agree.`:`Cross-check: ${name} give ${fmt(other,2)} FTE, so the basis used (${fmt(used,2)}) is ${fmt(Math.abs(diff)*100,0)}% ${diff>0?"above":"below"} it. Check the ${t.thinOn?"slice counts and FTE per slice":"volumes and the slice list"}.`};
+}
 function updateS2(){
   const B=S.bench;
   R.towers.forEach(t=>{
     const d=$("td-"+t.id);
     if(d){
-      let how;
+      let how, thinHtml=null;
       if(t.src==="Not answered yet"){delete d.dataset.impl;d.innerHTML="Answer the questions above to size this tower.";const a=$("tadd-"+t.id);if(a)a.textContent="";return}
+      if(t.thinOn){const u=t.kind==="AMS"?"applications":"data products";thinHtml=`${fmt(t.thinN,0)} ${u} by criticality (${["crit","imp","std"].map(k=>fmt(n0v((t.thin||{})[k]),0)).join(" / ")}) × FTE per slice from Benchmarks → <b>${fmt(t.fte,2)} FTE</b> (L2 ${fmt(t.fte2,2)} · L3 ${fmt(t.fte3,2)}). Volumetrics are not used for this tower.`}
       if(t.vol===true)how=`${fmt(n0v(t.inc),0)} incidents + ${fmt(n0v(t.sr),0)} SRs + ${fmt(n0v(t.cr),0)} CRs`;
       else if(!cpxKnown(t)){const eq=t.tickets/B.tpa.M;how=`${fmt(n0v(t.mau),0)} MAU × ${t.mauRate}%`;d.dataset.impl=`Implied complexity: about ${fmt(eq,1)} medium (M) applications' worth of demand, ${implTier(t.tickets)}.`}
       else if(t.kind==="AMS")how=SIZES.filter(z=>+t.apps[z]).map(z=>`${t.apps[z]}${z}×${B.tpa[z]}`).join(" + ")||"no apps";
@@ -3169,9 +3209,10 @@ function updateS2(){
       const lvTxt={l1:"",l2:" (counted at L2)",l3:" (counted at L3)"}[t.lvl];
       const tiers=[t.own.L1==="us"?`L1 ${fmt(t.l1t,1)}`:"",t.own.L2==="us"?`L2 ${fmt(t.l2t,1)}`:"",t.own.L3==="us"?`L3 ${fmt(t.l3t,1)}`:""].filter(Boolean).join(", ")||"no levels provided by us";
       const ups=[t.sm.l2||t.sm.l3?`SLA +${fmt(t.sm.l2*100,0)}% L2 / +${fmt(t.sm.l3*100,0)}% L3`:"",t.hand?`coordination +${fmt(t.hand*100,0)}%`:""].filter(Boolean).join(", ");
-      d.innerHTML=`${esc(how)} ≈ <b>${fmt(t.tickets,0)}</b> tickets/mo${lvTxt} → ${tiers}${ups?` · ${ups}`:""}${t.enhH>0?` + ${fmt(t.enhH,0)}h enhancements`:""} → <b>${fmt(t.fte,2)} FTE</b> (${t.fte1>0?`L1 ${fmt(t.fte1,2)} · `:""}L2 ${fmt(t.fte2-t.fte1,2)} · L3 ${fmt(t.fte3,2)})`+(d.dataset.impl?`<br>${esc(d.dataset.impl)}`:"");
+      d.innerHTML=thinHtml||`${esc(how)} ≈ <b>${fmt(t.tickets,0)}</b> tickets/mo${lvTxt} → ${tiers}${ups?` · ${ups}`:""}${t.enhH>0?` + ${fmt(t.enhH,0)}h enhancements`:""} → <b>${fmt(t.fte,2)} FTE</b> (${t.fte1>0?`L1 ${fmt(t.fte1,2)} · `:""}L2 ${fmt(t.fte2-t.fte1,2)} · L3 ${fmt(t.fte3,2)})`+(d.dataset.impl?`<br>${esc(d.dataset.impl)}`:"");
     }
     const a=$("tadd-"+t.id); if(a)a.textContent=`${fmt(t.fte,2)} FTE from the work`;
+    const tx=$("tx-"+t.id); if(tx){const x=xcheckOf(t);tx.innerHTML=x?`<b>${x.read}</b>`:(t.thinK?(t.thinOn?"Fill in the volumetric questions below to see a cross-check.":"Fill in the slices to see a cross-check against volumetrics."):"")}
     const pv=$("pv-"+t.id); if(pv)pv.innerHTML=provLine("tower:"+t.id);
     const oh=$("toh-"+t.id); if(oh)oh.textContent=`${!(S.towers.find(x=>x.id===t.id)||{}).own?"Not chosen: the client keeps L1 and we provide L2 and L3 until you choose. ":""}We provide ${ownedText(t)}. ${t.bnd?`${t.bnd} interface${t.bnd>1?"s":""} with other owners: +${fmt(t.hand*100,0)}% coordination on our ticket effort (proposed, 4% each).`:"No interfaces with other owners."}`;
     const sh=$("tsh-"+t.id); if(sh)sh.textContent=t.sm.why.length?`SLA uplift: ${t.sm.why.join(", ")} → L2 +${fmt(t.sm.l2*100,0)}%, L3 +${fmt(t.sm.l3*100,0)}% (cap ${S.bench.sla.cap}%, [F] Sc.3 Step 2).`:(t.sla&&Object.values(t.sla).some(v=>v!=null)||t.avail!=null)?"These targets are within standard levels: no SLA uplift.":"No SLA entered: no uplift. Enter P1 targets and availability, or pick a preset.";
@@ -3209,6 +3250,9 @@ function updateS2(){
   $("towerCalc").innerHTML=R.towers.length?R.towers.map(t=>`<tr><td class="loc-name">${esc(t.name)}<small>${t.kind}${t.estate==="legacy"?(t.kind==="AI"?" · self-hosted":" · legacy"):""}</small></td><td>${esc(t.src)}</td><td class="r num">${fmt(t.tickets,0)}</td><td class="r num">${fmt(t.l1t,1)}</td><td class="r num">${fmt(t.l2t,1)}</td><td class="r num">${fmt(t.l3t,1)}</td><td class="r num">${fmt(t.A,0)}</td><td class="r num">${fmt(t.Bh,0)}</td><td class="r num">${fmt(t.C,0)}</td><td class="r num"><b>${fmt(t.fte,2)}</b></td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td></td><td class="r num">${fmt(tk,0)}</td><td class="r num">${fmt(R.towers.reduce((x,t)=>x+t.l1t,0),1)}</td><td class="r num">${fmt(l2,1)}</td><td class="r num">${fmt(l3,1)}</td><td class="r num">${fmt(A,0)}</td><td class="r num">${fmt(Bh,0)}</td><td class="r num">${fmt(R.towers.reduce((x,t)=>x+t.C,0),0)}</td><td class="r num"><b>${fmt(R.demand,2)}</b></td></tr>`
     :`<tr><td colspan="10" class="hint">Add a tower to see its effect.</td></tr>`;
+  {const xs=R.towers.map(t=>({t,x:xcheckOf(t)})).filter(o=>o.x);
+   $("xcheckWrap").hidden=!xs.length;
+   $("xcheck").innerHTML=xs.map(({t,x})=>`<tr><td class="loc-name">${esc(t.name)}<small>${t.kind}</small></td><td>${t.thinOn?"Thin slices":"Volumetrics"}</td><td class="r num"><b>${fmt(x.used,2)}</b></td><td>${t.thinOn?"Volumetrics":"Thin slices"}</td><td class="r num">${fmt(x.other,2)}</td><td class="r num">${sgn(x.diff*100,0)}%</td><td>${x.agree?'<span class="band ok">agree</span>':`<span class="band ${x.diff>0?"hi":"lo"}">${fmt(Math.abs(x.diff)*100,0)}% ${x.diff>0?"above":"below"}</span>`}</td></tr>`).join("")}
   $("skillCalc").innerHTML=R.skills.length?R.skills.map(k=>`<tr><td class="loc-name">${esc(k.name)}<small>${esc(k.tower)}</small></td><td class="r num">${fmt(k.norm*100,0)}%</td><td class="r num">${fmt(k.fte,2)}</td><td>${k.absorb?'<span class="yes">Yes, every shift</span>':'<span class="no">No, set live windows in step 5</span>'}</td></tr>`).join("")
     +R.aiTowers.map(t=>`<tr><td class="loc-name">AI Engineer (AIOps)<small>${esc(t.name)}</small></td><td class="r num">1:${R.ratio}</td><td class="r num">${fmt(t.ai,2)}</td><td><span class="no">No, builds automation</span></td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td></td><td class="r num"><b>${fmt(R.demand+R.ai2,2)}</b></td><td></td></tr>`
@@ -4042,6 +4086,7 @@ document.addEventListener("click",e=>{
   else if(d.town){const o=OWN_PRESETS.find(x=>x[0]===d.town);twr(t).own={...o[2]};renderS2();update();}
   else if(d.tsla){const x=SLA_TIERS.find(q=>q[0]===d.tsla), tw=twr(t);tw.sla={...x[2]};tw.avail=x[3];tw.slaTier=x[0];renderS2();update();}
   else if(d.taiops){twr(t).aiops=d.taiops==="1";renderS2();update();}
+  else if(d.tbasis){const tw=twr(t);tw.basis=tw.basis===d.tbasis?null:d.tbasis;renderS2();update();}
   else if(d.tsre){twr(t).sre=d.tsre==="1";renderS2();update();}
   else if(d.tcpx){twr(t).cpx=d.tcpx==="1";renderS2();update();}
   else if(d.testate){twr(t).estate=d.testate;renderS2();update();}
@@ -4126,6 +4171,7 @@ document.addEventListener("input",e=>{
   if(d.tsrm){const tw=twr(t);tw.srMix=tw.srMix||{};tw.srMix[d.tsrm]=t.value===""?null:Math.max(0,+t.value);update();return}
   if(d.tcrm){const tw=twr(t);tw.crMix=tw.crMix||{};tw.crMix[d.tcrm]=t.value===""?null:Math.max(0,+t.value);update();return}
   if(d.tmix){const tw=twr(t);tw.mix=tw.mix||{};tw.mix[d.tmix]=t.value===""?null:Math.max(0,+t.value);update();return}
+  if(d.tthin){const tw=twr(t);tw.thin=tw.thin||{};tw.thin[d.tthin]=t.value===""?null:Math.max(0,+t.value);update();return}
   if(d.tapp){if(t.value===""){twr(t).apps[d.tapp]=null;update()}else{const v=+t.value;if(v>=0){twr(t).apps[d.tapp]=v;update()}}return}
   if(d.ks){if(t.value===""){skl(t).share=0;update()}else{const v=+t.value;if(v>=0&&v<=100){skl(t).share=v;update()}}return}
   if(d.kn){skl(t).name=t.value;update();return}
@@ -4209,6 +4255,7 @@ function summary(){
   L.push("","| Skill set | Tower | Share | FTE | Base has skill |","|---|---|---|---|---|");
   Rr.skills.forEach(k=>L.push(`| ${k.name} | ${k.tower} | ${fmt(k.norm*100,0)}% | ${fmt(k.fte,2)} | ${k.absorb?"Yes, every shift":"No"} |`));
   L.push("",`- Tower FTE (A + B) ÷ ${S.bench.hrsMonth}: ${fmt(Rr.demand,2)}`);
+  Rr.towers.map(t=>({t,x:xcheckOf(t)})).filter(o=>o.x).forEach(({t,x})=>L.push(`- ${t.name}: sized from ${t.thinOn?"thin slices":"volumetrics"}. ${x.read}`));
   L.push(`- Leave & holiday backfill: ${sgn(Rr.leave2,2)}`);
   L.push(`- Risk modifiers (${fmt(Rr.rp2*100,1)}%): ${sgn(Rr.risk2Add,2)}`);
   L.push("- AI engineers (AIOps) are part of the transformation capacity in Stage 3, not of the run team");
