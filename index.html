@@ -1534,7 +1534,7 @@ tr.sel td{background:var(--accent-soft)}
     <div class="stage-head">
       <span class="eyebrow">Part 3 · Step 10 of 10</span>
       <h2 id="s10h">Commercial position</h2>
-      <p>Optional. Steps 1 to 9 build and check the modelled team and are never changed by this step. Here you can set a proposed final number for a client budget or price to win, with the risks it creates, and see which commercial shape the data supports: fixed fee, outcome-based terms, time and materials or an assessment-led start. Effort only: no price.</p>
+      <p>Optional. Steps 1 to 11 build and check the modelled team and are never changed by this step. Here you can set a proposed final number for a client budget or price to win, with the risks it creates, and see which commercial shape the data supports: fixed fee, outcome-based terms, time and materials or an assessment-led start. Effort only: no price.</p>
     </div>
     <div class="kpis" id="cpKpis"></div>
     <div class="panel" style="margin-top:0" id="cpPanel">
@@ -2598,7 +2598,7 @@ function updateCP(){
   $("cpLive").innerHTML=st;
   $("cpResults").innerHTML=cpResultsHtml();
   const whole=S.rounding!=="none", tr=F.termRows[T-1];
-  $("cpKpis").innerHTML=[["Modelled Year 1 team",fmt(R.total,1),"FTE · Steps 1 to 9","main"],["Final Year 1 team",fmt(F.total,1),F.on?`FTE · proposed, ${sgn(F.total-R.total,1)} against the model`:"FTE · no adjustment",""],["Rostered people",whole?fmt(F.people,0):"–",F.on?"after the adjustment":"as modelled",""],[`${T}-year average`,fmt(tr.avg,1),"FTE a year",""]].map(k=>`<div class="kpi ${k[3]}"><span>${k[0]}</span><b>${k[1]}</b><em>${esc(k[2])}</em></div>`).join("");
+  $("cpKpis").innerHTML=[["Modelled Year 1 team",fmt(R.total,1),"FTE · Steps 1 to 11","main"],["Final Year 1 team",fmt(F.total,1),F.on?`FTE · proposed, ${sgn(F.total-R.total,1)} against the model`:"FTE · no adjustment",""],["Rostered people",whole?fmt(F.people,0):"–",F.on?"after the adjustment":"as modelled",""],[`${T}-year average`,fmt(tr.avg,1),"FTE a year",""]].map(k=>`<div class="kpi ${k[3]}"><span>${k[0]}</span><b>${k[1]}</b><em>${esc(k[2])}</em></div>`).join("");
   $("cpNotice").innerHTML=F.on?`<div class="verdict" style="margin-bottom:16px">A proposed final number is applied in Step 12: <b>Year 1 ${fmt(F.total,1)} FTE</b> against the modelled ${fmt(R.total,1)}. The numbers on this step are the modelled ones. <button type="button" class="btn sm" data-go="10" style="margin-left:6px">Open Step 12</button></div>`:"";
 }
 function commercialDoc(){
@@ -3694,7 +3694,7 @@ function updateS8(){
   ];
   $("exTable").innerHTML=rows.map(r=>`<tr><td class="loc-name">${r[0]}</td><td class="r num">${fmt(r[1],1)}</td><td class="r num">${fmt(r[2],2)}</td><td class="r num">${r[3]==null?"–":fmt(r[3],0)}</td><td class="r num">${sgn(r[2]-r[1],1)}</td><td>${r[0]==="Other roles"&&r[1]>0?`<span class="band lo">not in our scope</span>`:band(r[2],r[1])}</td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td class="r num"><b>${fmt(exTot,1)}</b></td><td class="r num"><b>${fmt(R.total,2)}</b></td><td class="r num"><b>${S.rounding!=="none"?fmt(R.people,0):"–"}</b></td><td class="r num"><b>${sgn(R.total-exTot,1)}</b></td><td>${band(R.total,exTot)}</td></tr>`;
-  const bars=[["Existing team","today",exTot,"var(--faint)"],["Our Year 1","Step 8 team",R.total,"var(--accent)"],[`Our ${T}-year average`,"Step 10",avg,"#8C5FA8"],[`Our Year ${T}`,"end of term",yEnd,"var(--add)"]];
+  const bars=[["Existing team","today",exTot,"var(--faint)"],["Our Year 1","Step 9 team",R.total,"var(--accent)"],[`Our ${T}-year average`,"Step 10",avg,"#8C5FA8"],[`Our Year ${T}`,"end of term",yEnd,"var(--add)"]];
   const mx=Math.max(...bars.map(b=>b[2]),0.0001);
   $("exBars").innerHTML=bars.map(b=>`<div class="rbar"><span class="t"><b>${b[0]}</b><span>${b[1]}${exTot>0&&b[0]!=="Existing team"?` · ${sgn((b[2]-exTot)/exTot*100,0)}%`:""}</span></span><span class="track"><i style="width:${b[2]/mx*100}%;background:${b[3]}"></i></span><span class="v">${fmt(b[2],1)}</span></div>`).join("");
   let v;
