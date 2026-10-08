@@ -1268,13 +1268,10 @@ tr.sel td{background:var(--accent-soft)}
       <div class="hint" id="shapeRunNote" style="margin-top:6px"></div>
       <h4 style="margin:14px 0 6px">Cross-cutting role ratios <span class="tag">editable</span></h4>
       <div class="tgrid">
-        <label for="shPse">Product Support Engineer, per tower<input type="number" id="shPse" data-sh="pse" min="0" max="10" step="0.5"></label>
+        <label for="shPse">Product Support Engineer, per tower with L1.5 in scope<input type="number" id="shPse" data-sh="pse" min="0" max="10" step="0.5"></label>
         <label for="shSa">Solution Architect, % of an FTE per deal<input type="number" id="shSa" data-sh="sa" min="0" max="100" step="5"></label>
-        <label for="shQa">Quality Analyst, per 10 delivery FTE<input type="number" id="shQa" data-sh="qa" min="0" max="10" step="0.1" placeholder="none"></label>
-        <label for="shBa">Business Analyst, per 10 delivery FTE<input type="number" id="shBa" data-sh="ba" min="0" max="10" step="0.1" placeholder="none"></label>
-        <label for="shSre">Service Reliability Engineer, per 10 delivery FTE<input type="number" id="shSre" data-sh="sre" min="0" max="10" step="0.1" placeholder="none"></label>
       </div>
-      <div class="hint">Product Support Engineer (1 per stream, a stream being a service tower) and Solution Architect (10% of an FTE once per deal, 0.8 hours of an 8-hour day) come from the roles guidance map; leave the others blank unless the deal needs them. Cross-cutting roles are carved out of the core-stream roles, so the team total never changes. Service Delivery Managers follow the ratio in Step 7.</div>
+      <div class="hint">Product Support Engineer (1 per stream, a stream being a service tower, only where L1.5 is in scope) and Solution Architect (10% of an FTE once per deal, 0.8 hours of an 8-hour day) come from the roles guidance map. They are carved out of the core-stream roles, so the team total never changes. The SRE and the AI engineer (AIOps) appear only where SRE or AIOps is in scope on a tower (Step 2); Quality Analyst, Business Analyst, Solution Architect and Mobile Developer can be added as special roles on a tower. Service Delivery Managers follow the ratio in Step 7.</div>
     </div>
     <div class="stage-result" id="res-13" aria-live="polite"></div>
     <div class="stage-nav"></div>
@@ -1789,6 +1786,8 @@ function mkSkill(id,share,name){const c=SKILL_CATALOG.find(k=>k.id===id);return 
 /* SRE as a named capability on IMS towers: SRE takes this share of the tower's L3 FTE, Infrastructure/other L3 skills the rest.
    Role-mix change, not extra headcount; weights 1.8 : 0.5 from damo-estimator's role policy (proposed) */
 const SRE_SHARE=1.8/(1.8+0.5);
+/* special roles a deal team can add by hand on a tower, on top of its skill sets */
+const SPEC_ROLES={qa:{name:"Quality Analyst"},ba:{name:"Business Analyst"},sa:{name:"Solution Architect"},mob:{name:"Mobile Developer"}};
 function skillName(k){return k.name||(k.skill==="spec"?"Niche skill":"Skill set")}
 function mkTower(kind){
   /* everything starts unanswered: the deal team fills it in */
@@ -1797,7 +1796,7 @@ function mkTower(kind){
     env:null,host:null,db:null,sec:false,
     dp:null,pipe:null,integ:null,up:null,down:null,
     agents:null,models:null,tools:null,ksrc:null,hiRisk:false,
-    aiops:null,sre:null,levels:null,tktLevel:null,enh:null,basis:null,thin:{crit:null,imp:null,std:null},
+    aiops:null,sre:null,l15:null,special:[],levels:null,tktLevel:null,enh:null,basis:null,thin:{crit:null,imp:null,std:null},
     own:null,mix:null,sla:{P1r:null,P1x:null,P2r:null,P2x:null},avail:null,slaTier:"",
     skills:[]};
 }
@@ -1816,7 +1815,7 @@ function defaultsRaw(){
     bench:defaultBench(),
     sparePct:25,
     onCallPct:15,
-    aiMaturity:null,transPct:null,aiRatio:"auto",life:{stage:null,appetite:null,pathway:null},shape:{pse:1,sa:10,qa:null,ba:null,sre:null},
+    aiMaturity:null,transPct:null,aiRatio:"auto",life:{stage:null,appetite:null,pathway:null},shape:{pse:1,sa:10},
     sdmRatio:12,sdmLoc:null,
     cplx:null,pyr:{},contPct:null,
     term:null,savePct:null,cont2:null,protectFloor:true,
@@ -1906,7 +1905,7 @@ function migrate(p){
       if(Array.isArray(p.risks))p.risks={s1:p.risks};
       const st=Object.assign(d,p);
       st.life=Object.assign({stage:null,appetite:null,pathway:null},p.life||{});
-      st.shape=Object.assign({pse:1,sa:10,qa:null,ba:null,sre:null},p.shape||{});
+      st.shape=Object.assign({pse:1,sa:10},p.shape||{});
       st.assumptions=Object.assign(defaults().assumptions,p.assumptions||{});
       /* assumptions saved as plain text become {t, c} with the step's default category */
       Object.keys(st.assumptions).forEach(k=>{st.assumptions[k]=(st.assumptions[k]||[]).map(a=>typeof a==="string"?{t:a,c:/^Service desk \(L1\)/.test(a)?"Service scope & ownership":(ACAT_DEFAULT[k]||"Other")}:a)});
@@ -2064,14 +2063,17 @@ function compute(){
     const thinOn=thinK&&t.basis==="thin", thinL3=Math.max(0,Math.min(100,+TH.l3||0))/100;
     if(thinOn)src=`Thin slices (${thinN} ${t.kind==="AMS"?"applications":"data products"})`;
     const devFrac=(t.kind==="AMS"&&!thinOn&&fteV>0)?Math.min(1,(crH/u*(1+hand)*(1+bp)+C)/B.hrsMonth/fteV):0;
-    const fte1=thinOn?0:fteV1, fte2=thinOn?thinFte*(1-thinL3):fteV2, fte3=thinOn?thinFte*thinL3:fteV3, fte=fte2+fte3;
+    /* special roles are added by hand, on top of the tower's skill sets, as L3 specialist effort */
+    const specList=(t.special||[]).filter(x=>SPEC_ROLES[x.role]&&n0(x.fte)>0), specF=specList.reduce((x,y)=>x+n0(y.fte),0);
+    const fte1=thinOn?0:fteV1, fte2=thinOn?thinFte*(1-thinL3):fteV2, fte3=(thinOn?thinFte*thinL3:fteV3)+specF, fte=fte2+fte3;
     const shareSum=t.skills.reduce((s2,k)=>s2+n0(k.share),0);
-    const sreOn=t.kind==="IMS"&&t.sre===true&&fte3>0, sreF=sreOn?fte3*SRE_SHARE:0;
-    const rF2=fte2, rF3=fte3-sreF, rF=rF2+rF3;
+    const sreOn=t.sre===true&&fte3-specF>0, sreF=sreOn?(fte3-specF)*SRE_SHARE:0;
+    const rF2=fte2, rF3=fte3-specF-sreF, rF=rF2+rF3;
     const skills=t.skills.map(k=>{const sh=shareSum>0?n0(k.share)/shareSum:1/t.skills.length;return {...k,name:skillName(k),tower:t.name,towerId:t.id,norm:rF>0&&fte>0?rF*sh/fte:0,fte:rF*sh,f2:rF2*sh,f3:rF3*sh}});
+    specList.forEach(x=>skills.push({id:"sp-"+x.id,skill:"sp_"+x.role,name:SPEC_ROLES[x.role].name+" (special role)",share:0,absorb:true,synthetic:true,special:true,tower:t.name,towerId:t.id,norm:fte>0?n0(x.fte)/fte:0,fte:n0(x.fte),f2:0,f3:n0(x.fte)}));
     if(sreOn)skills.unshift({id:"sre-"+t.id,skill:"sre",name:"Service Reliability Engineer (SRE)",share:0,absorb:true,synthetic:true,tower:t.name,towerId:t.id,norm:sreF/fte,fte:sreF,f2:0,f3:sreF});
     const userSkills=t.skills.length, unassigned=userSkills?0:rF;
-    return {...t,thinOn,thinK,thinN,thinFte,volFte:fteV,devFrac,sreOn,sreF,userSkills,unassigned,tickets,src,score,lvl,sv,own,bnd,hand,sm,slaAdd,handAdd,entry:[e1,e2,e3],mixUsed:!!(mx&&lvl==="l1"),l1Unknown,l2Unknown,l1t,l2t,l3t,A,Bh,bp,enhH,C,fte1,fte,fte2,fte3,shareSum,skills,incN:hist?n0(t.inc):0,srN:hist?n0(t.sr):0,crN:hist?n0(t.cr):0,srHrs:srH[0]+srH[1]+srH[2],crHrs:crH,srSh,crSh};
+    return {...t,thinOn,thinK,thinN,thinFte,volFte:fteV,devFrac,sreOn,sreF,specF,userSkills,unassigned,tickets,src,score,lvl,sv,own,bnd,hand,sm,slaAdd,handAdd,entry:[e1,e2,e3],mixUsed:!!(mx&&lvl==="l1"),l1Unknown,l2Unknown,l1t,l2t,l3t,A,Bh,bp,enhH,C,fte1,fte,fte2,fte3,shareSum,skills,incN:hist?n0(t.inc):0,srN:hist?n0(t.sr):0,crN:hist?n0(t.cr):0,srHrs:srH[0]+srH[1]+srH[2],crHrs:crH,srSh,crSh};
   });
   const skills=towers.flatMap(t=>t.skills);
   const demand=sum(towers,"fte");
@@ -2409,7 +2411,7 @@ function slaText(t){const q=t.sla||{},p=[];const m=v=>v>=60&&v%60===0?`${v/60} h
 function ownedText(t){const o=ownOf(t);const k=["L1","L2","L3"].filter(x=>o[x]==="us");return k.length?k.join(", ").replace(/, (L\d)$/," and $1"):"none"}
 
 /* ---------- provenance: inputs applied from documents ---------- */
-const TOWER_KEYS=["sre","vol","inc","sr","cr","srMix","crMix","tktLevel","levels","own","sla","avail","mix","cpx","apps","env","host","db","sec","dp","pipe","integ","up","down","agents","models","tools","ksrc","hiRisk","mau","estate","aiops","enh","basis","thin"];
+const TOWER_KEYS=["sre","vol","inc","sr","cr","srMix","crMix","tktLevel","levels","own","sla","avail","mix","cpx","apps","env","host","db","sec","dp","pipe","integ","up","down","agents","models","tools","ksrc","hiRisk","mau","estate","aiops","enh","basis","thin","l15","special"];
 function provVal(key){
   if(key==="client")return S.deal;
   if(key==="coverage")return `${S.hours}x${S.days}|${S.locations.flatMap(l=>(l.win||[]).map(w=>w.m)).join(",")}|${S.weekendMode}`;
@@ -2729,16 +2731,20 @@ function runSelfTests(){
    withState(testState(st=>{st.towers=[amsTower(300,{})];st.life={stage:"growth",appetite:"high",pathway:"unclear"}}),R=>{const sc=R.SC.pct, exp=Math.min(50,sc*1.25*1.25);add("Life stage and appetite move the POD share; pathway clarity credits the savings","POD share = scenario × 125% × 125%; savings × 50%",`POD ${fmt(R.transPct,2)}% (expect ${fmt(exp,2)}), savings ${fmt(R.savePct,2)}% (was ${fmt(base.save,2)}%)`,Math.abs(R.transPct-exp)<1e-9&&Math.abs(R.savePct-base.save*0.5)<1e-9&&R.total-runCompute().total>base.tr,"proposed")});
    withState(testState(st=>{st.towers=[amsTower(300,{})];st.life={stage:"sunset",appetite:"low",pathway:null};st.transPct=10}),R=>add("A typed POD share overrides life stage and appetite","10%",`${fmt(R.transPct,2)}%`,R.transPct===10,"proposed"));
    withState(testState(st=>{st.towers=[amsTower(300,{})]}),R=>add("Unanswered life stage, appetite and pathways leave the numbers unchanged","multipliers 100%",`${R.stageMul}, ${R.appMul}, ${R.pathMul}`,R.stageMul===1&&R.appMul===1&&R.pathMul===1&&R.transPct===R.SC.pct,"proposed"))}
-  withState(testState(st=>{st.towers=[amsTower(300,{aiops:true,skills:[mkSkill("sse",70),mkSkill("be",30)]}),Object.assign(mkTower("DMS"),{vol:true,inc:200,own:{L1:"customer",L2:"us",L3:"us"},skills:[mkSkill("dse",100)]})]}),R=>{
+  withState(testState(st=>{st.towers=[amsTower(300,{aiops:true,l15:true,skills:[mkSkill("sse",70),mkSkill("be",30)]}),Object.assign(mkTower("DMS"),{vol:true,inc:200,l15:true,own:{L1:"customer",L2:"us",L3:"us"},skills:[mkSkill("dse",100)]})]}),R=>{
     const rr=runCompute(), s1=shapeOf(rr.roles,rr), sf=shapeOf(R.roles,R), sy=shapeYears(R), id=i=>sf.rows.find(r=>r.id===i);
     const ok1=Math.abs(s1.total-rr.total)<1e-9, okF=Math.abs(sf.total-R.total)<1e-9, okY=sy.years.every(y=>Math.abs(Object.values(y.by).reduce((x,v)=>x+v,0)-y.total)<1e-9);
     add("Team shape adds up to the team at every point","run team, Year 1 and every later year",`${fmt(s1.total,2)} vs ${fmt(rr.total,2)}; ${fmt(sf.total,2)} vs ${fmt(R.total,2)}`,ok1&&okF&&okY,"proposed");
     const pse=id("pse"), sa=id("sa");
-    add("Cross-cutting roles come from the ratios: 1 Product Support Engineer per tower and 10% Solution Architect once per deal","PSE 2.00 for 2 towers and SA 0.10 for the deal, carved out of the team",`PSE ${fmt(pse?pse.fte:0,2)}, SA ${fmt(sa?sa.fte:0,2)}`,pse&&sa&&Math.abs(pse.fte-2)<1e-9&&Math.abs(sa.fte-0.1)<1e-9,"proposed");
+    add("Cross-cutting roles come from the ratios: 1 Product Support Engineer per tower with L1.5 and 10% Solution Architect once per deal","PSE 2.00 for 2 towers with L1.5 and SA 0.10 for the deal, carved out of the team",`PSE ${fmt(pse?pse.fte:0,2)}, SA ${fmt(sa?sa.fte:0,2)}`,pse&&sa&&Math.abs(pse.fte-2)<1e-9&&Math.abs(sa.fte-0.1)<1e-9,"proposed");
     add("DMS support splits into Data Analyst (L2) and Data Engineer (L3)","both roles present",`DA ${fmt((id("da")||{fte:0}).fte,2)}, DE ${fmt((id("de")||{fte:0}).fte,2)}`,id("da")&&id("de")&&id("de").fte>0,"proposed");
     add("Back-end developers map to Developer and the SDM to Service Delivery Manager","Developer and SDM rows present",`Dev ${fmt((id("dev")||{fte:0}).fte,2)}, SDM ${fmt((id("sdm")||{fte:0}).fte,2)}`,id("dev")&&id("sdm")&&Math.abs(id("sdm").fte-R.s5)<1e-9,"proposed");
     const aie=sy.years.map(y=>y.by.aie);
     add("AI engineers stay constant through the term while the rest of the team scales","same AI engineer FTE in every year",aie.map(v=>fmt(v,2)).join(" / "),aie.every(v=>Math.abs(v-aie[0])<1e-9)&&aie[0]>0,"proposed")});
+  withState(testState(st=>{st.towers=[amsTower(300,{skills:[mkSkill("sse",100)]})]}),R=>{const sf=shapeOf(R.roles,R), has=i=>sf.rows.some(r=>r.id===i);add("Roles appear only where they are in scope: no Product Support Engineer, SRE or AI Engineer unless L1.5, SRE or AIOps is answered Yes","only System Support Engineer and SDM",sf.rows.map(r=>r.id).join(", "),!has("pse")&&!has("sre")&&!has("aie")&&has("sse"),"proposed")});
+  withState(testState(st=>{st.towers=[amsTower(300,{aiops:true,l15:true,sre:true,skills:[mkSkill("sse",100)]})]}),R=>{const sf=shapeOf(R.roles,R), g=i=>(sf.rows.find(r=>r.id===i)||{fte:0}).fte, t=R.towers[0];add("L1.5, SRE and AIOps in scope bring in their roles; SRE on an AMS tower takes 78% of its L3","PSE, SRE and AI Engineer present; SRE = 78% of L3",`PSE ${fmt(g("pse"),2)}, SRE ${fmt(g("sre"),2)}, AI ${fmt(g("aie"),2)}; tower L3 ${fmt(t.fte3,2)}`,g("pse")>0&&g("aie")>0&&Math.abs(t.sreF-t.fte3*SRE_SHARE)<1e-9&&g("sre")>=t.sreF-1e-9,"proposed")});
+  {const base=withState(testState(st=>{st.towers=[amsTower(300,{skills:[mkSkill("sse",100)]})]}),R=>R.total);
+   withState(testState(st=>{st.towers=[amsTower(300,{skills:[mkSkill("sse",100)],special:[{id:"x1",role:"qa",fte:1.5},{id:"x2",role:"mob",fte:0.5}]})]}),R=>{const sf=shapeOf(R.roles,R), g=i=>(sf.rows.find(r=>r.id===i)||{fte:0}).fte;add("Special roles add their FTE on top of the tower and show under their own role","Quality Analyst 1.50 and Mobile Developer 0.50 more than without",`QA ${fmt(g("qa"),2)}, Mobile ${fmt(g("mob"),2)}, total ${fmt(R.total,2)} vs ${fmt(base,2)}`,Math.abs(g("qa")-1.5)<0.2&&g("mob")>0.3&&R.total>base+1.9,"proposed")})}
   withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>{const rr=runCompute(), tr=R.total-rr.total;add("Run team excludes AI engineers and the transformation POD","run team has 0 AI engineers; Year 1 = run team + transformation",`AI ${fmt(rr.ai2,2)} · ${fmt(rr.total,2)} + ${fmt(tr,2)} = ${fmt(R.total,2)}`,rr.ai2===0&&tr>0&&Math.abs(rr.total+tr-R.total)<1e-9&&rr.total<R.total,"proposed")});
   withState(testState(st=>{st.towers=[amsTower(300,{})];st.transPct=0}),R=>{const rr=runCompute();add("With no transformation and no AIOps the run team is the whole team","run team = Year 1 team",`${fmt(rr.total,3)} vs ${fmt(R.total,3)}`,Math.abs(rr.total-R.total)<1e-9,"proposed")});
   withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>add("AIOps ratio, low AI adoption","1 : 4",`1 : ${R.ratio}`,R.ratio===4,"[F] Part 3"));
@@ -3091,10 +3097,14 @@ function renderS2(){
         <div class="seg" role="group" aria-label="Estate">${(t.kind==="AI"?[["modern","Managed AI services (APIs)"],["legacy","Self-hosted models / custom agents"]]:[["modern","Modern / SaaS"],["legacy","Complex legacy"]]).map(([k,l])=>`<button type="button" data-testate="${k}" aria-pressed="${t.estate===k}">${l}</button>`).join("")}</div>${t.estate?"":`<div class="hint">Choose one. Modern is used until you do.</div>`}
       </div>
       <div class="derived" id="td-${t.id}"></div>
-      ${t.kind==="IMS"?`<div class="tsec"><span class="h">SRE</span>
-        <div class="q ${t.sre==null?"on":""}" style="margin:0"><span class="qh">Is SRE (reliability engineering) a capability the client wants?</span>${yn("data-tsre",t.sre,"Yes, SRE in scope","No")}</div>
+      <div class="tsec"><span class="h">L1.5 triage</span>
+        <div class="q ${t.l15==null?"on":""}" style="margin:0"><span class="qh">Is L1.5 (ticket triage, service management, ticket communication and reporting) in scope for this tower?</span>${yn("data-tl15",t.l15,"Yes, L1.5 in scope","No")}</div>
+        <div class="hint">If yes, a Product Support Engineer is shown for this tower in the team shape (1 per stream, from the roles guidance map). It is a role-mix change, not extra headcount.</div>
+      </div>
+      <div class="tsec"><span class="h">SRE</span>
+        <div class="q ${t.sre==null?"on":""}" style="margin:0"><span class="qh">Is SRE (reliability engineering) in scope for this tower?</span>${yn("data-tsre",t.sre,"Yes, SRE in scope","No")}</div>
         <div class="hint" id="tsr-${t.id}">${t.sre==null?"Choose Yes when the client names reliability as an objective (SLOs, error budgets, toil reduction). SRE then leads this tower's L3 work.":""}</div>
-      </div>`:""}
+      </div>
       <div class="tsec"><span class="h">AIOps</span>
         <div class="q ${t.aiops==null?"on":""}" style="margin:0"><span class="qh">Is AIOps in scope for this tower?</span>${yn("data-taiops",t.aiops,"Yes, AIOps in scope","No")}</div>
         <div class="hint" id="tai-${t.id}">${t.aiops==null?"Intelligent alerting, automated RCA, ticket auto-classification, self-healing. If yes, AI engineers are added at the framework ratio.":""}</div>
@@ -3108,6 +3118,16 @@ function renderS2(){
         </div>`).join("")}
         ${t.skills.length?"":`<div class="hint">No skill sets yet. Add the skill sets this tower needs; its FTE is split across them.</div>`}
         <div class="skfoot"><div class="addrow"><select id="sk-add-${t.id}" aria-label="Add a skill set">${opts}</select><button type="button" class="btn sm" data-addskill="${t.id}">Add skill set</button></div><span class="delta add" id="tadd-${t.id}"></span></div>
+      </div>
+      <div class="skills"><span class="tsec"><span class="h">Special roles</span></span>
+        ${(t.special||[]).map(x=>`<div class="skrow" data-sp="${x.id}">
+          <span class="nm">${esc((SPEC_ROLES[x.role]||{}).name||x.role)}</span>
+          <span class="pin"><input type="number" id="sp-${x.id}" data-spf="1" min="0" max="1000" step="0.1" value="${x.fte??""}" placeholder="FTE" aria-label="${esc((SPEC_ROLES[x.role]||{}).name||x.role)} FTE">FTE</span>
+          <span></span>
+          <button type="button" class="btn ghost sm" data-rmsp="${x.id}" aria-label="Remove ${esc((SPEC_ROLES[x.role]||{}).name||x.role)}">Remove</button>
+        </div>`).join("")}
+        ${(t.special||[]).length?"":`<div class="hint">No special roles. Add a Quality Analyst, Business Analyst, Solution Architect or Mobile Developer with the FTE you want for this tower. It is added on top of the skill sets and shown under that role in the team shape.</div>`}
+        <div class="skfoot"><div class="addrow"><select id="sp-add-${t.id}" aria-label="Add a special role">${Object.entries(SPEC_ROLES).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join("")}</select><button type="button" class="btn sm" data-addsp="${t.id}">Add special role</button></div></div>
       </div>
     </div>`}).join(""):`<div class="empty">No towers yet. Add AMS, IMS, DMS or AI platforms.</div>`;
   $("aiSeg2").innerHTML=[["low","Low AI adoption · 1:4"],["moderate","Moderate AI adoption · 1:8"]].map(([k,l])=>`<button type="button" data-ai="${k}" aria-pressed="${S.aiMaturity===k}">${l}</button>`).join("");
@@ -3195,9 +3215,10 @@ const GROLES=[
   ["aie","AI Engineer (AIOps engineer)","Use cases, generative and agentic AI solutions, evaluations, guardrails, bias mitigation, responsible AI","Cross-cutting role, shared capability across PODs","cross"],
   ["sa","Solution Architect","Solution design, architecture standards, risk, deliverability, commercial models","Cross-cutting role, 10%","cross"],
   ["sdm","Service Delivery Manager","Ops leader (day to day): incident, problem, request and service level management","Cross-cutting role: 1 SDM for 12 FTE","mgmt"],
-  ["oth","Other named skill","A niche skill set named on a tower","Core-stream, from the tower's estimate","core"]
+  ["oth","Other skill sets","Skill sets that are not in the roles guidance map, for example L1 support, AI platform skills or a named niche skill","Core-stream, from the tower's estimate","core"],
+  ["trn","Transformation engineers","Automation, CI/CD and AI adoption from the Transformation POD, when SRE is not in scope","Stage 3 transformation capacity","xform"]
 ];
-const GMAP={sse:"sse",fs:"dev",be:"dev",fe:"dev",mob:"mob",infra:"isu",sre:"sre",qa:"qa",l1:"pse",dse:"dms",dba:"de",data:"de",ai:"aie",prompt:"aie",mlops:"aie",llmops:"aie",aieval:"aie",ds:"aie",spec:"oth"};
+const GMAP={sse:"sse",fs:"dev",be:"dev",fe:"dev",mob:"mob",infra:"isu",sre:"sre",qa:"qa",l1:"oth",dse:"dms",dba:"de",data:"de",ai:"oth",prompt:"oth",mlops:"oth",llmops:"oth",aieval:"oth",ds:"oth",spec:"oth",sp_qa:"qa",sp_ba:"ba",sp_sa:"sa",sp_mob:"mob"};
 const GCORE=["sse","isu","da","de","dev","mob","oth"];
 /* Groups a team's role list (compute's roles) under the guidance map. Totals never change: core-stream roles are
    the work itself, and the cross-cutting roles that the ratios ask for are carved out of the core-stream roles. */
@@ -3208,9 +3229,9 @@ function shapeOf(list,X){
   list.forEach(r=>{
     if(r.sk==="sdm"){add("sdm",r.fte);return}
     if(r.sk==="aiops"){add("aie",r.fte);fixed+=r.fte;return}
-    if(r.sk==="trans"){add("sre",r.fte);return}
+    if(r.sk==="trans"){add(X.towers.some(t=>t.sre===true)?"sre":"trn",r.fte);return}
     if(r.sk==="lift"){lifts.push(r.fte);return}
-    const t=tw(r.tw), kindG=({AMS:"sse",IMS:"isu",DMS:"dms",AI:"aie"})[r.kind]||"oth";
+    const t=tw(r.tw), kindG=({AMS:"sse",IMS:"isu",DMS:"dms"})[r.kind]||"oth";
     const id=(r.sk&&GMAP[r.sk])||kindG;
     let f=r.fte, dv=0;
     if(t&&t.devFrac>0&&id!=="dev"&&id!=="mob"){dv=f*t.devFrac;f-=dv}
@@ -3221,8 +3242,8 @@ function shapeOf(list,X){
   const liftSum=lifts.reduce((x,v)=>x+v,0), coreSum0=GCORE.reduce((x,i)=>x+(g[i]||0),0);
   if(liftSum>0){if(coreSum0>0)GCORE.forEach(i=>{if(g[i])g[i]+=liftSum*g[i]/coreSum0});else add("sse",liftSum)}
   const total=Object.values(g).reduce((x,v)=>x+v,0), core=GCORE.reduce((x,i)=>x+(g[i]||0),0);
-  const nT=X.towers.filter(t=>t.fte>0).length, deliv=total-(g.sdm||0)-fixed;
-  const want={pse:nT*(+SH.pse||0),sa:nT>0?(+SH.sa||0)/100:0,qa:deliv*(+SH.qa||0)/10,ba:deliv*(+SH.ba||0)/10,sre:deliv*(+SH.sre||0)/10};
+  const nT=X.towers.filter(t=>t.fte>0).length, nL15=X.towers.filter(t=>t.fte>0&&t.l15===true).length;
+  const want={pse:nL15*(+SH.pse||0),sa:nT>0?(+SH.sa||0)/100:0};
   const ask=Object.values(want).reduce((x,v)=>x+v,0), cap=0.6*core, k=ask>cap&&ask>0?cap/ask:1;
   if(core>0&&ask>0){
     Object.keys(want).forEach(i=>{want[i]*=k});
@@ -3722,12 +3743,12 @@ function renderS7(){
   $("protectFloor").checked=S.protectFloor!==false;
 }
 function updateShape(){
-  const run=R.shapeRun, fin=R.shapeY.base, kindTag=r=>r.kind==="cross"?`<small>cross-cutting</small>`:r.kind==="mgmt"?`<small>management</small>`:"";
+  const run=R.shapeRun, fin=R.shapeY.base, kindTag=r=>r.kind==="cross"?`<small>cross-cutting</small>`:r.kind==="mgmt"?`<small>management</small>`:r.kind==="xform"?`<small>transformation</small>`:"";
   $("shapeRun").innerHTML=fin.rows.length?fin.rows.map(r=>{const o=run.rows.find(x=>x.id===r.id);return `<tr><td class="loc-name">${esc(r.name)}${kindTag(r)}</td><td class="hint">${esc(r.desc)}</td><td class="hint">${esc(r.guide)}</td><td class="r num">${o?fmt(o.fte,2):"–"}</td><td class="r num"><b>${fmt(r.fte,2)}</b></td><td class="r num">${fmt(r.share*100,0)}%</td></tr>`}).join("")
     +`<tr><td><b>Total</b></td><td></td><td></td><td class="r num"><b>${fmt(run.total,2)}</b></td><td class="r num"><b>${fmt(fin.total,2)}</b></td><td class="r num">100%</td></tr>`:`<tr><td colspan="6" class="hint">Add a tower in Step 2 to see the shape.</td></tr>`;
   $("shapeRunNote").textContent=`The run team (${fmt(run.total,2)} FTE) is what Stages 1 and 2 qualified: the base team and the work, skill cover, the SDM and contingency. Stage 3 adds ${fmt(fin.total-run.total,2)} FTE of transformation capacity, giving the ${fmt(fin.total,2)} FTE Year 1 team, so the Year 1 column moves as you answer Step 10.${fin.carved>0?` ${fmt(fin.carved,2)} FTE of cross-cutting roles is carved out of the core-stream roles.`:""}${fin.capped?" The ratios ask for more than 60% of the core-stream team, so they were scaled down.":""}`;
   const SH=S.shape||{};
-  [["shPse","pse"],["shSa","sa"],["shQa","qa"],["shBa","ba"],["shSre","sre"]].forEach(([id,k])=>{const el=$(id);if(el&&document.activeElement!==el)el.value=SH[k]==null?"":SH[k]});
+  [["shPse","pse"],["shSa","sa"]].forEach(([id,k])=>{const el=$(id);if(el&&document.activeElement!==el)el.value=SH[k]==null?"":SH[k]});
   const Y=R.shapeY.years.slice(0,Math.max(1,R.term));
   $("shapeYHead").innerHTML=`<tr><th>Role</th>${Y.map(y=>`<th class="r">Year ${y.n}</th>`).join("")}<th>Guidance</th></tr>`;
   const runY=i=>R.run.years[i].fte;
@@ -4272,6 +4293,9 @@ document.addEventListener("click",e=>{
   else if(d.tsre){twr(t).sre=d.tsre==="1";renderS2();update();}
   else if(d.tcpx){twr(t).cpx=d.tcpx==="1";renderS2();update();}
   else if(d.testate){twr(t).estate=d.testate;renderS2();update();}
+  else if(d.tl15){twr(t).l15=d.tl15==="1";renderS2();update();}
+  else if(d.addsp){const tw=S.towers.find(x=>x.id===d.addsp);tw.special=tw.special||[];tw.special.push({id:uid(),role:$("sp-add-"+tw.id).value,fte:null});renderS2();update();}
+  else if(d.rmsp){const tw=twr(t);tw.special=(tw.special||[]).filter(x=>x.id!==d.rmsp);renderS2();update();}
   else if(d.addskill){const tw=S.towers.find(x=>x.id===d.addskill);const id=$("sk-add-"+tw.id).value;if(id){tw.skills.push(mkSkill(id,0,id==="spec"?"":null));renderS2();update();}}
   else if(d.term){S.term=+d.term;update();}
   else if(d.cplx){S.cplx=d.cplx;renderS6();update();}
@@ -4357,6 +4381,7 @@ document.addEventListener("input",e=>{
   if(d.tmix){const tw=twr(t);tw.mix=tw.mix||{};tw.mix[d.tmix]=t.value===""?null:Math.max(0,+t.value);update();return}
   if(d.tthin){const tw=twr(t);tw.thin=tw.thin||{};tw.thin[d.tthin]=t.value===""?null:Math.max(0,+t.value);update();return}
   if(d.tapp){if(t.value===""){twr(t).apps[d.tapp]=null;update()}else{const v=+t.value;if(v>=0){twr(t).apps[d.tapp]=v;update()}}return}
+  if(d.spf){const tw=twr(t),sp=(tw.special||[]).find(x=>x.id===t.closest("[data-sp]").dataset.sp);if(sp){sp.fte=t.value===""?null:Math.max(0,+t.value);update()}return}
   if(d.ks){if(t.value===""){skl(t).share=0;update()}else{const v=+t.value;if(v>=0&&v<=100){skl(t).share=v;update()}}return}
   if(d.kn){skl(t).name=t.value;update();return}
   if(d.bn){const v=+t.value;if(t.value!==""&&v>=0){const [a,b2]=d.bn.split(".");if(b2)S.bench[a][b2]=v;else S.bench[a]=v;update()}return}
@@ -4695,7 +4720,7 @@ function towerLine(t){
   else parts.push("demand not stated");
   if(t.estate)parts.push(t.estate==="legacy"?(t.kind==="AI"?"self-hosted":"complex legacy"):(t.kind==="AI"?"managed AI services":"modern"));
   if(typeof t.aiopsInScope==="boolean")parts.push(t.aiopsInScope?"AIOps in scope":"no AIOps");
-  if(t.kind==="IMS"&&typeof t.sreInScope==="boolean")parts.push(t.sreInScope?"SRE in scope":"no SRE");
+  if(typeof t.sreInScope==="boolean")parts.push(t.sreInScope?"SRE in scope":"no SRE");
   if(t.serviceLevels)parts.push(`we provide ${t.serviceLevels}`);
   if(t.sla)parts.push("SLA: "+[t.sla.p1ResponseMin!=null?`P1 respond ${t.sla.p1ResponseMin} min`:"",t.sla.p1RestoreMin!=null?`restore ${t.sla.p1RestoreMin} min`:"",t.sla.availabilityPct!=null?`${t.sla.availabilityPct}%`:""].filter(Boolean).join(", "));
   if(t.priorityMix)parts.push(`mix ${["P1","P2","P3","P4"].map(k=>t.priorityMix[k]??0).join("/")}`);
@@ -4763,7 +4788,7 @@ function applyProposals(){
       if(t.kind==="AI"){tw.agents=st.agents??null;tw.models=st.models??null;tw.tools=st.toolIntegrations??null;tw.ksrc=st.knowledgeSources??null;tw.hiRisk=!!st.highRisk}
     }else if(t.mau){tw.vol=false;tw.cpx=false;tw.mau=t.mau}
     if(typeof t.aiopsInScope==="boolean")tw.aiops=t.aiopsInScope;
-    if(t.kind==="IMS"&&typeof t.sreInScope==="boolean")tw.sre=t.sreInScope;
+    if(typeof t.sreInScope==="boolean")tw.sre=t.sreInScope;
     (t.skills||[]).forEach(k=>{if(SKILL_CATALOG.some(c=>c.id===k))tw.skills.push(mkSkill(k,0))});
     S.towers.push(tw);mark("tower:"+tw.id,`${t.kind} tower${t.name?`: ${t.name}`:""}`,t);n++;
   });
