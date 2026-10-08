@@ -784,7 +784,7 @@ tr.sel td{background:var(--accent-soft)}
     <div class="stage-head">
       <span class="eyebrow">Part 1 · Step 2 of 10</span>
       <h2 id="s2h">Service towers and complexity</h2>
-      <p>Add the AMS, IMS, DMS and AI platform towers in scope. For each tower, answer up to three questions: ticket volumes if the client has them, otherwise the estate's structural complexity (T-shirt sizing), and if that isn't known either, monthly active users. Tickets become effort through the framework's L2/L3 cascade, and each tower's FTE is then split across the skill sets it needs. If AIOps is in scope for a tower, AI engineers are added at the framework ratio.</p>
+      <p>Add the AMS, IMS, DMS and AI platform towers in scope. For each tower, answer up to three questions: ticket volumes if the client has them, otherwise the estate's structural complexity (T-shirt sizing), and if that isn't known either, monthly active users. Tickets become effort through the framework's L2/L3 cascade, and each tower's FTE goes to its core support role until you add skill sets in Step 5. If AIOps is in scope for a tower, AI engineers are added at the framework ratio.</p>
     </div>
 
     <div class="cols">
@@ -884,20 +884,21 @@ tr.sel td{background:var(--accent-soft)}
     <div class="stage-head">
       <span class="eyebrow">Part 2 · Step 5 of 10</span>
       <h2 id="s3h">Skill type: is the Stage 1 team enough?</h2>
-      <p>Skill sets the base team already has are on every shift through the base roster. For every other skill set, pick the shifts where it must be live. Outside those shifts it is on call. If covering those shifts needs more people than the skill's Step 2 effort, the difference is added here.</p>
+      <p>This step holds every skill input. Add the specialist skill sets each tower needs, then say which skills are required on which shift, based on the working windows. Skill sets the base team already has are on every shift through the base roster. For every other skill set, enter the people who must be live in each window; elsewhere it is on call. If covering those shifts needs more people than the skill's Step 2 effort, the difference is added here.</p>
     </div>
 
     <div class="cols">
       <div class="panel">
-        <header><h3>Inputs</h3><span class="sub">Pick live windows per skill set</span></header>
+        <header><h3>Inputs</h3><span class="sub">Skill sets, then who is live on each shift</span></header>
         <div class="field">
           <div class="lbl">On-call allowance outside live shifts <span class="tag">proposed</span></div>
           <label class="inline" for="onCallPct"><input id="onCallPct" type="number" min="0" max="100" step="5">% of a staffed shift</label>
         </div>
         <div class="divider"></div>
         <div class="field">
-          <div class="lbl">Skill sets from step 2</div>
-          <div class="covlist" id="covList"></div>
+          <div class="lbl">Skill sets and special roles by tower</div>
+          <div class="hint" style="margin-bottom:8px">Each tower's core support role takes the rest of its FTE and is always on every shift. Add a skill set only for specialist work: give it a share of the tower, say whether the base team has it, and (if it does not) say below where it must be live. Special roles add FTE on top of the tower.</div>
+          <div id="skillTowers"></div>
         </div>
       </div>
 
@@ -911,6 +912,12 @@ tr.sel td{background:var(--accent-soft)}
           </table>
         </div>
       </div>
+    </div>
+
+    <div class="panel" style="margin-top:20px">
+      <header><h3>Skills required on each shift</h3><span class="sub">Working windows from Step 1 · people who must be live</span></header>
+      <div class="hint" style="margin-bottom:8px">Each row is a working window. For every specialist skill set (one the base team does not have), enter how many people must be live in that window. Leave it blank for on call: the skill is then reachable, counted at the on-call allowance. Changing the windows in Step 1 re-creates them, so set the windows first.</div>
+      <div id="shiftMatrix"></div>
     </div>
 
     <div class="panel" style="margin-top:20px">
@@ -1810,6 +1817,7 @@ function mkSkill(id,share,name){const c=SKILL_CATALOG.find(k=>k.id===id);return 
    Role-mix change, not extra headcount; weights 1.8 : 0.5 from damo-estimator's role policy (proposed) */
 const SRE_SHARE=1.8/(1.8+0.5);
 /* special roles a deal team can add by hand on a tower, on top of its skill sets */
+const CORE_SKILL={AMS:["sse","Systems Support Engineer (L2/L3)"],IMS:["infra","Infra support engineer"],DMS:["dse","Data Support Engineer"],AI:["ai","AI platform engineering"]};
 const SPEC_ROLES={qa:{name:"Quality Analyst"},ba:{name:"Business Analyst"},sa:{name:"Solution Architect"},mob:{name:"Mobile Developer"}};
 function skillName(k){return k.name||(k.skill==="spec"?"Niche skill":"Skill set")}
 function mkTower(kind){
@@ -1989,13 +1997,16 @@ function migrateCoverage(st,p){
 /* fingerprint of every input, so an approval can tell when the numbers under it change */
 function inputsHash(){
   const o=Object.assign({},S);delete o.meta;delete o.active;
-  o.cov=Object.fromEntries(Object.entries(S.cov||{}).filter(([,v])=>v.shifts.length||v.people!==1));
+  o.cov=Object.fromEntries(Object.entries(S.cov||{}).filter(([,v])=>v.shifts.length||v.people!==1||(v.p&&Object.keys(v.p).length)));
   const str=JSON.stringify(o);let h=5381;for(let i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))|0;
   return (h>>>0).toString(36)+str.length.toString(36);
 }
 const STATUS={draft:"Draft",submitted:"Submitted for approval",approved:"Approved"};
 function approvalStale(){return S.meta.status==="approved"&&S.meta.approvedHash&&S.meta.approvedHash!==inputsHash()}
 function covOf(id){if(!S.cov[id])S.cov[id]={shifts:[],people:1};return S.cov[id]}
+/* people of a skill set who must be live in one window; an estimate saved before the shift matrix has a list of live windows and one head count */
+function covPeople(cv,bid){if(cv.p&&cv.p[bid]!=null)return Math.max(0,Math.round(+cv.p[bid])||0);return cv.p?0:((cv.shifts||[]).includes(bid)?Math.max(1,Math.round(+cv.people)||1):0)}
+function covPut(cv,bid,n){if(!cv.p)cv.p=Object.fromEntries((cv.shifts||[]).map(id=>[id,Math.max(1,Math.round(+cv.people)||1)]));cv.p[bid]=Math.max(0,Math.min(9,Math.round(+n)||0))}
 function sdmLocOf(){
   if(S.sdmLoc&&S.locations.some(l=>l.id===S.sdmLoc))return S.sdmLoc;
   const pick=S.locations.find(l=>/Onshore/.test(l.kind))||S.locations.find(l=>/Nearshore/.test(l.kind))||S.locations[0];
@@ -2112,13 +2123,16 @@ function compute(){
     /* special roles are added by hand, on top of the tower's skill sets, as L3 specialist effort */
     const specList=(t.special||[]).filter(x=>SPEC_ROLES[x.role]&&n0(x.fte)>0), specF=specList.reduce((x,y)=>x+n0(y.fte),0);
     const fte1=thinOn?0:fteV1, fte2=thinOn?thinFte*(1-thinL3):fteV2, fte3=(thinOn?thinFte*thinL3:fteV3)+specF, fte=fte2+fte3;
-    const shareSum=t.skills.reduce((s2,k)=>s2+n0(k.share),0);
+    /* every tower has a core support skill set that takes the share the added skill sets do not (the base team has it) */
+    const uSum=t.skills.reduce((s2,k)=>s2+n0(k.share),0), cs0=CORE_SKILL[t.kind]||["spec","Core support"];
+    const allSk=(uSum<100?[{id:"core-"+t.id,skill:cs0[0],name:cs0[1],share:100-uSum,absorb:true,core:true}]:[]).concat(t.skills);
+    const shareSum=allSk.reduce((s2,k)=>s2+n0(k.share),0);
     const sreOn=t.sre===true&&fte3-specF>0, sreF=sreOn?(fte3-specF)*SRE_SHARE:0;
     const rF2=fte2, rF3=fte3-specF-sreF, rF=rF2+rF3;
-    const skills=t.skills.map(k=>{const sh=shareSum>0?n0(k.share)/shareSum:1/t.skills.length;return {...k,name:skillName(k),tower:t.name,towerId:t.id,norm:rF>0&&fte>0?rF*sh/fte:0,fte:rF*sh,f2:rF2*sh,f3:rF3*sh}});
+    const skills=allSk.map(k=>{const sh=shareSum>0?n0(k.share)/shareSum:1/allSk.length;return {...k,name:skillName(k),tower:t.name,towerId:t.id,norm:rF>0&&fte>0?rF*sh/fte:0,fte:rF*sh,f2:rF2*sh,f3:rF3*sh}});
     specList.forEach(x=>skills.push({id:"sp-"+x.id,skill:"sp_"+x.role,name:SPEC_ROLES[x.role].name+" (special role)",share:0,absorb:true,synthetic:true,special:true,tower:t.name,towerId:t.id,norm:fte>0?n0(x.fte)/fte:0,fte:n0(x.fte),f2:0,f3:n0(x.fte)}));
     if(sreOn)skills.unshift({id:"sre-"+t.id,skill:"sre",name:"Service Reliability Engineer (SRE)",share:0,absorb:true,synthetic:true,tower:t.name,towerId:t.id,norm:sreF/fte,fte:sreF,f2:0,f3:sreF});
-    const userSkills=t.skills.length, unassigned=userSkills?0:rF;
+    const userSkills=t.skills.length, unassigned=0;
     return {...t,thinOn,thinK,thinN,thinFte,volFte:fteV,devFrac,sreOn,sreF,specF,userSkills,unassigned,tickets,src,score,lvl,sv,own,bnd,hand,sm,slaAdd,handAdd,entry:[e1,e2,e3],mixUsed:!!(mx&&lvl==="l1"),l1Unknown,l2Unknown,l1t,l2t,l3t,A,Bh,bp,enhH,C,fte1,fte,fte2,fte3,shareSum,skills,incN:hist?n0(t.inc):0,srN:hist?n0(t.sr):0,crN:hist?n0(t.cr):0,srHrs:srH[0]+srH[1]+srH[2],crHrs:crH,srSh,crSh};
   });
   const skills=towers.flatMap(t=>t.skills);
@@ -2162,18 +2176,18 @@ function compute(){
   const oc=S.onCallPct/100, rp3=riskPctOf("s3");
   const covSkills=skills.filter(k=>!k.absorb).map(k=>{
     const cv=covOf(k.id);
-    const live=cv.shifts.filter(id=>blocks.some(k=>k.id===id));
+    const pe=b=>covPeople(cv,b.id), live=blocks.filter(b=>pe(b)>0).map(b=>b.id);
     const byLoc=locs.map(l=>{
       let ls=0,os=0;
-      blocks.forEach(k=>{if(k.loc!==l.id)return;if(live.includes(k.id))ls+=k.h;else os+=k.h});
+      blocks.forEach(k=>{if(k.loc!==l.id)return;if(pe(k)>0)ls+=k.h*pe(k);else os+=k.h});
       const f=S.backfill?1/l.avail:1;
-      return {id:l.id,floor:(ls*days*cv.people+os*days*oc)/fteH/u1*f};
+      return {id:l.id,floor:(ls*days+os*days*oc)/fteH/u1*f};
     });
     const floor=byLoc.reduce((s3,x)=>s3+x.floor,0);
     const have=k.added*bf2*(1+rp2);
     const top=Math.max(0,floor-have);
     const l3s=(k.f2+k.f3)>0?k.f3/(k.f2+k.f3):0.5;
-    return {...k,live,onCall:blocks.length-live.length,people:cv.people,floor,have,top,l3s,byLoc};
+    return {...k,live,onCall:blocks.length-live.length,people:Math.max(0,...blocks.map(pe)),floor,have,top,l3s,byLoc};
   });
   const topUp=covSkills.reduce((s3,k)=>s3+k.top,0);
   const s3=topUp*(1+rp3);
@@ -2283,13 +2297,13 @@ function compute(){
   const termRows=[1,2,3,4,5].map(T=>{const ys=years.slice(0,T);const sumY=ys.reduce((x,y)=>x+y.fte,0);return {T,ys,sum:sumY,avg:sumY/T}});
   termRows.forEach(t=>t.vs1=1-t.avg/termRows[0].avg);
   const term=Math.min(5,Math.max(1,+S.term||1));
-  towers.filter(t=>t.userSkills&&t.shareSum>0&&t.shareSum!==100).forEach(t=>warnings2.push(`${t.name}: skill shares add up to ${fmt(t.shareSum,0)}%. They are scaled to 100%.`));
-  towers.filter(t=>t.userSkills&&t.shareSum===0).forEach(t=>warnings2.push(`${t.name}: enter a share for each skill set. Until then the FTE is split equally.`));
+  const warningsSk=[];
+  towers.filter(t=>t.shareSum>100).forEach(t=>warningsSk.push(`${t.name}: skill shares add up to ${fmt(t.shareSum,0)}%. They are scaled to 100%.`));
+  towers.forEach(t=>t.skills.filter(k=>!k.core&&!k.synthetic&&!(+k.share>0)).forEach(k=>warningsSk.push(`${t.name}: enter a share of the tower for ${k.name}. Until then it has no FTE.`)));
   towers.filter(t=>t.l1Unknown).forEach(t=>warnings2.push(`${t.name}: we provide L1 but the ticket counts are at ${t.lvl.toUpperCase()}, so L1 volume is unknown and no L1 effort is sized. Enter counts of all tickets (L1).`));
   towers.filter(t=>t.l2Unknown).forEach(t=>warnings2.push(`${t.name}: the ticket counts are at L3, so the L2 volume is unknown and no L2 effort is sized. Enter counts at L1 or L2, or choose L3 only.`));
   if(towers.length&&towers.every(t=>t.sv==="l2")&&S.perShift.L3>0)[warnings,warnings2].forEach(w=>w.push(`Every tower is L2 only, but the base team puts ${S.perShift.L3} L3 on every shift. Set L3 per shift to 0 in Step 1 if no L3 cover is needed.`));
   if(towers.length&&towers.every(t=>t.sv==="l3")&&S.perShift.L2>0)[warnings,warnings2].forEach(w=>w.push(`Every tower is L3 only, but the base team puts ${S.perShift.L2} L2 on every shift. Set L2 per shift to 0 in Step 1 if no L2 cover is needed.`));
-  towers.filter(t=>t.unassigned>0).forEach(t=>warnings2.push(`${t.name} has no skill sets, so ${fmt(t.unassigned,2)} FTE${t.sreOn?" (besides SRE)":""} is not staffed. Add at least one skill set.`));
 
   /* rounding on the combined team */
   const up=x=>Math.ceil(x-1e-6);
@@ -2401,7 +2415,7 @@ function compute(){
   const bridge={d3:snaps[3].fte-p1total,d4:snaps[4].fte-snaps[3].fte,d5:snaps[5].fte-snaps[4].fte,spare:p1lift};
   return {p1,bridge,days,fteH,reqH,c,framework,actH,oncH,blocks,cover,oc1,p1Busy,aEff,rp1,locs,roster,buffered,s1,warnings,
     u1,utilised,utilAdd:utilised-roster,leaveAdd:buffered-utilised,risk1Add:s1-buffered,
-    towers,skills,demand,demAbs,capacity,absorbed,added,add2,add3,rp2,s2,s2run,bf2,leave2,risk2Add:s2run-added*bf2,warnings2,
+    towers,skills,demand,demAbs,capacity,absorbed,added,add2,add3,rp2,s2,s2run,bf2,leave2,risk2Add:s2run-added*bf2,warnings2,warningsSk,
     aiTowers,aiBase,scRatio,ai2,
     covSkills,topUp,rp3,s3,risk3Add:s3-topUp,sub2:s2,sub3,runTeam,workTeam,runWork,lift,
     volShare,volAvail,sc,SC,transPct,transAuto,stageMul,appMul,pathMul,pod,autoRatio,ratio:aiRatioN,aiops,stage4raw,otherTrans,rp4,s4,risk4Add:s4-stage4raw,
@@ -2798,6 +2812,13 @@ function runSelfTests(){
     add("Best fit with nights on call covers the window and marks night hours as on call","no gap; some on-call hours",`${fmt(c2.gapH,1)} h gap, ${fmt(c2.onCallH,1)} h on call`,c2.gapH===0&&c2.onCallH>0,"proposed");
     add("Region lists: IME offers India only; APAC offers Singapore, Australia, China and India; NA offers LATAM, Ecuador, Brazil and India","as listed",Object.entries(REGIONS).map(([r,v])=>r+":"+v.del.map(x=>x[0]).join("/")).join(" · "),REGIONS.ime.del.length===1&&REGIONS.apac.del.map(x=>x[0]).join()==="sg,au,cn,in"&&REGIONS.na.del.map(x=>x[0]).join()==="la,ec,br,in","agreed");
   }finally{S=kS}}
+  withState(testState(st=>{st.towers=[amsTower(300,{skills:[]})]}),R=>{const t=R.towers[0], cells=R.locs.reduce((x,l)=>x+l.t2+l.t3,0);add("A tower with no skill sets is fully staffed by its core support role","core skill takes 100%; no unassigned FTE; the FTE reaches the location cells",`core ${fmt(t.skills[0]?t.skills[0].fte:0,2)} of ${fmt(t.fte,2)}; ${fmt(t.unassigned,2)} unassigned; cells ${fmt(cells,2)}`,t.skills.length===1&&t.skills[0].core&&near(t.skills[0].fte,t.fte)&&t.unassigned===0&&cells>0,"proposed")});
+  withState(testState(st=>{st.towers=[amsTower(300,{skills:[Object.assign(mkSkill("data",20),{absorb:false})]})]}),R=>{const t=R.towers[0], core=t.skills.find(k=>k.core);add("Added skill sets take their share and the core support role takes the rest","20% added; the rest is core",`core ${fmt(core?core.share:0,0)}%`,!!core&&core.share===80&&near(t.skills.reduce((x,k)=>x+k.fte,0),t.fte),"proposed")});
+  {const mk=(mod)=>testState(st=>{st.towers=[amsTower(300,{skills:[Object.assign(mkSkill("dba",20),{absorb:false})]})];st.hours=24;st.days=5;mod(st)});
+   const base=withState(mk(st=>{}),R=>R.covSkills[0].floor);
+   const two=withState(mk(st=>{const id=blocksOf(st)[0].id;st.cov[st.towers[0].skills[0].id]={shifts:[],people:1,p:{[id]:2}}}),R=>R.covSkills[0].floor);
+   const one=withState(mk(st=>{const id=blocksOf(st)[0].id;st.cov[st.towers[0].skills[0].id]={shifts:[],people:1,p:{[id]:1}}}),R=>R.covSkills[0].floor);
+   add("Skills required per shift: two people live in a window need more cover than one, and both more than on call only","on call < 1 live < 2 live",`${fmt(base,2)} < ${fmt(one,2)} < ${fmt(two,2)}`,base<one&&one<two,"proposed")}
   withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>{const rr=runCompute(), tr=R.total-rr.total;add("Run team excludes AI engineers and the transformation POD","run team has 0 AI engineers; Year 1 = run team + transformation",`AI ${fmt(rr.ai2,2)} · ${fmt(rr.total,2)} + ${fmt(tr,2)} = ${fmt(R.total,2)}`,rr.ai2===0&&tr>0&&Math.abs(rr.total+tr-R.total)<1e-9&&rr.total<R.total,"proposed")});
   withState(testState(st=>{st.towers=[amsTower(300,{})];st.transPct=0}),R=>{const rr=runCompute();add("With no transformation and no AIOps the run team is the whole team","run team = Year 1 team",`${fmt(rr.total,3)} vs ${fmt(R.total,3)}`,Math.abs(rr.total-R.total)<1e-9,"proposed")});
   withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>add("AIOps ratio, low AI adoption","1 : 4",`1 : ${R.ratio}`,R.ratio===4,"[F] Part 3"));
@@ -2990,6 +3011,7 @@ function stepStatus(id){
   if(id===2)return !S.towers.length?["todo","Add at least one tower"]:R.warnings2.length?["warn",R.warnings2[0]]:["ok","Ready"];
   if(id===5)return ["ok","Ready"];
   if(id===9)return hasEx?["ok","Existing team entered"]:["opt","Optional: enter the existing team to cross-check the number"];
+  if(id===3&&R.warningsSk.length)return ["warn",R.warningsSk[0]];
   if(id===3)return R.bridge.d3>0?["info",`Adds ${fmt(R.bridge.d3,1)} FTE of headcount`]:["ok","The Stage 1 team covers the specialist skills"];
   if(id===4)return S.aiMaturity==null?["todo","Choose the client's AI adoption (Low is used until you do)"]:["ok","Ready"];
   if(id===6)return S.cplx?["ok","Ready"]:["todo","Choose the engagement complexity (no contingency until you do)"];
@@ -3094,6 +3116,41 @@ function renderS1(){
 
 /* ---------- stage 2 static render ---------- */
 function numIn(t,f,label,max=100000,step=1,val){return `<label for="t-${t.id}-${f}">${label}<input type="number" id="t-${t.id}-${f}" data-tn="${f}" min="0" max="${max}" step="${step}" value="${(val!=null?val:t[f])??""}"></label>`}
+/* a tower's skill sets and special roles, entered in Step 5 (the same markup the handlers have always used) */
+function skillsHtml(t){
+    const used=new Set(t.skills.map(k=>k.skill));
+    const avail=SKILL_CATALOG.filter(k=>k.id==="spec"||!used.has(k.id));
+    const groups=[...new Set(avail.map(k=>k.g))];
+    /* AI platform towers list their own skills first */
+    if(t.kind==="AI"&&groups.includes("AI platforms"))groups.sort((x,y)=>(y==="AI platforms")-(x==="AI platforms"));
+    /* Systems Support Engineer is the AMS L2/L3 role: first for AMS towers, last in its group elsewhere */
+    const ord=g=>{const a=avail.filter(k=>k.g===g);if(g!=="Application and infrastructure")return a;const sse=a.filter(k=>k.id==="sse"),rest=a.filter(k=>k.id!=="sse");return t.kind==="AMS"?sse.concat(rest):rest.concat(sse)};
+    const opts=groups.map(g=>`<optgroup label="${esc(g)}">${ord(g).map(k=>`<option value="${k.id}">${esc(k.name)}</option>`).join("")}</optgroup>`).join("");
+  const cs=CORE_SKILL[t.kind]||["spec","Core support"], uSum=t.skills.reduce((x,k)=>x+(+k.share||0),0);
+  return `<div class="tower skilltower" data-tower="${t.id}"><div class="th"><span class="kbadge">${t.kind}</span><b style="margin-left:8px">${esc(t.name||t.kind+" tower")}</b></div>
+      <div class="skills"><div class="skrow base"><span class="nm">${esc(cs[1])} <small style="display:block;font-weight:400">core support, the base team has it</small></span><span class="pin">${fmt(Math.max(0,100-uSum),0)}%</span><span></span><span></span></div></div>
+      <div class="skills"><span class="tsec"><span class="h">Skill sets added to this tower</span></span>
+        ${t.skills.map(k=>`<div class="skrow" data-skill="${k.id}">
+          <span class="nm">${k.skill==="spec"?`<input type="text" id="kn-${k.id}" data-kn="1" value="${esc(k.name)}" placeholder="Name the niche skill, e.g. Mainframe COBOL" aria-label="Niche skill name" style="width:100%">`:esc(k.name)}</span>
+          <span class="pin"><input type="number" id="ks-${k.id}" data-ks="1" min="0" max="100" step="5" value="${k.share||""}" placeholder="%" aria-label="${esc(k.name)} share of tower">%</span>
+          <label class="ab" for="ka-${k.id}"><input type="checkbox" id="ka-${k.id}" data-ka="1" ${k.absorb?"checked":""}>Base has skill</label>
+          <button type="button" class="btn ghost sm" data-rmskill="${k.id}" aria-label="Remove ${esc(k.name)}">Remove</button>
+        </div>`).join("")}
+        ${t.skills.length?"":`<div class="hint">No skill sets added. The tower's core support role takes all of its FTE; add a skill set only for specialist work (a share of the tower).</div>`}
+        <div class="skfoot"><div class="addrow"><select id="sk-add-${t.id}" aria-label="Add a skill set">${opts}</select><button type="button" class="btn sm" data-addskill="${t.id}">Add skill set</button></div><span class="delta add" id="tadd-${t.id}"></span></div>
+      </div>
+      <div class="skills"><span class="tsec"><span class="h">Special roles</span></span>
+        ${(t.special||[]).map(x=>`<div class="skrow" data-sp="${x.id}">
+          <span class="nm">${esc((SPEC_ROLES[x.role]||{}).name||x.role)}</span>
+          <span class="pin"><input type="number" id="sp-${x.id}" data-spf="1" min="0" max="1000" step="0.1" value="${x.fte??""}" placeholder="FTE" aria-label="${esc((SPEC_ROLES[x.role]||{}).name||x.role)} FTE">FTE</span>
+          <span></span>
+          <button type="button" class="btn ghost sm" data-rmsp="${x.id}" aria-label="Remove ${esc((SPEC_ROLES[x.role]||{}).name||x.role)}">Remove</button>
+        </div>`).join("")}
+        ${(t.special||[]).length?"":`<div class="hint">No special roles. Add a Quality Analyst, Business Analyst, Solution Architect or Mobile Developer with the FTE you want for this tower. It is added on top of the skill sets and shown under that role in the team shape.</div>`}
+        <div class="skfoot"><div class="addrow"><select id="sp-add-${t.id}" aria-label="Add a special role">${Object.entries(SPEC_ROLES).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join("")}</select><button type="button" class="btn sm" data-addsp="${t.id}">Add special role</button></div></div>
+      </div>
+    </div>`;
+}
 function renderS2(){
   $("towerList").innerHTML=S.towers.length?S.towers.map(t=>{
     const known=cpxKnown(t);
@@ -3129,14 +3186,6 @@ function renderS2(){
         <span class="qh" style="margin-top:10px">${t.kind==="AMS"?"Applications":"Data products"} by criticality${t.basis==="thin"?"":" (optional cross-check)"} <span class="tag">proposed</span></span>
         <div class="tgrid" style="grid-template-columns:repeat(3,minmax(0,1fr))">${[["crit","Critical"],["imp","Important"],["std","Standard"]].map(([k,l],i)=>`<label for="t-${t.id}-th-${k}">${l} <span style="font-size:11px">${fmt(+rate[i]||0,2)} FTE each</span><input type="number" id="t-${t.id}-th-${k}" data-tthin="${k}" min="0" max="10000" step="1" value="${th[k]??""}"></label>`).join("")}</div>
         <div class="hint" id="tx-${t.id}"></div></div>`:"";
-    const used=new Set(t.skills.map(k=>k.skill));
-    const avail=SKILL_CATALOG.filter(k=>k.id==="spec"||!used.has(k.id));
-    const groups=[...new Set(avail.map(k=>k.g))];
-    /* AI platform towers list their own skills first */
-    if(t.kind==="AI"&&groups.includes("AI platforms"))groups.sort((x,y)=>(y==="AI platforms")-(x==="AI platforms"));
-    /* Systems Support Engineer is the AMS L2/L3 role: first for AMS towers, last in its group elsewhere */
-    const ord=g=>{const a=avail.filter(k=>k.g===g);if(g!=="Application and infrastructure")return a;const sse=a.filter(k=>k.id==="sse"),rest=a.filter(k=>k.id!=="sse");return t.kind==="AMS"?sse.concat(rest):rest.concat(sse)};
-    const opts=groups.map(g=>`<optgroup label="${esc(g)}">${ord(g).map(k=>`<option value="${k.id}">${esc(k.name)}</option>`).join("")}</optgroup>`).join("");
     return `<div class="tower" data-tower="${t.id}">
       <div class="th"><span class="kbadge">${t.kind}</span><input class="tname" type="text" id="tn-${t.id}" data-tf="name" value="${esc(t.name)}" placeholder="Name this ${t.kind} tower" aria-label="Tower name"><button type="button" class="btn ghost sm" data-rmtower="${t.id}">Remove</button></div>
       <div id="pv-${t.id}"></div>
@@ -3177,25 +3226,9 @@ function renderS2(){
         <div class="q ${t.aiops==null?"on":""}" style="margin:0"><span class="qh">Is AIOps in scope for this tower?</span>${yn("data-taiops",t.aiops,"Yes, AIOps in scope","No")}</div>
         <div class="hint" id="tai-${t.id}">${t.aiops==null?"Intelligent alerting, automated RCA, ticket auto-classification, self-healing. If yes, AI engineers are added at the framework ratio.":""}</div>
       </div>
-      <div class="skills"><span class="tsec"><span class="h">Skill sets in this tower</span></span>
-        ${t.skills.map(k=>`<div class="skrow" data-skill="${k.id}">
-          <span class="nm">${k.skill==="spec"?`<input type="text" id="kn-${k.id}" data-kn="1" value="${esc(k.name)}" placeholder="Name the niche skill, e.g. Mainframe COBOL" aria-label="Niche skill name" style="width:100%">`:esc(k.name)}</span>
-          <span class="pin"><input type="number" id="ks-${k.id}" data-ks="1" min="0" max="100" step="5" value="${k.share||""}" placeholder="%" aria-label="${esc(k.name)} share of tower">%</span>
-          <label class="ab" for="ka-${k.id}"><input type="checkbox" id="ka-${k.id}" data-ka="1" ${k.absorb?"checked":""}>Base has skill</label>
-          <button type="button" class="btn ghost sm" data-rmskill="${k.id}" aria-label="Remove ${esc(k.name)}">Remove</button>
-        </div>`).join("")}
-        ${t.skills.length?"":`<div class="hint">No skill sets yet. Add the skill sets this tower needs; its FTE is split across them.</div>`}
-        <div class="skfoot"><div class="addrow"><select id="sk-add-${t.id}" aria-label="Add a skill set">${opts}</select><button type="button" class="btn sm" data-addskill="${t.id}">Add skill set</button></div><span class="delta add" id="tadd-${t.id}"></span></div>
-      </div>
-      <div class="skills"><span class="tsec"><span class="h">Special roles</span></span>
-        ${(t.special||[]).map(x=>`<div class="skrow" data-sp="${x.id}">
-          <span class="nm">${esc((SPEC_ROLES[x.role]||{}).name||x.role)}</span>
-          <span class="pin"><input type="number" id="sp-${x.id}" data-spf="1" min="0" max="1000" step="0.1" value="${x.fte??""}" placeholder="FTE" aria-label="${esc((SPEC_ROLES[x.role]||{}).name||x.role)} FTE">FTE</span>
-          <span></span>
-          <button type="button" class="btn ghost sm" data-rmsp="${x.id}" aria-label="Remove ${esc((SPEC_ROLES[x.role]||{}).name||x.role)}">Remove</button>
-        </div>`).join("")}
-        ${(t.special||[]).length?"":`<div class="hint">No special roles. Add a Quality Analyst, Business Analyst, Solution Architect or Mobile Developer with the FTE you want for this tower. It is added on top of the skill sets and shown under that role in the team shape.</div>`}
-        <div class="skfoot"><div class="addrow"><select id="sp-add-${t.id}" aria-label="Add a special role">${Object.entries(SPEC_ROLES).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join("")}</select><button type="button" class="btn sm" data-addsp="${t.id}">Add special role</button></div></div>
+      <div class="tsec"><span class="h">Skill sets and special roles</span>
+        <div class="hint">Skill sets, special roles and the skills required on each shift are set in Step 5 (Skill type). ${t.skills.length?`${t.skills.length} skill set${t.skills.length===1?"":"s"} added.`:"None added: the tower's core support role takes all of its FTE."}</div>
+        <div class="row"><button type="button" class="btn sm" data-go="3">Open Step 5: Skill type</button></div>
       </div>
     </div>`}).join(""):`<div class="empty">No towers yet. Add AMS, IMS, DMS or AI platforms.</div>`;
   $("aiSeg2").innerHTML=[["low","Low AI adoption · 1:4"],["moderate","Moderate AI adoption · 1:8"]].map(([k,l])=>`<button type="button" data-ai="${k}" aria-pressed="${S.aiMaturity===k}">${l}</button>`).join("");
@@ -3528,15 +3561,14 @@ function implTier(tk){return tk<25?"a small, low-complexity estate":tk<75?"a med
 function shiftLabel(k){const l=S.locations.find(x=>x.id===k.loc)||{};return {h:`${l.name||""} · ${k.mode==="oncall"?"on-call window":"active window"}`,s:`${clock(k.s)}–${clock(k.e)} local · ${clock(toCust(S,l,k.s))}–${clock(toCust(S,l,k.e))} customer`}}
 function renderS3(){
   $("onCallPct").value=S.onCallPct;
-  const all=S.towers.flatMap(t=>t.skills.map(k=>({...k,tower:t.name||`${t.kind} tower`,kind:t.kind})));
-  $("covList").innerHTML=all.length?all.map(k=>{
-    if(k.absorb)return `<div class="covrow base"><div class="ch"><span><b>${esc(skillName(k))}</b><small>${esc(k.kind)} · ${esc(k.tower)}</small></span><span class="yes" style="font-size:13px">Base team, every shift</span></div></div>`;
-    const cv=covOf(k.id);
-    return `<div class="covrow" data-cskill="${k.id}"><div class="ch"><span><b>${esc(skillName(k))}</b><small>${esc(k.kind)} · ${esc(k.tower)}</small></span>
-      <span class="row" style="gap:6px"><button type="button" class="btn ghost sm" data-callall="${k.id}">All shifts</button></span></div>
-      <div class="shiftchips" role="group" aria-label="Live shifts for ${esc(k.name)}">${blocksOf(S).map(bk=>{const L=shiftLabel(bk);const on=cv.shifts.includes(bk.id);return `<button type="button" data-kshift="${k.id}:${bk.id}" aria-pressed="${on}" class="${on?"":"oc"}"><b>${L.h} · ${on?"live":"on call"}</b><span>${esc(L.s)}</span></button>`}).join("")}</div>
-      <div class="covmeta"><label class="inline" for="cp-${k.id}">People per live shift <input type="number" class="w-s" id="cp-${k.id}" data-cpeople="${k.id}" min="1" max="9" step="1" value="${cv.people}"></label><span class="derived" id="cd-${k.id}" style="padding:4px 8px"></span></div>
-    </div>`}).join(""):`<div class="empty">Add towers and skill sets in Step 2 first.</div>`;
+  $("skillTowers").innerHTML=S.towers.length?S.towers.map(skillsHtml).join(""):`<div class="empty">Add towers in Step 2 first.</div>`;
+  /* the shift matrix: windows down, specialist skill sets across, people who must be live in each cell */
+  const sk=S.towers.flatMap(t=>t.skills.filter(k=>!k.absorb).map(k=>({...k,kind:t.kind,tower:t.name||`${t.kind} tower`}))), bl=blocksOf(S);
+  $("shiftMatrix").innerHTML=!sk.length?`<div class="empty">No specialist skill sets. Every skill set added is held by the base team, so nothing needs its own cover. Untick "Base has skill" on a skill set to ask for its cover.</div>`
+    :!bl.length?`<div class="empty">No working windows yet. Set them in Step 1 (Coverage).</div>`
+    :`<div class="loc-table"><table class="mx"><thead><tr><th>Shift</th>${sk.map(k=>`<th class="r">${esc(skillName(k))}<small>${esc(k.tower)}</small><span class="row" style="gap:4px;justify-content:flex-end;margin-top:4px"><button type="button" class="btn ghost sm" data-callall="${k.id}">All live</button><button type="button" class="btn ghost sm" data-cnone="${k.id}">Clear</button></span></th>`).join("")}</tr></thead>
+      <tbody>${bl.map(bk=>{const L=shiftLabel(bk);return `<tr><td class="loc-name">${esc(L.h)}<small>${esc(L.s)}</small></td>${sk.map(k=>{const n=covPeople(covOf(k.id),bk.id);return `<td class="r"><input type="number" class="w-s" style="width:84px" min="0" max="9" step="1" data-cmx="${k.id}:${bk.id}" value="${n>0?n:""}" placeholder="on call" aria-label="${esc(skillName(k))} live in ${esc(L.h)}, ${esc(L.s)}"></td>`}).join("")}</tr>`}).join("")}
+      <tr><td><b>Floor against effort</b></td>${sk.map(k=>`<td class="r"><span class="derived" id="cd-${k.id}" style="padding:4px 8px"></span></td>`).join("")}</tr></tbody></table></div>`;
 }
 function updateS3(){
   R.covSkills.forEach(k=>{const d=$("cd-"+k.id);if(d)d.innerHTML=`floor ${fmt(k.floor,2)} vs effort ${fmt(k.have,2)} → <b>${k.top>0?"adds "+sgn(k.top,2):"covered"}</b>`});
@@ -4367,16 +4399,16 @@ document.addEventListener("click",e=>{
   else if(d.tcpx){twr(t).cpx=d.tcpx==="1";renderS2();update();}
   else if(d.testate){twr(t).estate=d.testate;renderS2();update();}
   else if(d.tl15){twr(t).l15=d.tl15==="1";renderS2();update();}
-  else if(d.addsp){const tw=S.towers.find(x=>x.id===d.addsp);tw.special=tw.special||[];tw.special.push({id:uid(),role:$("sp-add-"+tw.id).value,fte:null});renderS2();update();}
-  else if(d.rmsp){const tw=twr(t);tw.special=(tw.special||[]).filter(x=>x.id!==d.rmsp);renderS2();update();}
-  else if(d.addskill){const tw=S.towers.find(x=>x.id===d.addskill);const id=$("sk-add-"+tw.id).value;if(id){tw.skills.push(mkSkill(id,0,id==="spec"?"":null));renderS2();update();}}
+  else if(d.addsp){const tw=S.towers.find(x=>x.id===d.addsp);tw.special=tw.special||[];tw.special.push({id:uid(),role:$("sp-add-"+tw.id).value,fte:null});renderS3();update();}
+  else if(d.rmsp){const tw=twr(t);tw.special=(tw.special||[]).filter(x=>x.id!==d.rmsp);renderS3();update();}
+  else if(d.addskill){const tw=S.towers.find(x=>x.id===d.addskill);const id=$("sk-add-"+tw.id).value;if(id){tw.skills.push(mkSkill(id,0,id==="spec"?"":null));renderS3();update();}}
   else if(d.term){S.term=+d.term;update();}
   else if(d.cplx){S.cplx=d.cplx;renderS6();update();}
   else if(d.ai){S.aiMaturity=d.ai;update();}
   else if(d.life||d.app||d.path){S.life=S.life||{};const [k,v]=d.life?["stage",d.life]:d.app?["appetite",d.app]:["pathway",d.path];S.life[k]=S.life[k]===v?null:v;renderS4();update();}
-  else if(d.kshift){const [id,i]=pair(d.kshift);const cv=covOf(id);cv.shifts=cv.shifts.includes(i)?cv.shifts.filter(x=>x!==i):[...cv.shifts,i];renderS3();update();}
-  else if(d.callall){const cv=covOf(d.callall);cv.shifts=blocksOf(S).map(k=>k.id);renderS3();update();}
-  else if(d.rmskill){const tw=twr(t);tw.skills=tw.skills.filter(k=>k.id!==d.rmskill);renderS2();update();}
+  else if(d.callall){const cv=covOf(d.callall);blocksOf(S).forEach(k=>covPut(cv,k.id,Math.max(1,covPeople(cv,k.id))));renderS3();update();}
+  else if(d.cnone){const cv=covOf(d.cnone);blocksOf(S).forEach(k=>covPut(cv,k.id,0));renderS3();update();}
+  else if(d.rmskill){const tw=twr(t);tw.skills=tw.skills.filter(k=>k.id!==d.rmskill);renderS3();update();}
   else if(d.rmtower){S.towers=S.towers.filter(x=>x.id!==d.rmtower);renderS2();update();}
   else if(d.rmassume){const [k,i]=pair(d.rmassume);S.assumptions[k].splice(+i,1);renderAssume(k);update();}
   else if(d.rmrisk){const [k,id]=pair(d.rmrisk);S.risks[k]=S.risks[k].filter(r=>r.id!==id);renderRisks(k);update();}
@@ -4442,7 +4474,7 @@ document.addEventListener("input",e=>{
   if(t.id==="sdmRatio"){const v=Math.round(+t.value);if(v>=4&&v<=20){S.sdmRatio=v;update()}return}
   if(t.id==="transPct"){if(t.value===""){S.transPct=null;update()}else{const v=+t.value;if(v>=0&&v<=50){S.transPct=v;update()}}return}
   if(t.id==="onCallPct"){const v=+t.value;if(t.value!==""&&v>=0&&v<=100){S.onCallPct=v;update()}return}
-  if(d.cpeople){const v=Math.round(+t.value);if(v>=1&&v<=9){covOf(d.cpeople).people=v;update()}return}
+  if(d.cmx){const [sid,bid]=pair(d.cmx);covPut(covOf(sid),bid,t.value===""?0:+t.value);update();return}
   if(t.id==="sparePct"){const v=+t.value;if(v>=0&&v<=80){S.sparePct=v;update()}return}
   if(d.tn){if(t.value===""){twr(t)[d.tn]=null;update()}else{const v=+t.value;if(v>=0){twr(t)[d.tn]=v;update()}}return}
   if(d.ucf){const id=t.closest("tr").dataset.uc;S.aiopsPf=pfOf();const c=S.aiopsPf.uc[id];if(d.ucf==="on")c.on=t.checked;else c[d.ucf]=Math.max(0,+t.value||0);update();return}
@@ -4494,7 +4526,7 @@ document.addEventListener("change",e=>{
   if(t.id==="aiRatio"){S.aiRatio=t.value;update();return}
   if(t.id==="rounding"){S.rounding=t.value;update();return}
   if(d.tc){twr(t)[d.tc]=t.checked;update();return}
-  if(d.ka){skl(t).absorb=t.checked;update();return}
+  if(d.ka){skl(t).absorb=t.checked;renderS3();update();return}
   if(d.rf==="on"){const r=findRisk(t);r.on=t.checked;t.closest("[data-risk]").classList.toggle("off",!r.on);update();return}
 });
 ["dragover","dragleave","drop"].forEach(ev=>document.addEventListener(ev,e=>{

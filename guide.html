@@ -317,7 +317,7 @@ quiz:[
 {id:"s2",grp:"Stage 1 · Size the team",t:"Step 2 · Service towers",html:()=>`
 <span class="eyebrow">Stage 1 · Step 2</span>
 <h1>Service towers: demand, service levels and skill sets</h1>
-<p class="lead">Add an <b>AMS</b>, <b>IMS</b>, <b>DMS</b> or <b>AI platforms</b> tower for each estate in scope. Each tower turns demand into effort and FTE, then splits it across skill sets.</p>
+<p class="lead">Add an <b>AMS</b>, <b>IMS</b>, <b>DMS</b> or <b>AI platforms</b> tower for each estate in scope. Each tower turns demand into effort and FTE. Skill sets and special roles are added in Step 5; until then the tower's core support role takes all of its FTE.</p>
 <h2>For each tower, top to bottom</h2>
 <p>AMS and DMS towers first ask <b>Proceed with volumetrics or thin slices?</b> Thin slices size the tower from its applications (AMS) or data products (DMS) by criticality: Critical, Important and Standard, each carrying a fixed FTE per slice from Benchmarks (<code>proposed</code>, editable). The basis you choose drives the number; if you fill in the other as well, it shows as a cross-check and is flagged when it is more than 25% away. IMS and AI towers use volumetrics only. A tower sized from thin slices does not count towards volumetrics being available for the transformation scenario.</p>
 <ol class="steps">
@@ -326,9 +326,9 @@ quiz:[
 <li><div><b>Demand, in order.</b> Ticket history if the client has it: <b>incidents, service requests and change requests a month</b>. Incidents are split by <b>severity</b> (P1 to P4, counts or %; with counts at L1 the mix sends P1/P2 straight to L2/L3) and counted at L1, L2 or L3. Service requests and change requests are each split by <b>complexity</b> (Low / Medium / High, counts or %): SRs are costed by complexity and done by L1 (Low), L2 (Medium) or L3 (High); CRs are planned engineering work on L3 (or L2). The AREs are in the Benchmarks panel. If not, the estate's structural complexity (T-shirt sizing for apps, environments/DBs for IMS, pipelines for DMS, agents/models for AI). If not even that, monthly active users.</div></li>
 <li><div><b>Enhancement pool</b> (optional hours a month, separate from change requests) and <b>estate</b> (modern or complex legacy: 25% or 35% non-ticketing effort).</div></li>
 <li><div><b>L1.5, SRE and AIOps</b>: each tower asks whether they are in scope. SRE (any tower kind): an SRE takes 78% of that tower's L3 FTE, a role-mix change, not extra headcount. L1.5 brings a Product Support Engineer into the team shape and AIOps brings the AI engineers.</div></li>
-<li><div><b>Special roles</b>: under the skill sets, add a Quality Analyst, Business Analyst, Solution Architect or Mobile Developer with the FTE you want. It is added on top of the tower and shows under that role in the team shape.</div></li>
+<li><div><b>Skill sets and special roles</b> are no longer entered on the tower: they live in Step 5 (Skill type), together with the skills required on each shift.</div></li>
 <li><div><b>AIOps</b>: if in scope, AI engineers are added at 1 per 4 support FTE (low AI adoption) or 1 per 8 (moderate; 1:6 above 20 FTE).</div></li>
-<li><div><b>Skill sets</b> with a share % each, e.g. <span class="ui">Systems Support Engineer (L2/L3)</span> 70%, <span class="ui">Front end dev</span> 30%. <span class="ui">Base has skill</span> means the base roster covers it on every shift; others get their own cover in Step 5.</div></li>
+<li><div><b>Core support role</b>: every tower has one (Systems Support Engineer for AMS, Infra support engineer for IMS, Data Support Engineer for DMS, AI platform engineering for AI). It takes the share of the tower that added skill sets do not, and the base roster covers it on every shift.</div></li>
 </ol>
 <div class="flow"><span>Tickets a month</span><i>→</i><span>L1 30% resolved · L2 70% · L3 = L2 × 20%</span><i>→</i><span>hours: L1 0.25 · L2 3 · L3 10, + SLA, + coordination</span><i>→</i><span>÷ 85% utilisation</span><i>→</i><span>+ B non-ticketing 25/35%</span><i>→</i><span>÷ 160 h = FTE</span></div>
 <div class="calc" id="calcTw">
@@ -390,9 +390,10 @@ ${tryTool(5,"See the comparison bars and the verdict sentence.")}`},
 {id:"s3",grp:"Stage 2 · Qualify the team",t:"Step 5 · Skill type",html:()=>`
 <span class="eyebrow">Stage 2 · Step 5</span>
 <h1>Skill coverage: is the Stage 1 team enough?</h1>
-<p class="lead">Specialist skill sets (anything not marked <span class="ui">Base has skill</span>) need their own cover. You choose where they must be live; elsewhere they're on call. The step then says whether the Stage 1 team can carry that or needs more headcount.</p>
+<p class="lead">Specialist skill sets (anything not marked <span class="ui">Base has skill</span>) need their own cover. You say which skills are required on which shift, based on the working windows from Step 1; elsewhere they're on call. The step then says whether the Stage 1 team can carry that or needs more headcount.</p>
 <ol class="steps">
-<li><div>For each specialist skill set, tick the windows (a location's active or on-call window) where someone must be <b>live</b> and set people per live window.</div></li>
+<li><div>Add the <b>skill sets and special roles</b> for each tower: a skill set takes a share of the tower and says whether the base team has it; a special role (Quality Analyst, Business Analyst, Solution Architect, Mobile Developer) adds FTE on top of the tower.</div></li>
+<li><div>In the <b>skills required on each shift</b> table, each row is a working window and each column a specialist skill set. Enter how many people must be <b>live</b> in that window; leave it blank for on call.</div></li>
 <li><div>In the other windows it's <b>on call</b>, counted at 15% of a staffed window (editable).</div></li>
 <li><div>The tool compares that <b>coverage floor</b> with the FTE the skill already has from step 2 and tops up only the gap.</div></li>
 <li><div>The verdict card then compares the top-up with the <b>spare capacity</b> in the Stage 1 team (the base team above the work team). Spare capacity is used first; <b>additional headcount</b> is added only for what is still missing.</div></li>
