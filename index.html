@@ -96,7 +96,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 /* two-tier navigation: Part tabs above, the steps of that part below; stays on screen while you scroll */
 .stages{position:sticky;top:0;z-index:50;overflow:visible;box-shadow:0 1px 0 var(--line),0 6px 14px -10px rgba(0,0,0,.25)}
-.ptabs{display:grid;grid-template-columns:minmax(0,.55fr) minmax(0,1.3fr) minmax(0,1.3fr) minmax(0,1fr);gap:8px;padding-top:10px}
+.ptabs{display:grid;grid-template-columns:minmax(0,.5fr) repeat(4,minmax(0,1fr));gap:8px;padding-top:10px}
 .ptab{all:unset;box-sizing:border-box;display:grid;gap:2px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);cursor:pointer;min-width:0}
 .ptab:hover{border-color:var(--accent)}
 .ptab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -123,7 +123,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .schip .st.opt{background:transparent;border:1px solid var(--faint)}
 .pnav{flex:none;display:flex;gap:6px;padding-bottom:6px}
 .pnav .btn{padding:4px 10px;font-size:13px}
-@media (max-width:820px){.psteps .where{display:none}.pnav .tx{display:none}.ptab .pf span{display:none}.ptabs{grid-template-columns:minmax(0,.6fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.9fr)}}
+@media (max-width:820px){.psteps .where{display:none}.pnav .tx{display:none}.ptab .pf span{display:none}.ptabs{grid-template-columns:minmax(0,.5fr) repeat(4,minmax(0,1fr))}}
 @media (max-width:520px){.ptab .pl .lg{display:none}.ptab[data-go="0"] .pl{display:none}.ptabs{gap:6px;padding-top:8px}.ptab{display:flex;align-items:baseline;justify-content:space-between;gap:6px;padding:5px 8px}.ptab .pf b{font-size:14px}.psteps{padding-top:4px}.schip{padding:5px 8px}.schip .n{width:20px;height:20px}}
 /* stage */
 .stage-head{display:grid;gap:6px;padding-block:28px 18px;max-width:780px}
@@ -623,8 +623,8 @@ tr.sel td{background:var(--accent-soft)}
   <section id="stage1" class="stage" aria-labelledby="s1h">
     <div class="stage-head">
       <span class="eyebrow">Part 1 · Step 1 of 10</span>
-      <h2 id="s1h">Base team from coverage windows and locations</h2>
-      <p>The support window and the delivery locations' working hours set the smallest L2 + L3 team that can staff every hour. No ticket volumes are used. Step 2 builds a second team from the ticket volume. The two are compared at step 3: the larger one is used, so the base team is the floor.</p>
+      <h2 id="s1h">Coverage: the base team from the support window and locations</h2>
+      <p>The support window and the delivery locations' working hours set the smallest L2 + L3 team that can staff every hour. No ticket volumes are used. Step 2 builds a second team from the ticket volume. The two are compared at step 4: the larger one is used, so the base team is the floor.</p>
     </div>
 
     <div class="cols">
@@ -862,7 +862,7 @@ tr.sel td{background:var(--accent-soft)}
   <section id="stage3" class="stage" aria-labelledby="s3h" hidden>
     <div class="stage-head">
       <span class="eyebrow">Part 2 · Step 5 of 10</span>
-      <h2 id="s3h">Skill coverage: is the Part 1 team enough?</h2>
+      <h2 id="s3h">Skill type: is the Stage 1 team enough?</h2>
       <p>Skill sets the base team already has are on every shift through the base roster. For every other skill set, pick the shifts where it must be live. Outside those shifts it is on call. If covering those shifts needs more people than the skill's Step 2 effort, the difference is added here.</p>
     </div>
 
@@ -893,7 +893,7 @@ tr.sel td{background:var(--accent-soft)}
     </div>
 
     <div class="panel" style="margin-top:20px">
-      <header><h3>Is the Part 1 team enough?</h3><span class="sub">Skill cover against the spare capacity in the base team</span></header>
+      <header><h3>Is the Stage 1 team enough?</h3><span class="sub">Skill cover against the spare capacity in the base team</span></header>
       <div class="verdict" id="covVerdict"></div>
     </div>
 
@@ -968,7 +968,7 @@ tr.sel td{background:var(--accent-soft)}
 
     <div class="cols even" data-stage="s4">
       <div class="panel">
-        <header><h3>Assumptions</h3><span class="sub">Step 6</span></header>
+        <header><h3>Assumptions</h3><span class="sub">Step 9</span></header>
         <ul class="alist" id="auto-s4"></ul>
         <ul class="alist" id="user-s4"></ul>
         <form class="addrow" data-addassume="s4">
@@ -983,7 +983,7 @@ tr.sel td{background:var(--accent-soft)}
           <input type="text" id="ri-s4" placeholder="Add a risk" aria-label="New risk">
           <button class="btn sm" type="submit">Add</button>
         </form>
-        <div class="risk-sum"><span>Step 6 risk modifier</span><span class="num" id="rt-s4"></span></div>
+        <div class="risk-sum"><span>Step 9 risk modifier</span><span class="num" id="rt-s4"></span></div>
       </div>
     </div>
 
@@ -995,27 +995,14 @@ tr.sel td{background:var(--accent-soft)}
   <section id="stage5" class="stage" aria-labelledby="s5h" hidden>
     <div class="stage-head">
       <span class="eyebrow">Part 1 · Step 3 of 10</span>
-      <h2 id="s5h">Reconcile and SDM</h2>
-      <p>The team from the ticket volume (step 2) is compared with the base team from coverage (step 1). If the work team is larger it is kept; if it is smaller it is lifted to the base team. A Service Delivery Manager is then added at one per eight delivery FTE. The result is the <b>Part 1 team</b>. Part 2 tests whether it is enough once skill coverage, transformation and complexity are applied.</p>
+      <h2 id="s5h">Required team size</h2>
+      <p>The team from the ticket volume (step 2) is compared with the base team from coverage (step 1). If the work team is larger it is kept; if it is smaller it is lifted to the base team. A Service Delivery Manager is then added at one per eight delivery FTE. The result is the <b>Stage 1 team</b>. Stage 2 tests whether it is enough once skill coverage, transformation and complexity are applied.</p>
     </div>
 
-    <div class="cols">
-      <div class="panel">
-        <header><h3>Inputs</h3><span class="sub">SDM only</span></header>
-        <div class="field">
-          <div class="lbl">SDM ratio <span class="tag">DAMO manual estimation convention</span></div>
-          <label class="inline" for="sdmRatio">1 SDM per <input id="sdmRatio" type="number" min="4" max="20" step="1"> delivery FTE</label>
-        </div>
-        <div class="field">
-          <div class="lbl">SDM location</div>
-          <select id="sdmLoc" aria-label="SDM location"></select>
-          <div class="hint">Usually close to the client. Only locations from Step 1 are listed.</div>
-        </div>
-      </div>
-      <div class="panel">
-        <header><h3>How the number is built</h3><span class="sub">Delivery team ÷ SDM ratio</span></header>
-        <div class="working" id="steps5"></div>
-      </div>
+    <div class="panel">
+      <header><h3>How the number is built</h3><span class="sub">Larger of coverage and the work, then the SDM</span></header>
+      <div class="working" id="steps5"></div>
+      <div class="hint" style="margin-top:8px">The SDM ratio and location are set in Stage 2, Managerial capacity. Stage 2 re-bases the SDM on the final delivery team.</div>
     </div>
 
     <div class="panel" style="margin-top:20px">
@@ -1030,27 +1017,6 @@ tr.sel td{background:var(--accent-soft)}
       <div class="verdict" id="verdict"></div>
     </div>
 
-    <div class="cols even" data-stage="s5">
-      <div class="panel">
-        <header><h3>Assumptions</h3><span class="sub">Step 3</span></header>
-        <ul class="alist" id="auto-s5"></ul>
-        <ul class="alist" id="user-s5"></ul>
-        <form class="addrow" data-addassume="s5">
-          <input type="text" id="ai-s5" placeholder="Add an assumption agreed in the review" aria-label="New assumption">
-          <button class="btn sm" type="submit">Add</button>
-        </form>
-      </div>
-      <div class="panel">
-        <header><h3>Risks &amp; FTE modifiers</h3><span class="sub">Each risk's % is applied to the SDM FTE</span></header>
-        <div class="risks" id="risks-s5"></div>
-        <form class="addrow" data-addrisk="s5">
-          <input type="text" id="ri-s5" placeholder="Add a risk" aria-label="New risk">
-          <button class="btn sm" type="submit">Add</button>
-        </form>
-        <div class="risk-sum"><span>Step 3 risk modifier</span><span class="num" id="rt-s5"></span></div>
-      </div>
-    </div>
-
     <div class="stage-result" id="res-5" aria-live="polite"></div>
     <div class="stage-nav"><button class="btn" type="button" data-go="2">← Service towers</button><button class="btn primary" type="button" data-go="9">Next: triangulation →</button></div>
   </section>
@@ -1059,7 +1025,7 @@ tr.sel td{background:var(--accent-soft)}
   <section id="stage6" class="stage" aria-labelledby="s6h" hidden>
     <div class="stage-head">
       <span class="eyebrow">Part 2 · Step 7 of 10</span>
-      <h2 id="s6h">Seniority and contingency</h2>
+      <h2 id="s6h">Complexity, seniority and contingency</h2>
       <p>The engagement's complexity sets two things. The seniority pyramid decides the grade mix of the team without changing headcount. The contingency adds 5–10% FTE on top of the team.</p>
     </div>
 
@@ -1118,7 +1084,7 @@ tr.sel td{background:var(--accent-soft)}
 
     <div class="cols even" data-stage="s6">
       <div class="panel">
-        <header><h3>Assumptions</h3><span class="sub">Step 7</span></header>
+        <header><h3>Assumptions</h3><span class="sub">Step 8</span></header>
         <ul class="alist" id="auto-s6"></ul>
         <ul class="alist" id="user-s6"></ul>
         <form class="addrow" data-addassume="s6">
@@ -1133,7 +1099,7 @@ tr.sel td{background:var(--accent-soft)}
           <input type="text" id="ri-s6" placeholder="Add a risk" aria-label="New risk">
           <button class="btn sm" type="submit">Add</button>
         </form>
-        <div class="risk-sum"><span>Step 7 risk modifier</span><span class="num" id="rt-s6"></span></div>
+        <div class="risk-sum"><span>Step 8 risk modifier</span><span class="num" id="rt-s6"></span></div>
       </div>
     </div>
 
@@ -1145,8 +1111,8 @@ tr.sel td{background:var(--accent-soft)}
   <section id="stage7" class="stage" aria-labelledby="s7h" hidden>
     <div class="stage-head">
       <span class="eyebrow">Part 2 · Step 8 of 10</span>
-      <h2 id="s7h">Term and YoY savings</h2>
-      <p>Year 1 is the team from Step 7. From Year 2 the team gets smaller as runbooks mature and automation lands, and contingency tapers once transition risk has passed. A longer term captures more of those years, so the average team per year falls as the term grows.</p>
+      <h2 id="s7h">Capacity ramp and savings</h2>
+      <p>Year 1 is the team from Step 8. From Year 2 the team gets smaller as runbooks mature and automation lands, and contingency tapers once transition risk has passed. A longer term captures more of those years, so the average team per year falls as the term grows.</p>
     </div>
 
     <div class="cols">
@@ -1236,7 +1202,7 @@ tr.sel td{background:var(--accent-soft)}
 
     <div class="cols even" data-stage="s7">
       <div class="panel">
-        <header><h3>Assumptions</h3><span class="sub">Step 8</span></header>
+        <header><h3>Assumptions</h3><span class="sub">Step 10</span></header>
         <ul class="alist" id="auto-s7"></ul>
         <ul class="alist" id="user-s7"></ul>
         <form class="addrow" data-addassume="s7">
@@ -1251,7 +1217,7 @@ tr.sel td{background:var(--accent-soft)}
           <input type="text" id="ri-s7" placeholder="Add a risk" aria-label="New risk">
           <button class="btn sm" type="submit">Add</button>
         </form>
-        <div class="risk-sum"><span>Step 8 risk modifier</span><span class="num" id="rt-s7"></span></div>
+        <div class="risk-sum"><span>Step 10 risk modifier</span><span class="num" id="rt-s7"></span></div>
       </div>
     </div>
 
@@ -1259,12 +1225,92 @@ tr.sel td{background:var(--accent-soft)}
     <div class="stage-nav"><button class="btn" type="button" data-go="6">← Seniority &amp; contingency</button><button class="btn primary" type="button" data-go="8">Next: final fact check →</button></div>
   </section>
 
+  <!-- ===================== STAGE 11: LOCATION DISTRIBUTION ===================== -->
+  <section id="stage11" class="stage" aria-labelledby="s11h" hidden>
+    <div class="stage-head">
+      <span class="eyebrow"></span>
+      <h2 id="s11h">Location distribution</h2>
+      <p>Where the qualified team sits. The support window and each location's working hours (Stage 1, Coverage) set the spread; leave and public holidays set how many people each location needs for the same FTE. Nothing is added in this step: it shows how the team is spread, so the review can see the follow-the-sun shape.</p>
+    </div>
+    <div class="panel">
+      <header><h3>The team by location</h3><span class="sub">Stage 2 team, before transformation capacity</span></header>
+      <div class="loc-table"><table>
+        <thead><tr><th>Location</th><th class="r">L2 (incl. L1)</th><th class="r">L3</th><th class="r">SDM</th><th class="r">FTE</th><th class="r">Share</th><th class="r">People</th><th class="r">Available</th><th class="r">Active h / day</th></tr></thead>
+        <tbody id="locDist"></tbody>
+      </table></div>
+      <div class="verdict" id="locVerdict"></div>
+      <div class="row" style="margin-top:8px"><button class="btn sm" type="button" data-go="1">Change windows and locations in Coverage</button></div>
+    </div>
+    <div class="stage-result" id="res-11" aria-live="polite"></div>
+    <div class="stage-nav"></div>
+  </section>
+
+  <!-- ===================== STAGE 12: MANAGERIAL CAPACITY ===================== -->
+  <section id="stage12" class="stage" aria-labelledby="s12h" hidden>
+    <div class="stage-head">
+      <span class="eyebrow"></span>
+      <h2 id="s12h">Managerial capacity</h2>
+      <p>The people who manage and lead the team: the Service Delivery Manager at one per eight delivery FTE, re-based here on the final delivery team, and a tech lead on L3. Only the SDMs and the tech lead are Lead grade, and Lead is never above Senior.</p>
+    </div>
+    <div class="cols">
+      <div class="panel">
+        <header><h3>Inputs</h3><span class="sub">SDM only</span></header>
+        <div class="field">
+          <div class="lbl">SDM ratio <span class="tag">DAMO manual estimation convention</span></div>
+          <label class="inline" for="sdmRatio">1 SDM per <input id="sdmRatio" type="number" min="4" max="20" step="1"> delivery FTE</label>
+        </div>
+        <div class="field">
+          <div class="lbl">SDM location</div>
+          <select id="sdmLoc" aria-label="SDM location"></select>
+          <div class="hint">Usually close to the client. Only locations from Coverage are listed.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <header><h3>How the number is built</h3><span class="sub">Delivery team ÷ SDM ratio</span></header>
+        <div class="working" id="steps12"></div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:20px">
+      <header><h3>Who manages and leads</h3><span class="sub">Lead is the SDMs and a tech lead on L3 only</span></header>
+      <div class="loc-table"><table>
+        <thead><tr><th>Role</th><th class="r">FTE</th><th class="r">People</th><th>What it is</th></tr></thead>
+        <tbody id="mgrTable"></tbody>
+      </table></div>
+      <div class="verdict" id="mgrVerdict"></div>
+    </div>
+
+    <div class="cols even" data-stage="s5">
+      <div class="panel">
+        <header><h3>Assumptions</h3><span class="sub">Managerial capacity</span></header>
+        <ul class="alist" id="auto-s5"></ul>
+        <ul class="alist" id="user-s5"></ul>
+        <form class="addrow" data-addassume="s5">
+          <input type="text" id="ai-s5" placeholder="Add an assumption agreed in the review" aria-label="New assumption">
+          <button class="btn sm" type="submit">Add</button>
+        </form>
+      </div>
+      <div class="panel">
+        <header><h3>Risks &amp; FTE modifiers</h3><span class="sub">Each risk's % is applied to the SDM FTE</span></header>
+        <div class="risks" id="risks-s5"></div>
+        <form class="addrow" data-addrisk="s5">
+          <input type="text" id="ri-s5" placeholder="Add a risk" aria-label="New risk">
+          <button class="btn sm" type="submit">Add</button>
+        </form>
+        <div class="risk-sum"><span>Managerial capacity risk modifier</span><span class="num" id="rt-s5"></span></div>
+      </div>
+    </div>
+
+    <div class="stage-result" id="res-12" aria-live="polite"></div>
+    <div class="stage-nav"></div>
+  </section>
+
+
   <!-- ===================== STAGE 9: TRIANGULATION ===================== -->
   <section id="stage9" class="stage" aria-labelledby="s9h" hidden>
     <div class="stage-head">
       <span class="eyebrow">Part 1 · Step 4 of 10</span>
-      <h2 id="s9h">Triangulate the Part 1 number</h2>
-      <p>Three independent views of the same team: what the ticket volume needs, what the support window needs, and what the client runs today. The Part 1 number is still the larger of the first two; the existing team is the cross-check that tells you whether to trust it.</p>
+      <h2 id="s9h">Current team: a reference range for the Stage 1 number</h2>
+      <p>Three independent views of the same team: what the ticket volume needs, what the support window needs, and what the client runs today. The Stage 1 number is still the larger of the first two; the existing team is the cross-check that tells you whether to trust it.</p>
     </div>
 
     <div class="cols">
@@ -1291,7 +1337,7 @@ tr.sel td{background:var(--accent-soft)}
         <div class="recon" id="triBars"></div>
         <div class="loc-table">
           <table>
-            <thead><tr><th>Tier</th><th class="r">Existing</th><th class="r">Part 1 FTE</th><th class="r">Part 1 people</th><th class="r">Difference</th><th>Check</th></tr></thead>
+            <thead><tr><th>Tier</th><th class="r">Existing</th><th class="r">Stage 1 FTE</th><th class="r">Stage 1 people</th><th class="r">Difference</th><th>Check</th></tr></thead>
             <tbody id="triTable"></tbody>
           </table>
         </div>
@@ -1305,7 +1351,7 @@ tr.sel td{background:var(--accent-soft)}
 
     <div class="cols even" data-stage="s9">
       <div class="panel">
-        <header><h3>Assumptions</h3><span class="sub">Step 4</span></header>
+        <header><h3>Assumptions</h3><span class="sub">Step 3</span></header>
         <ul class="alist" id="auto-s9"></ul>
         <ul class="alist" id="user-s9"></ul>
         <form class="addrow" data-addassume="s9">
@@ -1315,11 +1361,11 @@ tr.sel td{background:var(--accent-soft)}
       </div>
       <div class="panel">
         <header><h3>Reading the result</h3><span class="sub">No FTE is added in this step</span></header>
-        <div class="hint">If the three views agree, the Part 1 number is well supported. If the existing team is far above or below, check scope (L1, projects, enhancements), the support window it covers, and hidden capacity before moving on. Part 2 then tests skill coverage and the grade mix.</div>
+        <div class="hint">If the three views agree, the Stage 1 number is well supported. If the existing team is far above or below, check scope (L1, projects, enhancements), the support window it covers, and hidden capacity before moving on. Stage 2 then tests skill coverage and the grade mix.</div>
       </div>
     </div>
 
-    <div class="stage-nav"><button class="btn" type="button" data-go="5">← Reconcile &amp; SDM</button><button class="btn primary" type="button" data-go="3">Continue to Part 2: skill coverage →</button></div>
+    <div class="stage-nav"><button class="btn" type="button" data-go="5">← Reconcile &amp; SDM</button><button class="btn primary" type="button" data-go="3">Continue to Stage 2: skill coverage →</button></div>
   </section>
 
   <!-- ===================== STAGE 8 ===================== -->
@@ -1334,7 +1380,7 @@ tr.sel td{background:var(--accent-soft)}
 
     <div class="cols">
       <div class="panel">
-        <header><h3>Existing team today</h3><span class="sub">Entered in Part 1, step 4</span></header>
+        <header><h3>Existing team today</h3><span class="sub">Entered in Stage 1, step 3</span></header>
         <div class="hint" id="exSummary"></div>
         <div class="row"><button class="btn sm" type="button" data-go="9">Edit the existing team</button></div>
       </div>
@@ -1358,7 +1404,7 @@ tr.sel td{background:var(--accent-soft)}
 
     <div class="cols even" data-stage="s8">
       <div class="panel">
-        <header><h3>Assumptions</h3><span class="sub">Step 9</span></header>
+        <header><h3>Assumptions</h3><span class="sub">Step 11</span></header>
         <ul class="alist" id="auto-s8"></ul>
         <ul class="alist" id="user-s8"></ul>
         <form class="addrow" data-addassume="s8">
@@ -1373,7 +1419,7 @@ tr.sel td{background:var(--accent-soft)}
           <input type="text" id="ri-s8" placeholder="Add a risk" aria-label="New risk">
           <button class="btn sm" type="submit">Add</button>
         </form>
-        <div class="risk-sum"><span>Step 9 risk modifier</span><span class="num" id="rt-s8">not applied</span></div>
+        <div class="risk-sum"><span>Step 11 risk modifier</span><span class="num" id="rt-s8">not applied</span></div>
       </div>
     </div>
 
@@ -1530,18 +1576,21 @@ tr.sel td{background:var(--accent-soft)}
 /* ---------- reference data ---------- */
 /* n is the section's internal id (state keys such as risks.s5 and assumptions.s5 use it); the order here is the order on screen */
 const STAGES=[
-  {n:1,part:1,t:"Base team",d:"Coverage windows, locations and on-call set the L2 + L3 roster.",built:true},
-  {n:2,part:1,t:"Service towers",d:"AMS, IMS and DMS demand from volumetrics or complexity, then skill sets.",built:true},
-  {n:5,part:1,t:"Reconcile & SDM",d:"Work team vs base team, larger wins; SDM at 1:8.",built:true},
-  {n:9,part:1,t:"Triangulation",d:"Ticket volume, existing team and base team side by side.",built:true},
-  {n:3,part:2,t:"Skill coverage",d:"Does the Part 1 team cover each skill, or is headcount added?",built:true},
-  {n:4,part:2,t:"Transformation",d:"Transformation POD share and AIOps engineers by scenario.",built:true},
-  {n:6,part:2,t:"Seniority & contingency",d:"Grade mix by complexity, 5–10% contingency.",built:true},
-  {n:7,part:2,t:"Term & savings",d:"Year-by-year FTE and the benefit of a longer term.",built:true},
-  {n:8,part:2,t:"Final fact check",d:"The final team against the existing team.",built:true},
-  {n:10,part:3,t:"Commercial position",d:"An optional proposed final number and the commercial options.",built:true}
+  {n:1,part:1,t:"Coverage",d:"The support window, locations and on-call set the base team.",built:true},
+  {n:2,part:1,t:"Service towers",d:"Demand per tower from volumetrics or thin slices, then skill sets.",built:true},
+  {n:9,part:1,t:"Current team",d:"The existing team as a reference range beside the sizing views.",built:true},
+  {n:5,part:1,t:"Required team size",d:"The larger of coverage and the work sets the size; the binding dimension is shown.",built:true},
+  {n:3,part:2,t:"Skill type",d:"Does the Stage 1 team cover each skill, or is headcount added?",built:true},
+  {n:11,part:2,t:"Location distribution",d:"Where the team sits across the delivery locations.",built:true},
+  {n:12,part:2,t:"Managerial capacity",d:"The SDMs and the tech lead for the team.",built:true},
+  {n:6,part:2,t:"Complexity, seniority & contingency",d:"Grade mix by complexity, and 5–10% contingency to close Stage 2.",built:true},
+  {n:4,part:3,t:"Transformation",d:"Transformation capacity and AIOps engineers by scenario.",built:true},
+  {n:7,part:3,t:"Capacity ramp & savings",d:"Year-by-year FTE and the benefit of a longer term.",built:true},
+  {n:8,part:4,t:"Final fact check",d:"The final team against the existing team.",built:true},
+  {n:10,part:4,t:"Commercial position",d:"An optional proposed final number and the commercial options.",built:true}
 ];
-const PARTS={1:"Part 1 · The Year 1 number",2:"Part 2 · Validate and finalise",3:"Part 3 · Commercial position"};
+const PARTS={1:"Stage 1 · Size the team",2:"Stage 2 · Qualify the team",3:"Stage 3 · Transformation and productivity",4:"Review and commercial"};
+const PARTS_SHORT={1:"Stage 1",2:"Stage 2",3:"Stage 3",4:"Review"};
 const ORDER=STAGES.map(x=>x.n);
 const STEPNO=Object.fromEntries(STAGES.map((x,i)=>[x.n,i+1]));
 const COV_PRESETS=[["8x5",5,8],["16x5",5,16],["24x5",5,24],["8x7",7,8],["16x7",7,16],["24x7",7,24]];
@@ -1633,7 +1682,7 @@ const EX_SOURCE={org:"client org chart or contract schedule",rfp:"RFP or incumbe
 const RISKS_S8=()=>[
   {id:uid(),on:true,pct:0,title:"Existing team includes out-of-scope work",note:"Today's team may also do L1, projects or enhancements that are not in our scope. Check role by role before comparing."},
   {id:uid(),on:true,pct:0,title:"Hidden capacity in the existing team",note:"Client staff or shared incumbent teams quietly absorb L2/L3 work, so today's headcount understates the real effort ([F] Annexure 2: hidden work content)."},
-  {id:uid(),on:false,pct:0,title:"Existing team is over-staffed",note:"A large incumbent team reflects low automation, not the work. Use Step 8 savings to show the path down."}
+  {id:uid(),on:false,pct:0,title:"Existing team is over-staffed",note:"A large incumbent team reflects low automation, not the work. Use Step 10 savings to show the path down."}
 ];
 const RISKS_S7=()=>[
   {id:uid(),on:false,pct:5,title:"Volume growth beyond the baseline",note:"Ticket volume grows and eats the savings. Mitigation: volume band clause with a re-baseline trigger ([F] Sc.3 risk log)."},
@@ -1938,7 +1987,7 @@ function compute(){
   const skills=towers.flatMap(t=>t.skills);
   const demand=sum(towers,"fte");
   const demAbs=skills.filter(k=>k.absorb).reduce((s2,k)=>s2+k.fte,0);
-  const capacity=0; /* no absorption: the work team is compared with the base team after Step 6 */
+  const capacity=0; /* no absorption: the work team is compared with the base team after Step 9 */
   const absorbed=Math.min(demAbs,capacity);
   const ratio=demAbs>0?absorbed/demAbs:0;
   skills.forEach(k=>{k.absorbed=k.absorb?k.fte*ratio:0;k.added=k.fte-k.absorbed;const f=k.fte>0?k.added/k.fte:0;k.a2=k.f2*f;k.a3=k.f3*f});
@@ -1995,7 +2044,7 @@ function compute(){
   const sub3=s2+s3; /* team from the work (steps 2 and 5), AI engineers included */
   const runTeam=sub3-ai2; /* support team that staffs the shifts */
 
-  /* Step 6: scenario from AI maturity × volumetric availability; Transformation POD % vs AIOps ratio, AIOps inside the POD */
+  /* Step 9: scenario from AI maturity × volumetric availability; Transformation POD % vs AIOps ratio, AIOps inside the POD */
   const volFte=towers.filter(t=>t.vol===true).reduce((x,t)=>x+t.fte,0);
   const volShare=demand>0?volFte/demand:0;
   const volAvail=towers.length>0&&volShare>=0.5;
@@ -2015,7 +2064,7 @@ function compute(){
     l.v3=s4*sh;
   });
 
-  /* Reconcile: team from the work (steps 2, 5 and 6) vs base team from coverage (Step 1). Keep the larger;
+  /* Reconcile: team from the work (steps 2, 5 and 9) vs base team from coverage (Step 1). Keep the larger;
      if the work team is smaller, lift it to the base team using the base team's location/tier layout. */
   const workTeam=sub3+s4;
   /* AI engineers build automation and don't staff shifts, so the base team can't stand in for them:
@@ -2028,7 +2077,7 @@ function compute(){
     if(lift>0){l.c2=l.k2; l.c3=l.k3+l.ai} else {l.c2=f2; l.c3=f3}
   });
 
-  /* Step 3: SDM at 1:N of the delivery team (Stages 1–4), governance tier, in one location */
+  /* Step 4: SDM at 1:N of the delivery team (Stages 1–4), governance tier, in one location */
   const sub4=workTeam+lift; /* delivery team = max(work team excl. AI engineers, base team) + AI engineers */
   const sdmRatio=Math.max(1,+S.sdmRatio||8);
   const sdmRaw=sub4/sdmRatio;
@@ -2036,10 +2085,10 @@ function compute(){
   const s5=sdmRaw*(1+rp5);
   const sdmLoc=sdmLocOf();
   locs.forEach(l=>{l.g=l.id===sdmLoc?s5:0});
-  /* Part 1 team: base team and towers only, with its own SDM, before skill cover, transformation and contingency */
+  /* Stage 1 team: base team and towers only, with its own SDM, before skill cover, transformation and contingency */
   const p1run=s2-ai2, p1lift=Math.max(0,s1-p1run), p1deliv=s2+p1lift, p1sdmRaw=p1deliv/sdmRatio, p1sdm=p1sdmRaw*(1+rp5), p1total=p1deliv+p1sdm;
 
-  /* Step 7: contingency by complexity on steps 1–3 and 5–6, spread over delivery L2/L3 cells; pyramid splits by grade only */
+  /* Step 8: contingency by complexity on steps 1–3 and 5–6, spread over delivery L2/L3 cells; pyramid splits by grade only */
   const sub5=sub4+s5;
   const CX=CPLX[S.cplx]||CX_UNSET;
   const contPct=S.contPct==null?CX.cont:+S.contPct;
@@ -2056,7 +2105,7 @@ function compute(){
   const pSum=pyr.reduce((x,v)=>x+v,0)||1;
   const shares=pyr.map(v=>v/pSum);
 
-  /* Step 8: year-by-year FTE. Savings compound from Y2 on the part above the coverage floor; contingency tapers from Y2 */
+  /* Step 10: year-by-year FTE. Savings compound from Y2 on the part above the coverage floor; contingency tapers from Y2 */
   const savePct=S.savePct==null?SAVE_BY_SC[sc]:+S.savePct;
   const r7=savePct/100;
   const cont2=S.cont2==null?Math.min(contPct,6):+S.cont2;
@@ -2143,7 +2192,7 @@ function compute(){
     if(n===1)fte=s1;
     else if(n<=4){work=s2+(n>=3?s3:0)+(n>=4?s4:0);lf=Math.max(0,s1-(work-ai2));
       if(lf>0)cells.forEach((c,i)=>{c.a2=locs[i].k2;c.a3=locs[i].k3+locs[i].ai});fte=work+lf;
-      /* from skill cover on, the team carries the Part 1 SDM until the SDM is re-based on the final delivery team */
+      /* from skill cover on, the team carries the Stage 1 SDM until the SDM is re-based on the final delivery team */
       if(n>=3){fte+=p1sdm;cells.forEach(c=>{c.g=c.id===sdmLoc?p1sdm:0})}}
     else if(n===5)fte=sub5; else fte=total;
     let P2=0,P3=0,PG=0,pp=0;
@@ -2169,7 +2218,7 @@ function compute(){
       people:S.rounding==="total"?up(p1total):pp,L2:p1cells.reduce((x,c)=>x+c.a2,0),L3:p1cells.reduce((x,c)=>x+c.a3,0),G:p1cells.reduce((x,c)=>x+c.g,0),L2p:P2,L3p:P3,Gp:PG};
   })();
   /* final number: the modelled team, or the proposed one once a reason is on record (editable final number).
-     The cut comes out of contingency first, then the delivery team (SDM included); steps 1 to 8 are never changed. */
+     The cut comes out of contingency first, then the delivery team (SDM included); steps 1 to 11 are never changed. */
   const fin=(()=>{
     const A=S.adj, mod=years.map(y=>y.fte);
     const termOf=ys=>{const rows=[1,2,3,4,5].map(T=>{const z=ys.slice(0,T),sm=z.reduce((x,y)=>x+y.fte,0);return {T,ys:z,sum:sm,avg:sm/T}});rows.forEach(t=>t.vs1=1-t.avg/rows[0].avg);return rows};
@@ -2206,7 +2255,7 @@ function compute(){
     }
     return {on:true,total:totalN,people:peopleN,roundAdd:peopleN-totalN,roles:rolesN,years:ys,termRows:termOf(ys),snap,s6:s6n,cut1:a1?a1.cut:0,mod,adjYears};
   })();
-  /* what Part 2 adds to the Part 1 team */
+  /* what Stage 2 adds to the Stage 1 team */
   const bridge={d3:snaps[3].fte-p1total,d4:snaps[4].fte-snaps[3].fte,d5:snaps[5].fte-snaps[4].fte,spare:p1lift};
   return {p1,bridge,days,fteH,reqH,c,framework,actH,oncH,blocks,cover,oc1,p1Busy,aEff,rp1,locs,roster,buffered,s1,warnings,
     u1,utilised,utilAdd:utilised-roster,leaveAdd:buffered-utilised,risk1Add:s1-buffered,
@@ -2336,7 +2385,7 @@ const SCN_KEY="damo-workflow-scenarios";
 function scnLoad(){try{const v=JSON.parse(localStorage.getItem(SCN_KEY)||"[]");return Array.isArray(v)?v:[]}catch(e){return []}}
 function scnSave(list){try{localStorage.setItem(SCN_KEY,JSON.stringify(list))}catch(e){toast("This browser won't store scenarios; save the estimate as a file instead.")}}
 /* ---------- commercial position: an editable final number, and commercial options ----------
-   Applied at the very end: steps 1 to 8 stay the modelled team. compute() returns R.fin, the modelled Year 1 team and years,
+   Applied at the very end: steps 1 to 11 stay the modelled team. compute() returns R.fin, the modelled Year 1 team and years,
    or the proposed ones once a reason is on record. The cut comes out of contingency first, then the delivery team (SDM
    included); the proposed number is what the fact check, the final panel and the client summary use. Effort only: no price. */
 const ADJ_REASONS=[["budget","Client budget constraint"],["ptw","Price to win"],["comp","Competitive position"],["scope","Scope reduced"],["ai","Stronger AI or automation commitment"],["strat","Strategic investment in the account"],["other","Other (explain in the note)"]];
@@ -2507,7 +2556,7 @@ function updateCP(){
   $("cpResults").innerHTML=cpResultsHtml();
   const whole=S.rounding!=="none", tr=F.termRows[T-1];
   $("cpKpis").innerHTML=[["Modelled Year 1 team",fmt(R.total,1),"FTE · Steps 1 to 9","main"],["Final Year 1 team",fmt(F.total,1),F.on?`FTE · proposed, ${sgn(F.total-R.total,1)} against the model`:"FTE · no adjustment",""],["Rostered people",whole?fmt(F.people,0):"–",F.on?"after the adjustment":"as modelled",""],[`${T}-year average`,fmt(tr.avg,1),"FTE a year",""]].map(k=>`<div class="kpi ${k[3]}"><span>${k[0]}</span><b>${k[1]}</b><em>${esc(k[2])}</em></div>`).join("");
-  $("cpNotice").innerHTML=F.on?`<div class="verdict" style="margin-bottom:16px">A proposed final number is applied in Step 10: <b>Year 1 ${fmt(F.total,1)} FTE</b> against the modelled ${fmt(R.total,1)}. The numbers on this step are the modelled ones. <button type="button" class="btn sm" data-go="10" style="margin-left:6px">Open Step 10</button></div>`:"";
+  $("cpNotice").innerHTML=F.on?`<div class="verdict" style="margin-bottom:16px">A proposed final number is applied in Step 12: <b>Year 1 ${fmt(F.total,1)} FTE</b> against the modelled ${fmt(R.total,1)}. The numbers on this step are the modelled ones. <button type="button" class="btn sm" data-go="10" style="margin-left:6px">Open Step 12</button></div>`:"";
 }
 function commercialDoc(){
   const F=R.fin,c=commercialOptions(),A=S.adj;let h=`<h3>Commercial position</h3>`;
@@ -2523,7 +2572,7 @@ function commercialDoc(){
 }
 function commercialMd(L){
   const F=R.fin,c=commercialOptions(),A=S.adj;
-  L.push("","## Part 3 · Step 10 · Commercial position (internal, effort only, no price)");
+  L.push("","## Part 3 · Step 12 · Commercial position (internal, effort only, no price)");
   if(F.on){
     L.push(`- Reason: ${adjReasonLabel(A.reason)}${A.note?` — ${A.note}`:""}. The cut comes out of contingency first, then the delivery team (SDM included).`);
     F.years.forEach((y,i)=>{const a=F.adjYears[i];L.push(a?`- Year ${y.n}: modelled ${fmt(a.fteM,2)} FTE, proposed **${fmt(y.fte,2)}** FTE (${sgn(y.fte-a.fteM,2)}).`:`- Year ${y.n}: unchanged at ${fmt(y.fte,2)} FTE.`)});
@@ -2549,7 +2598,7 @@ function metricsOf(st){
       savings:R.pf.mode==="portfolio"?"AIOps use cases":`${R.savePct}% a year`,trans:R.trans.total,sc:R.sc}});
 }
 const SCN_ROWS=[["Year 1 team (FTE)",m=>fmt(m.fte,1)],["Proposed Year 1 (commercial position)",m=>m.finOn?fmt(m.fin,1):"–"],["Rostered people",m=>m.people==null?"–":fmt(m.people,0)],["Coverage",m=>`${m.cov} · ${m.shifts}`],["Towers",m=>m.towers],["Tickets a month",m=>fmt(m.tickets,0)],
-  ["Base team (Step 1)",m=>fmt(m.base,1)],["Work team (steps 2, 5 and 6, without AI engineers)",m=>fmt(m.work,1)],["AI engineers (AIOps)",m=>fmt(m.ai,1)],["SDM",m=>fmt(m.sdm,1)],["Contingency",m=>`${fmt(m.cont,1)} (${m.contPct}%)`],
+  ["Base team (Step 1)",m=>fmt(m.base,1)],["Work team (steps 2, 5 and 9, without AI engineers)",m=>fmt(m.work,1)],["AI engineers (AIOps)",m=>fmt(m.ai,1)],["SDM",m=>fmt(m.sdm,1)],["Contingency",m=>`${fmt(m.cont,1)} (${m.contPct}%)`],
   ["Framework scenario",m=>String(m.sc)],["Term",m=>`${m.term} year${m.term>1?"s":""}`],["Year 2+ savings",m=>m.savings],["Final-year team",m=>fmt(m.lastY,1)],["Average FTE a year",m=>fmt(m.avg,1)],
   ["Confidence",m=>`${fmt(m.conf,0)} · ${m.band}`],["Range",m=>`${fmt(m.lo,1)} – ${fmt(m.hi,1)}`],["Transition (FTE-months)",m=>m.trans>0?fmt(m.trans,1):"–"]];
 function renderScenarios(){
@@ -2653,7 +2702,7 @@ function runSelfTests(){
    const gp=gradePeople(gradeSplit(2,3,2,[1/7,2/7,4/7]),5,2);
    add("Grade mix: in whole people Lead is not above Senior and nobody is lost","Lead ≤ Senior, people add up",`${gp.join(" / ")}`,gp[0]<=gp[1]&&gp[0]+gp[1]+gp[2]===7,"grade mix");
    withState(testState(st=>{st.towers=[amsTower(500,{skills:[]})];st.cplx="low";st.term=3;st.adj={on:true,mode:"pct",pct:20,y:[],reason:"budget",note:"",mit:{},extra:[]}}),R=>add("Final number: a 20% cut is exactly 20% even when a tower has no skill set and part of the team is not in the location cells","proposed Year 1 = 0.8 × modelled; snapshot equals the total",`${fmt(R.fin.total,2)} vs ${fmt(R.total*0.8,2)}; snapshot ${fmt(R.fin.snap.fte,2)}`,Math.abs(R.fin.total-R.total*0.8)<1e-6&&Math.abs(R.fin.snap.fte-R.fin.total)<1e-6&&Math.abs(R.fin.years[0].fte-R.fin.total)<1e-6,"commercial position"))}
-  withState(testState(st=>{st.towers=[amsTower(900,{skills:[mkSkill("be",100)]})]}),R=>add("Part 1 team is the larger of base and work, plus SDM","max(base, work) + SDM",`${fmt(R.p1.total,2)} vs ${fmt(Math.max(R.s1,R.s2-R.ai2)+R.ai2+R.p1.sdm,2)}`,near(R.p1.total,Math.max(R.s1,R.s2-R.ai2)+R.ai2+R.p1.sdm)&&near(R.p1.sdm,R.p1.deliv/R.sdmRatio),"DAMO convention"));
+  withState(testState(st=>{st.towers=[amsTower(900,{skills:[mkSkill("be",100)]})]}),R=>add("Stage 1 team is the larger of base and work, plus SDM","max(base, work) + SDM",`${fmt(R.p1.total,2)} vs ${fmt(Math.max(R.s1,R.s2-R.ai2)+R.ai2+R.p1.sdm,2)}`,near(R.p1.total,Math.max(R.s1,R.s2-R.ai2)+R.ai2+R.p1.sdm)&&near(R.p1.sdm,R.p1.deliv/R.sdmRatio),"DAMO convention"));
   withState(testState(st=>{st.towers=[amsTower(40,{skills:[mkSkill("mob",100)]})];st.cplx="medium"}),R=>{const exp=Math.max(0,R.s3-R.p1.lift);
     add("Skill cover first uses the spare capacity in the base team","added headcount = max(0, skill cover − spare)",`${fmt(R.bridge.d3,2)} vs ${fmt(exp,2)}`,near(R.bridge.d3,exp)&&near(R.p1.total+R.bridge.d3+R.bridge.d4+R.bridge.d5+R.s6,R.total),"proposed")});
   withState(testState(st=>{st.towers=[amsTower(300)];st.cplx="medium"}),R=>{const a=R.total;withState(Object.assign(testState(st=>{st.towers=[amsTower(300)];st.cplx="medium";st.pyr={medium:[1,1,1]}})),R2=>add("Seniority changes the grade mix, never the headcount","same total with a 1:2:3 and a 1:1:1 pyramid",`${fmt(a,2)} vs ${fmt(R2.total,2)}`,near(a,R2.total)&&near(R2.shares[0],1/3),"proposed"))});
@@ -2664,7 +2713,7 @@ function runSelfTests(){
   add("This estimate: locations add up to the Year 1 team",fmt(R.total,2),fmt(cells,2),near(cells,R.total),"invariant");
   add("This estimate: allowances add up to the Year 1 team",fmt(R.total,2),fmt(A.core+A.util+A.leave+A.cont+A.risk,2),near(A.core+A.util+A.leave+A.cont+A.risk,R.total),"invariant");
   add("This estimate: Year 1 of the term is the Year 1 team",fmt(R.total,2),fmt(R.years[0].fte,2),near(R.years[0].fte,R.total),"invariant");
-  add("This estimate: bottom bar after Step 7 is the Year 1 team",fmt(R.total,2),fmt(R.snaps[6].fte,2),near(R.snaps[6].fte,R.total),"invariant");
+  add("This estimate: bottom bar after Step 8 is the Year 1 team",fmt(R.total,2),fmt(R.snaps[6].fte,2),near(R.snaps[6].fte,R.total),"invariant");
   return out;
 }
 function renderTests(){
@@ -2694,9 +2743,9 @@ async function exportExcel(){
   sheet("Confidence",[["Driver","Weight","Score","Suggested or set","What the score means","Points"]].concat(C.rows.map(r=>[r.name,r.w,r.sc,r.user?"set":"suggested",r.rub[r.sc-1],r.pts])).concat([["Score",100,"","",C.band,C.score]]),[44,8,8,14,70,8]);
   sheet("Sources",[["Input","Source","Evidence","Status"]].concat(provRows().map(r=>[r.label,r.source,r.evidence,r.edited?"Edited after import":"As imported"])),[30,18,60,20]);
   const ar=[["Step","Kind","ID","Text","FTE modifier %","Applied","Source"]];
-  for(const n of ORDER){[...document.querySelectorAll(`#auto-s${n} li.auto`)].forEach(li=>ar.push([STEPNO[n],"Assumption",li.children[0].textContent,li.children[1].textContent,"","",li.children[2].textContent]));
-    (S.assumptions["s"+n]||[]).filter(a=>a.t.trim()).forEach((a,i)=>ar.push([STEPNO[n],"Assumption",`U${i+1}`,a.t,"","","deal team"]));
-    (S.risks["s"+n]||[]).forEach(r=>ar.push([STEPNO[n],"Risk","",`${r.title}: ${r.note}`,n===8?"":+r.pct||0,r.on?"Yes":"No",""]))}
+  for(const n of ORDER){const k_=KEY_OF(n);if(!k_)continue;[...document.querySelectorAll(`#auto-${k_} li.auto`)].forEach(li=>ar.push([STEPNO[n],"Assumption",li.children[0].textContent,li.children[1].textContent,"","",li.children[2].textContent]));
+    (S.assumptions[k_]||[]).filter(a=>a.t.trim()).forEach((a,i)=>ar.push([STEPNO[n],"Assumption",`U${i+1}`,a.t,"","","deal team"]));
+    (S.risks[k_]||[]).forEach(r=>ar.push([STEPNO[n],"Risk","",`${r.title}: ${r.note}`,n===8?"":+r.pct||0,r.on?"Yes":"No",""]))}
   sheet("Assumptions & risks",ar,[6,12,6,100,14,8,16]);
   sheet("Assumptions register",[["Category","Step","ID","Assumption","Source"]].concat(registerGroups().flatMap(g=>g.items.map(i=>[g.cat,i.step,i.id,i.t,i.src]))),[28,6,8,110,22]);
   const cols=R.scnCols||[];
@@ -2765,11 +2814,11 @@ function stepStatus(id){
   if(id===2)return !S.towers.length?["todo","Add at least one tower"]:R.warnings2.length?["warn",R.warnings2[0]]:["ok","Ready"];
   if(id===5)return ["ok","Ready"];
   if(id===9)return hasEx?["ok","Existing team entered"]:["opt","Optional: enter the existing team to cross-check the number"];
-  if(id===3)return R.bridge.d3>0?["info",`Adds ${fmt(R.bridge.d3,1)} FTE of headcount`]:["ok","The Part 1 team covers the specialist skills"];
+  if(id===3)return R.bridge.d3>0?["info",`Adds ${fmt(R.bridge.d3,1)} FTE of headcount`]:["ok","The Stage 1 team covers the specialist skills"];
   if(id===4)return S.aiMaturity==null?["todo","Choose the client's AI adoption (Low is used until you do)"]:["ok","Ready"];
   if(id===6)return S.cplx?["ok","Ready"]:["todo","Choose the engagement complexity (no contingency until you do)"];
   if(id===7)return S.term?["ok","Ready"]:["todo","Choose the contract term (a 1-year term is shown until you do)"];
-  if(id===8)return hasEx?["ok","Existing team entered"]:["opt","Optional: needs the existing team from step 4"];
+  if(id===8)return hasEx?["ok","Existing team entered"]:["opt","Optional: needs the existing team from step 3"];
   if(id===10)return R.fin.on?["info","A proposed final number is applied"]:["opt","Optional: set a proposed final number and see the commercial options"];
   return ["ok",""];
 }
@@ -2782,12 +2831,14 @@ function renderNav(){
   const tab=(p,label,long,fig,sub,target)=>`<button type="button" class="ptab ${curPart===p?"on":""}" role="tab" aria-selected="${curPart===p}" data-go="${target}"><span class="pl">${label}<span class="lg"> · ${long}</span></span><span class="pf"><b>${fig}</b><span>${sub}</span></span></button>`;
   const P=R?R.p1.total:0, T=R?R.total:0;
   let tabs=`<button type="button" class="ptab ${curPart===0?"on":""}" role="tab" aria-selected="${curPart===0}" data-go="0"><span class="pl">Step 0</span><span class="pf"><b style="font-size:14px;font-family:var(--body)">Documents</b><span>optional</span></span></button>`;
-  tabs+=tab(1,"Part 1","The Year 1 number",R?`${fmt(P,1)} FTE`:"–",`${ready(1)} of ${partOf(1).length} ready`,partOf(1)[0].n);
-  tabs+=tab(2,"Part 2","Validate and finalise",R?`${fmt(T,1)} FTE`:"–",`Year 1 · ${ready(2)} of ${partOf(2).length} ready`,partOf(2)[0].n);
-  tabs+=tab(3,"Part 3","Commercial position",R?`${fmt(R.fin.total,1)} FTE`:"–",R&&R.fin.on?"proposed":"optional",partOf(3)[0].n);
+  const Pr=R?R.p1.total:0;
+  tabs+=tab(1,"Stage 1","Size the team",R?`${fmt(Pr,1)} FTE`:"–",`${ready(1)} of ${partOf(1).length} ready`,partOf(1)[0].n);
+  tabs+=tab(2,"Stage 2","Qualify the team",R?`${fmt(T,1)} FTE`:"–",`${ready(2)} of ${partOf(2).length} ready`,partOf(2)[0].n);
+  tabs+=tab(3,"Stage 3","Transformation",R?`${fmt(T,1)} FTE`:"–",`${ready(3)} of ${partOf(3).length} ready`,partOf(3)[0].n);
+  tabs+=tab(4,"Review","Check and commercial",R?`${fmt(R.fin.total,1)} FTE`:"–",R&&R.fin.on?"proposed":"optional",partOf(4)[0].n);
   const list=curPart?partOf(curPart):[], pos=ORDER.indexOf(cur);
   const chips=list.map(x=>{const st=stat[x.n], on=x.n===cur;return `<button type="button" class="schip ${on?"on":""}" data-go="${x.n}" ${on?'aria-current="step"':""} title="${esc(st[1]?x.t+": "+st[1]:x.t)}"><span class="n">${STEPNO[x.n]}</span>${esc(x.t)}<span class="st ${st[0]}" aria-hidden="true"></span><span class="sr" style="position:absolute;left:-9999px">${esc(st[1])}</span></button>`}).join("");
-  const where=cur===0?"Optional: let Claude propose inputs":curPart===1?`Step ${list.findIndex(x=>x.n===cur)+1} of ${list.length}`:curPart===3?"Optional: a proposed final number and the commercial options. Steps 1 to 9 stay as modelled":`Step ${list.findIndex(x=>x.n===cur)+1} of ${list.length} · starts from the Part 1 team, ${R?fmt(P,1):"–"} FTE`;
+  const where=cur===0?"Optional: let Claude propose inputs":curPart===1?`Step ${list.findIndex(x=>x.n===cur)+1} of ${list.length} · sizes the team from coverage, volumetrics or thin slices, and the current team`:curPart===2?`Step ${list.findIndex(x=>x.n===cur)+1} of ${list.length} · starts from the Stage 1 team, ${R?fmt(P,1):"–"} FTE`:curPart===3?`Step ${list.findIndex(x=>x.n===cur)+1} of ${list.length} · transformation capacity and the year-by-year lift`:`Step ${list.findIndex(x=>x.n===cur)+1} of ${list.length} · steps 1 to 11 stay as modelled; the commercial position is optional`;
   const prev=pos>0?ORDER[pos-1]:null, next=pos<ORDER.length-1?ORDER[pos+1]:null, nm=id=>(STAGES.find(x=>x.n===id)||{}).t||"Documents";
   const pn=`${cur===0?"":prev!=null?`<button type="button" class="btn sm" data-go="${prev}" aria-label="Previous step: ${esc(nm(prev))}">←<span class="tx"> Previous</span></button>`:`<button type="button" class="btn sm" data-go="0" aria-label="Documents">←<span class="tx"> Documents</span></button>`}${cur===0?`<button type="button" class="btn sm primary" data-go="1">Step 1<span class="tx"> · Base team</span> →</button>`:next!=null?`<button type="button" class="btn sm primary" data-go="${next}" aria-label="Next step: ${esc(nm(next))}"><span class="tx">Next </span>→</button>`:""}`;
   const html=tabs+"\u0001"+chips+"\u0001"+where+"\u0001"+pn+"\u0001"+cur;
@@ -2799,11 +2850,21 @@ function renderNav(){
   const on=$("stepChips").querySelector(".schip.on");
   if(on&&!sameTab)on.scrollIntoView({inline:"center",block:"nearest"});else $("stepChips").scrollLeft=keepScroll;
 }
+function fixStages(){
+  ORDER.forEach((n,i)=>{
+    const sec=$("stage"+n); if(!sec)return;
+    const st=STAGES.find(x=>x.n===n), prev=i>0?STAGES.find(x=>x.n===ORDER[i-1]):null, next=i<ORDER.length-1?STAGES.find(x=>x.n===ORDER[i+1]):null;
+    const eb=sec.querySelector(".stage-head .eyebrow"); if(eb)eb.textContent=`${PARTS_SHORT[st.part]} · Step ${i+1} of ${ORDER.length}`;
+    const nav=sec.querySelector(".stage-nav"); if(!nav)return;
+    const extra=n===8?`<button class="btn" type="button" id="copyBtn2">Copy summary</button>`:"";
+    nav.innerHTML=`${prev?`<button class="btn" type="button" data-go="${prev.n}">← ${esc(prev.t)}</button>`:`<button class="btn" type="button" data-go="0">← Documents</button>`}<span class="row" style="gap:8px">${extra}${next?`<button class="btn primary" type="button" data-go="${next.n}">Next: ${esc(next.t.toLowerCase())} →</button>`:""}</span>`;
+  });
+}
 function renderRail(){
-  NAVHTML="";renderNav();
+  fixStages();NAVHTML="";renderNav();
   document.querySelectorAll(".stage").forEach(sec=>{sec.hidden=sec.id!=="stage"+S.active});
 }
-function go(n){S.active=n;if(R)renderBar();if(n===3){renderS3();update();}if(n===4){renderS4();update();}if(n===5){renderS5();update();}if(n===6){renderS6();update();}if(n===7){renderS7();update();}if(n===8||n===9||n===10){renderS8();update();}renderRail();save();window.scrollTo({top:0,behavior:"auto"})}
+function go(n){S.active=n;if(R)renderBar();if(n===3){renderS3();update();}if(n===4){renderS4();update();}if(n===5){renderS5();update();}if(n===6){renderS6();update();}if(n===7){renderS7();update();}if(n===8||n===9||n===10){renderS8();update();}if(n===11||n===12){renderS5();update();}renderRail();save();window.scrollTo({top:0,behavior:"auto"})}
 
 /* ---------- stage 1 static render ---------- */
 function renderS1(){
@@ -2959,7 +3020,9 @@ function renderRisks(k){
     </div></div>`}`).join("");
 }
 const AUTO={};
-const stepOf=k=>STEPNO[+String(k).replace(/^s/,"")]||"";
+const KEY_OF=n=>n===12?"s5":n===5||n===11?null:"s"+n;   /* the assumption and risk key a stage owns; the SDM ones sit in Managerial capacity */
+const STAGE_OF_KEY=k=>k==="s5"?12:+String(k).replace(/^s/,"");
+const stepOf=k=>STEPNO[STAGE_OF_KEY(k)]||"";
 function renderAuto(k,list){
   AUTO[k]=list;
   const items=list.map((a,i)=>({a,i,c:ACAT_OF[a[0]]||ACAT_DEFAULT[k]||"Other"})).sort((x,y)=>ACATS.indexOf(x.c)-ACATS.indexOf(y.c)||x.i-y.i);
@@ -2989,7 +3052,7 @@ function updateRiskDeltas(k,base,add,pct){
 let R;
 function update(){
   R=compute();
-  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); updateS6(); updateS7(); updateTrans(); updateS9(); updateS8(); updateCP(); updateResults(); renderBar(); renderNav(); setNavH(); updateMeta(); save();
+  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); updateS6(); updateS7(); updateTrans(); updateS9(); updateS11(); updateS12(); updateS8(); updateCP(); updateResults(); renderBar(); renderNav(); setNavH(); updateMeta(); save();
 }
 /* A compact version of the coverage timeline for the inputs panel: one 48-cell bar per row, on the customer clock from the window start. */
 function miniHtml(C){
@@ -3129,7 +3192,7 @@ function updateS2(){
   h+=wstep("6","Leave &amp; holiday backfill",`<span class="delta add">${sgn(R.leave2,2)}</span>`,S.backfill?`Tower FTE ÷ availability of the locations it sits in (spread like the Step 1 roster): ×${fmt(R.bf2,3)}`:"Off, as in Step 1");
   h+=wstep("7","Risk modifiers",`<span class="delta risk">${sgn(R.risk2Add,2)}</span>`,`${fmt(R.added*R.bf2,2)} × ${fmt(R.rp2*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
   h+=wstep("8","AI engineers (AIOps)",`<span class="delta add">${sgn(R.ai2,2)}</span>`,R.aiTowers.length?`${listNames(R.aiTowers)}: ${fmt(R.aiBase,2)} support FTE ÷ ${R.ratio} (1 AI engineer per ${R.ratio} support FTE)`:`No tower has AIOps in scope`);
-  h+=wstep("=","Tower team",`${fmt(R.s2,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Built from the work, separately from the ${fmt(R.s1,2)} FTE base team · L2 ${fmt(R.add2,2)} · L3 ${fmt(R.add3,2)} before risk${R.ai2>0?` · AI engineers ${fmt(R.ai2,2)}`:""}. The two are compared at Step 3.`,"total");
+  h+=wstep("=","Tower team",`${fmt(R.s2,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Built from the work, separately from the ${fmt(R.s1,2)} FTE base team · L2 ${fmt(R.add2,2)} · L3 ${fmt(R.add3,2)} before risk${R.ai2>0?` · AI engineers ${fmt(R.ai2,2)}`:""}. The two are compared at Step 4.`,"total");
   $("steps2").innerHTML=h;
   $("towerCalc").innerHTML=R.towers.length?R.towers.map(t=>`<tr><td class="loc-name">${esc(t.name)}<small>${t.kind}${t.estate==="legacy"?(t.kind==="AI"?" · self-hosted":" · legacy"):""}</small></td><td>${esc(t.src)}</td><td class="r num">${fmt(t.tickets,0)}</td><td class="r num">${fmt(t.l1t,1)}</td><td class="r num">${fmt(t.l2t,1)}</td><td class="r num">${fmt(t.l3t,1)}</td><td class="r num">${fmt(t.A,0)}</td><td class="r num">${fmt(t.Bh,0)}</td><td class="r num">${fmt(t.C,0)}</td><td class="r num"><b>${fmt(t.fte,2)}</b></td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td></td><td class="r num">${fmt(tk,0)}</td><td class="r num">${fmt(R.towers.reduce((x,t)=>x+t.l1t,0),1)}</td><td class="r num">${fmt(l2,1)}</td><td class="r num">${fmt(l3,1)}</td><td class="r num">${fmt(A,0)}</td><td class="r num">${fmt(Bh,0)}</td><td class="r num">${fmt(R.towers.reduce((x,t)=>x+t.C,0),0)}</td><td class="r num"><b>${fmt(R.demand,2)}</b></td></tr>`
@@ -3156,7 +3219,7 @@ function updateS2(){
     ["B5",`IMS, DMS and AI platform proxies use complexity points × tickets per point (IMS ${B.ims.tpp}, DMS ${B.dms.tpp}, AI ${B.ai.tpp}). These are calibration targets.`,"proposed"],
     ["B6",`Skill sets the base team already has (${abs.length?abs.map(kn).join(", "):"none"}) are covered on every shift by the base roster. Other skill sets get their own window cover in step 5.`,"proposed"],
     ["B7","Tower FTE keeps its effort-based L2/L3 split and is spread across locations like the Step 1 roster. Step 5 sets which windows each skill covers.","proposed"],
-    ["B9",S.backfill?`Tower FTE gets the same leave and holiday backfill as the base team (×${fmt(R.bf2,3)}, weighted by location), so the two teams are compared like for like at Step 3.`:"Leave backfill is off, for the tower team as for the base team.","[F] G3"],
+    ["B9",S.backfill?`Tower FTE gets the same leave and holiday backfill as the base team (×${fmt(R.bf2,3)}, weighted by location), so the two teams are compared like for like at Step 4.`:"Leave backfill is off, for the tower team as for the base team.","[F] G3"],
     ["B8",R.aiTowers.length?`AIOps is in scope for ${listNames(R.aiTowers)}: one AI engineer per ${R.ratio} support FTE of those towers (after Step 2 risk), counted as L3 engineering. They build intelligent alerting, RCA automation and self-healing, own prompt engineering and model evaluation, and do not staff shifts.`:"AIOps is not in scope for any tower, so no AI engineers are added.","[F] Sc.4 Step 3"]
   ]);
 }
@@ -3193,10 +3256,10 @@ function updateS3(){
     :`<tr><td colspan="6" class="hint">No skill sets need their own cover.</td></tr>`;
   updateRiskDeltas("s3",R.topUp,R.risk3Add,R.rp3);
   {const B=R.bridge;
-   $("covVerdict").innerHTML=!R.covSkills.length?`<b>Every skill set is held by the base team</b>, so skill coverage adds nothing to the Part 1 team (${fmt(R.p1.total,2)} FTE).`
-     :B.d3>0?`<b>The Part 1 team is not enough for skill coverage.</b> Specialist cover needs ${fmt(R.s3,2)} FTE; the Part 1 team has ${fmt(B.spare,2)} FTE of spare capacity (base team above the work), so <b>${fmt(B.d3,2)} FTE of additional headcount</b> is added.`
-     :R.s3>0?`<b>The Part 1 team is enough.</b> Specialist cover needs ${fmt(R.s3,2)} FTE and the base team has ${fmt(B.spare,2)} FTE of spare capacity above the work, so no extra headcount is added.`
-     :`<b>The Part 1 team is enough.</b> The live windows you picked are already covered by the effort sized in step 2, so nothing is added.`}
+   $("covVerdict").innerHTML=!R.covSkills.length?`<b>Every skill set is held by the base team</b>, so skill coverage adds nothing to the Stage 1 team (${fmt(R.p1.total,2)} FTE).`
+     :B.d3>0?`<b>The Stage 1 team is not enough for skill coverage.</b> Specialist cover needs ${fmt(R.s3,2)} FTE; the Stage 1 team has ${fmt(B.spare,2)} FTE of spare capacity (base team above the work), so <b>${fmt(B.d3,2)} FTE of additional headcount</b> is added.`
+     :R.s3>0?`<b>The Stage 1 team is enough.</b> Specialist cover needs ${fmt(R.s3,2)} FTE and the base team has ${fmt(B.spare,2)} FTE of spare capacity above the work, so no extra headcount is added.`
+     :`<b>The Stage 1 team is enough.</b> The live windows you picked are already covered by the effort sized in step 2, so nothing is added.`}
   const base=R.skills.filter(k=>k.absorb).map(k=>k.name);
   renderAuto("s3",[
     ["C1",`Skill sets the base team has are present on every shift through the Step 1 roster: ${base.length?[...new Set(base)].join(", "):"none"}.`,"Step 1"],
@@ -3227,7 +3290,7 @@ function updateS4(){
   h+=wstep("4","AI engineers already in the POD",fmt(R.aiops,2),R.aiTowers.length?`Added in Step 2 at 1:${R.ratio} for ${esc(listNames(R.aiTowers))}`:"AIOps not in scope for any tower");
   h+=wstep("5","Transformation added",`<span class="delta add">${sgn(R.stage4raw,2)}</span>`,`POD ${fmt(R.pod,2)} − AI engineers ${fmt(R.aiops,2)}: other transformation (SRE, automation, CI/CD)${R.pod<R.aiops?". The AI engineers already exceed the POD, so nothing more is added":""}`);
   h+=wstep("6","Risk modifiers",`<span class="delta risk">${sgn(R.risk4Add,2)}</span>`,`${fmt(R.stage4raw,2)} × ${fmt(R.rp4*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
-  h+=wstep("=","Step 6 adds",`${sgn(R.s4,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team from the work: ${fmt(R.sub3,2)} + ${fmt(R.s4,2)} = ${fmt(R.workTeam,2)} FTE, compared with the ${fmt(R.s1,2)} FTE base team at Step 3`,"total");
+  h+=wstep("=","Step 9 adds",`${sgn(R.s4,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team from the work: ${fmt(R.sub3,2)} + ${fmt(R.s4,2)} = ${fmt(R.workTeam,2)} FTE, compared with the ${fmt(R.s1,2)} FTE base team at Step 4`,"total");
   if(S.aiMaturity==null)h=`<div class="alert" style="margin-bottom:10px">Choose the client's AI adoption. Low is used until you do.</div>`+h;
   $("steps4").innerHTML=h;
   $("scFacts").innerHTML=[["Estimation confidence",SC.conf],["Y1 contingency",SC.cont],["Team shape",SC.shape],["AIOps timeline",SC.aiops],["Commercial model",SC.comm],["Volume band clause",SC.band],["YoY savings target",SC.savings]].map(([k,v])=>`<div><span>${k}</span><b>${esc(v)}</b></div>`).join("");
@@ -3236,7 +3299,7 @@ function updateS4(){
     ["D1",`Scenario ${R.sc} (${SC.name}). Volumetrics count as available when towers with ticket history carry at least half of the tower FTE.`,"[F] Part 2–3"],
     ["D2",`Transformation POD is ${R.transPct}% of the support team from the work (steps 2 and 5, without AI engineers) (scenario guidance ${SC.range}). It covers SRE, automation, CI/CD and AI adoption.`,"[F] 1.7"],
     ["D3",R.aiTowers.length?`AI engineers (AIOps) are sized per tower in Step 2 at 1:${R.ratio} and sit inside the Transformation POD, so the POD adds only what they don't already cover.`:"AIOps is not in scope for any tower, so the whole POD is other transformation capacity.","[F] Sc.4 Step 3"],
-    ["D4",`AIOps timeline for this scenario: ${SC.aiops}. This stage sizes steady-state capacity; the year-by-year ramp is set in Step 8.`,"[F] Part 3"],
+    ["D4",`AIOps timeline for this scenario: ${SC.aiops}. This stage sizes steady-state capacity; the year-by-year ramp is set in Step 10.`,"[F] Part 3"],
     ["D5","AI tools, licences, tokens and hyperscaler AI API costs are paid by the client.","[F] G5"],
     ["D6","Transformation FTE is engineering capacity (L3) and is spread across locations like the Step 1 roster.","proposed"]
   ]);
@@ -3256,7 +3319,7 @@ function updateS5(){
   h+=wstep("3","Delivery team",P.lift>0?`<span class="delta round">${sgn(P.lift,2)}</span> ${fmt(P.deliv,2)}`:fmt(P.deliv,2),P.lift>0?`Work team is smaller, so the base team is used (+${fmt(P.lift,2)}); it already staffs every window${R.ai2>0?`. The ${fmt(R.ai2,2)} AI engineers are kept on top`:""}`:`Work team is larger than the base team, so it is kept`);
   h+=wstep("4","SDM",`<span class="delta add">${sgn(P.sdmRaw,2)}</span>`,`${fmt(P.deliv,2)} ÷ ${R.sdmRatio}, based in ${esc(loc?loc.name:"")}`);
   h+=wstep("5","Risk modifiers",`<span class="delta risk">${sgn(P.sdm-P.sdmRaw,2)}</span>`,`${fmt(P.sdmRaw,2)} × ${fmt(R.rp5*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
-  h+=wstep("=","Part 1 team",`${fmt(P.total,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`${fmt(P.deliv,2)} delivery + ${fmt(P.sdm,2)} SDM${S.rounding==="cell"?`; SDMs round to the nearest whole person: ${fmt(P.Gp,0)}`:""}. Skill cover, transformation and contingency are tested in Part 2`,"total");
+  h+=wstep("=","Stage 1 team",`${fmt(P.total,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`${fmt(P.deliv,2)} delivery + ${fmt(P.sdm,2)} SDM${S.rounding==="cell"?`; SDMs round to the nearest whole person: ${fmt(P.Gp,0)}`:""}. Skill cover, transformation and contingency are tested in Stage 2`,"total");
   $("steps5").innerHTML=h;
 
   /* reconciliation */
@@ -3271,7 +3334,7 @@ function updateS5(){
   $("reconTable").innerHTML=rows.map(r=>`<tr><td class="loc-name">${r[0]}</td><td>${r[1]}</td><td class="hint">${esc(r[2])}</td><td class="r num"><b>${fmt(r[3],2)}</b></td></tr>`).join("");
   const gap=Math.abs(cov-wk), pct=Math.min(cov,wk)>0?gap/Math.min(cov,wk)*100:0;
   const v=P.lift>0
-    ?`<b>The support window sets the team.</b> The work needs ${fmt(wk,2)} FTE, but covering ${covLabel()} needs ${fmt(cov,2)}, ${fmt(gap,2)} (${fmt(pct,0)}%) more. The team is lifted to ${fmt(cov,2)}; about ${fmt(cov>0?gap/cov*100:0,0)}% of its time is spare, and Part 2 uses that spare capacity first for skill cover and transformation.`
+    ?`<b>The support window sets the team.</b> The work needs ${fmt(wk,2)} FTE, but covering ${covLabel()} needs ${fmt(cov,2)}, ${fmt(gap,2)} (${fmt(pct,0)}%) more. The team is lifted to ${fmt(cov,2)}; about ${fmt(cov>0?gap/cov*100:0,0)}% of its time is spare, and Stage 2 uses that spare capacity first for skill cover and transformation.`
     :`<b>The work sets the team.</b> The towers need ${fmt(wk,2)} FTE, ${fmt(gap,2)} (${fmt(pct,0)}%) more than the ${fmt(cov,2)} FTE base team, so the work team is kept and the windows are staffed from within it.`;
   $("verdict").innerHTML=v;
 
@@ -3280,8 +3343,40 @@ function updateS5(){
     ["E1",`One Service Delivery Manager per ${R.sdmRatio} delivery FTE, graded Lead. The SDM owns governance: ops reviews, QBRs, SLA reporting and CAB.`,"DAMO convention · [F] 1.7"],
     ["E2","The SDM is the only governance role. Delivery Principal, Solution Architect and similar roles are not included.","agreed"],
     ["E3",`The SDM is based in ${loc?loc.name:""} and is not rostered on windows. With whole-person rounding, SDMs round to the nearest person (at least one), not up.`,"proposed"],
-    ["E4","The Part 1 delivery team is the larger of the base team (step 1, with risk) and the team from the towers (step 2, with risk). A lift follows the base team's locations and tiers. Part 2 re-bases the SDM on the final delivery team.","agreed"]
+    ["E4","The Stage 1 delivery team is the larger of the base team (step 1, with risk) and the team from the towers (step 2, with risk). A lift follows the base team's locations and tiers. Stage 2 re-bases the SDM on the final delivery team.","agreed"]
   ]);
+}
+
+/* ---------- Stage 2: location distribution and managerial capacity (views of the team; nothing is added here) ---------- */
+function updateS11(){
+  const whole=S.rounding!=="none", cells=R.snaps[6].cells, tot=cells.reduce((x,c)=>x+c.a2+c.a3+c.g,0)||1;
+  $("locDist").innerHTML=cells.filter(c=>c.a2+c.a3+c.g>0).map(c=>{
+    const l=R.locs.find(x=>x.id===c.id)||{}, row=R.cover.rows.find(x=>x.id===c.id)||{}, f=c.a2+c.a3+c.g;
+    return `<tr><td class="loc-name">${esc(c.name)}<small>${esc((S.locations.find(x=>x.id===c.id)||{}).kind||"")} · ${utcLabel(+(S.locations.find(x=>x.id===c.id)||{}).utc||0)}</small></td><td class="r num">${fmt(c.a2,2)}</td><td class="r num">${fmt(c.a3,2)}</td><td class="r num">${fmt(c.g,2)}</td><td class="r num"><b>${fmt(f,2)}</b></td><td class="r num">${fmt(f/tot*100,0)}%</td><td class="r num">${whole&&S.rounding!=="total"?fmt(c.people,0):"–"}</td><td class="r num">${l.avail!=null?fmt(l.avail*100,0)+"%":"–"}</td><td class="r num">${row.a?fmt(row.a.filter(Boolean).length/2,1):"–"}</td></tr>`}).join("")||`<tr><td colspan="9" class="hint">No team yet.</td></tr>`;
+  const big=cells.slice().sort((a,b)=>(b.a2+b.a3+b.g)-(a.a2+a.a3+a.g))[0];
+  const share=big?(big.a2+big.a3+big.g)/tot*100:0;
+  $("locVerdict").innerHTML=cells.filter(c=>c.a2+c.a3+c.g>0).length<2?`<b>The whole team sits in ${esc(big?big.name:"one location")}.</b> Add a second location in Coverage for follow-the-sun cover.`
+    :`<b>${esc(big.name)} carries the most, ${fmt(share,0)}% of the ${fmt(tot,1)} FTE.</b> The split follows the working windows in Coverage: ${R.cover.overlapH>0?`${fmt(R.cover.overlapH,1)} h a day have two locations active (a handover cushion), `:"no hour has two locations active, "}${R.cover.gapH>0?`and ${fmt(R.cover.gapH,1)} h are uncovered.`:"and every window hour is covered."}`;
+  const r11=$("res-11");if(r11){const bn=cells.filter(c=>c.a2+c.a3+c.g>0).map(c=>`${esc(c.name)} ${fmt(c.a2+c.a3+c.g,1)}`).join(" · ");r11.innerHTML=`<div><div class="rl">Team by location</div><div class="rv">${fmt(tot,2)}<small>FTE</small></div></div><div class="rd">${bn}. This step adds no FTE.</div>`}
+}
+function updateS12(){
+  const gsp=gradeSplit(R.L2,R.L3,R.G,R.shares), tech=gsp[0].l3, G=R.G, whole=S.rounding!=="none";
+  const sen=gsp.reduce((x,r,i)=>x+(i===1?r.l2+r.l3+r.sdm:0),0), lead=tech+G, nR=S.risks.s5.filter(r=>r.on&&+r.pct).length;
+  const loc=S.locations.find(l=>l.id===R.sdmLoc);
+  let h="";
+  h+=wstep("1","Delivery team",fmt(R.sub4,2),`Work team ${fmt(R.workTeam,2)}${R.p1.lift>0||R.bridge.d4!==undefined?`, lifted to the base team where needed`:""}; AI engineers included`);
+  h+=wstep("2","SDM",`<span class="delta add">${sgn(R.sdmRaw,2)}</span>`,`${fmt(R.sub4,2)} ÷ ${R.sdmRatio}, based in ${esc(loc?loc.name:"")}`);
+  h+=wstep("3","Risk modifiers",`<span class="delta risk">${sgn(R.s5-R.sdmRaw,2)}</span>`,`${fmt(R.sdmRaw,2)} × ${fmt(R.rp5*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
+  h+=wstep("=","SDM re-based",`${fmt(R.s5,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Against ${fmt(R.p1.sdm,2)} in Stage 1: ${sgn(R.s5-R.p1.sdm,2)} FTE once skill cover and transformation are on the delivery team`,"total");
+  $("steps12").innerHTML=h;
+  const sdmP=whole?(S.rounding==="cell"?R.Gp:Math.max(G>0?1:0,Math.round(G))):G;
+  const techP=whole?Math.round(tech):tech;
+  $("mgrTable").innerHTML=`<tr><td class="loc-name">Service Delivery Manager</td><td class="r num">${fmt(G,2)}</td><td class="r num">${whole?fmt(sdmP,0):"–"}</td><td class="hint">Governance: operations reviews, QBRs, SLA reporting and CAB. One per ${R.sdmRatio} delivery FTE. Graded Lead.</td></tr>
+    <tr><td class="loc-name">Tech lead (L3)</td><td class="r num">${fmt(tech,2)}</td><td class="r num">${whole?fmt(techP,0):"–"}</td><td class="hint">The pyramid's Lead share on L3 (${R.pyr.join(" : ")}), reduced if Lead would otherwise be above Senior. L1 and L2 have no Lead.</td></tr>
+    <tr><td><b>Lead grade in total</b></td><td class="r num"><b>${fmt(lead,2)}</b></td><td class="r num">${whole?fmt(sdmP+techP,0):"–"}</td><td class="hint">Against ${fmt(sen,2)} FTE of Senior: Lead is ${lead<=sen+1e-9?"never above":"ABOVE"} Senior.</td></tr>`;
+  const perMgr=lead>0?(R.L2+R.L3)/lead:0;
+  $("mgrVerdict").innerHTML=`<b>${fmt(G,2)} SDM and ${fmt(tech,2)} tech lead FTE manage and lead a ${fmt(R.L2+R.L3,1)} FTE delivery team</b>, about ${fmt(perMgr,1)} delivery FTE for each Lead.${lead<=sen+1e-9?"":" Lead is above Senior: raise the pyramid or reduce the SDM ratio."}`;
+  const r12=$("res-12");if(r12)r12.innerHTML=`<div><div class="rl">SDM re-based</div><div class="rv">${fmt(R.s5,2)}<small>FTE</small></div></div><div class="rd">${fmt(G,2)} SDM and ${fmt(tech,2)} tech lead. Contingency follows in the next step.</div>`;
 }
 
 /* ---------- triangulation: ticket volume, base team and existing team ---------- */
@@ -3289,14 +3384,14 @@ function updateS9(){
   const P=R.p1, ex=S.ex||{}, n=k=>Math.max(0,+ex[k]||0);
   const exSup=n("L2")+n("L3")+n("trans"), exTot=EX_TIERS.reduce((x,[k])=>x+n(k),0);
   const tol=(+S.exTol||0)/100, cell=S.rounding==="cell", supp=P.deliv-R.ai2;
-  const pts=[["Ticket volume","Step 2: tower effort, without AI engineers",P.run,"#6B7C93"],["Base team","Step 1: the support window's floor",R.s1,"var(--accent)"],["Existing team","today: L2 + L3 + SRE / automation",exSup,"var(--faint)"],["Part 1 support team","larger of ticket volume and base team",supp,"var(--add)"]];
+  const pts=[["Ticket volume","Step 2: tower effort, without AI engineers",P.run,"#6B7C93"],["Base team","Step 1: the support window's floor",R.s1,"var(--accent)"],["Existing team","today: L2 + L3 + SRE / automation",exSup,"var(--faint)"],["Stage 1 support team","larger of ticket volume and base team",supp,"var(--add)"]];
   const mx=Math.max(...pts.map(p=>p[2]),0.0001);
   $("triBars").innerHTML=pts.map(p=>`<div class="rbar"><span class="t"><b>${p[0]}</b><span>${p[1]}</span></span><span class="track"><i style="width:${p[2]/mx*100}%;background:${p[3]}"></i></span><span class="v">${p[0]==="Existing team"&&!(exSup>0)?"–":fmt(p[2],2)}</span></div>`).join("");
   const band=(ours,theirs)=>{if(!(theirs>0))return ours>0?`<span class="band hi">new</span>`:"–";const p=(ours-theirs)/theirs;return Math.abs(p)<=tol?`<span class="band ok">consistent</span>`:p>0?`<span class="band hi">${fmt(p*100,0)}% above</span>`:`<span class="band lo">${fmt(-p*100,0)}% below</span>`};
   const rows=[["L2",n("L2"),P.L2,cell?P.L2p:null],["L3 incl. SRE / automation and AI engineers",n("L3")+n("trans"),P.L3,cell?P.L3p:null],["Governance (SDM)",n("gov"),P.G,cell?P.Gp:null],["Other roles",n("other"),0,cell?0:null]];
   $("triTable").innerHTML=rows.map(r=>`<tr><td class="loc-name">${r[0]}</td><td class="r num">${fmt(r[1],1)}</td><td class="r num">${fmt(r[2],2)}</td><td class="r num">${r[3]==null?"–":fmt(r[3],0)}</td><td class="r num">${sgn(r[2]-r[1],1)}</td><td>${r[0]==="Other roles"&&r[1]>0?`<span class="band lo">not in our scope</span>`:band(r[2],r[1])}</td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td class="r num"><b>${fmt(exTot,1)}</b></td><td class="r num"><b>${fmt(P.total,2)}</b></td><td class="r num"><b>${S.rounding!=="none"?fmt(P.people,0):"–"}</b></td><td class="r num"><b>${sgn(P.total-exTot,1)}</b></td><td>${band(P.total,exTot)}</td></tr>`;
-  let v=`<b>${P.lift>0?"The support window sets the Part 1 number.":"The ticket volume sets the Part 1 number."}</b> The towers need ${fmt(P.run,2)} FTE of support and the base team is ${fmt(R.s1,2)}. The larger, ${fmt(supp,2)}, is used${R.ai2>0?`, with ${fmt(R.ai2,2)} AI engineers on top`:""}, plus ${fmt(P.sdm,2)} SDM: <b>${fmt(P.total,2)} FTE</b>.`;
+  let v=`<b>${P.lift>0?"The support window sets the Stage 1 number.":"The ticket volume sets the Stage 1 number."}</b> The towers need ${fmt(P.run,2)} FTE of support and the base team is ${fmt(R.s1,2)}. The larger, ${fmt(supp,2)}, is used${R.ai2>0?`, with ${fmt(R.ai2,2)} AI engineers on top`:""}, plus ${fmt(P.sdm,2)} SDM: <b>${fmt(P.total,2)} FTE</b>.`;
   const vals=[P.run,R.s1].concat(exSup>0?[exSup]:[]).filter(x=>x>0), lo=Math.min(...vals), hi=Math.max(...vals), spread=lo>0?(hi-lo)/lo:0;
   if(!(exSup>0))v+=" Enter the existing team to complete the triangulation: with only two views there is nothing to check them against.";
   else{
@@ -3309,7 +3404,7 @@ function updateS9(){
   }
   $("triVerdict").innerHTML=v;
   renderAuto("s9",[
-    ["I1","The Part 1 number is the larger of the ticket-volume team and the base team, plus SDM. The existing team is a cross-check and does not change it.","agreed"],
+    ["I1","The Stage 1 number is the larger of the ticket-volume team and the base team, plus SDM. The existing team is a cross-check and does not change it.","agreed"],
     ["I2",`The existing team is ${fmt(exTot,1)} FTE, ${S.exSource?`taken from the ${EX_SOURCE[S.exSource]}`:"source not stated"}. L2, L3 and SRE / automation roles are compared with our support team before the SDM; managers with our SDM.`,"input"],
     ["I3",`Differences within ±${S.exTol}% count as consistent.`,"proposed"]
   ]);
@@ -3360,7 +3455,7 @@ function updateS6(){
   h+=wstep("1","Delivery team + SDM",fmt(R.sub5,2),`${fmt(R.sub4,2)} + ${fmt(R.s5,2)}`);
   h+=wstep("2","Contingency",`<span class="delta add">${sgn(R.contRaw,2)}</span>`,`${fmt(R.sub5,2)} × ${R.contPct}% (${CX.name} complexity)`);
   h+=wstep("3","Risk modifiers",`<span class="delta risk">${sgn(R.risk6Add,2)}</span>`,`${fmt(R.contRaw,2)} × ${fmt(R.rp6*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
-  h+=wstep("=","Step 7 adds",`${sgn(R.s6,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team: ${fmt(R.sub5,2)} + ${fmt(R.s6,2)} = ${fmt(R.total,2)} FTE. Contingency is spread across L2 and L3 in each location.`,"total");
+  h+=wstep("=","Step 8 adds",`${sgn(R.s6,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team: ${fmt(R.sub5,2)} + ${fmt(R.s6,2)} = ${fmt(R.total,2)} FTE. Contingency is spread across L2 and L3 in each location.`,"total");
   h+=wstep("4","Grade mix",R.pyr.join(" : "),`Lead : Senior : Consultant. Leads are the SDMs and a tech lead on L3; L2 has no Lead; Lead is never above Senior. No change to FTE.`);
   if(!S.cplx)h=`<div class="alert" style="margin-bottom:10px">Choose the engagement complexity. No contingency is added until you do.</div>`+h;
   $("steps6").innerHTML=h;
@@ -3409,7 +3504,7 @@ function updateS7(){
   $("savePct").placeholder=String(SAVE_BY_SC[R.sc]);
   $("saveHint").textContent=`Scenario ${R.sc} target ${R.SC.savings}. Leave blank to use ${SAVE_BY_SC[R.sc]}%.`;
   $("cont2").placeholder=String(Math.min(R.contPct,6));
-  $("cont2Hint").textContent=`Year 1 uses ${R.contPct}% from Step 7. Leave blank to use ${Math.min(R.contPct,6)}% from Year 2.`;
+  $("cont2Hint").textContent=`Year 1 uses ${R.contPct}% from Step 8. Leave blank to use ${Math.min(R.contPct,6)}% from Year 2.`;
   const T=R.term, tr=R.termRows[T-1], y=R.years, P=R.pf, pfm=P.mode==="portfolio";
   document.querySelectorAll("[data-pfm]").forEach(b=>b.setAttribute("aria-pressed",String(P.mode===b.dataset.pfm)));
   $("saveField").hidden=pfm;$("pfPanel").hidden=!pfm;
@@ -3428,7 +3523,7 @@ function updateS7(){
   }
   const nR=S.risks.s7.filter(r=>r.on&&+r.pct).length;
   let h="";
-  h+=wstep("1","Year 1 team",fmt(y[0].fte,2),"The Step 7 team, with Year 1 contingency");
+  h+=wstep("1","Year 1 team",fmt(y[0].fte,2),"The Step 8 team, with Year 1 contingency");
   h+=wstep("2","Coverage floor",fmt(R.floor,2),S.protectFloor!==false?"Step 1 base team, kept whole every year":"Off: savings apply to the whole team");
   if(pfm)h+=wstep("3","AIOps savings",`−${fmt(P.years[T-1].reduce+P.years[T-1].commit,2)}`,`By Year ${T}: ${fmt(P.years[T-1].gross,2)} FTE freed by ${P.items.filter(i=>i.on).length} use cases; ${P.realize.reduce}% reduced + ${P.realize.commit}% committed leave the team, ${P.realize.redeploy}% redeployed. Never below the floor`);
   else h+=wstep("3","YoY savings",`−${R.savePct}%`,`Applied each year from Y2 to the ${fmt(R.sub5-R.floor,2)} FTE above the floor, compounding`);
@@ -3446,7 +3541,7 @@ function updateS7(){
   updateRiskDeltas("s7",y.slice(1,T).reduce((x,v)=>x+v.fte/(1+R.rp7),0)/Math.max(1,T-1),0,R.rp7);
   $("rt-s7").textContent=`${sgn(R.rp7*100,1)}% on Year 2+ FTE`;
   renderAuto("s7",[
-    ["G1",`Year 1 is the Step 7 team. Savings start in Year 2; nothing is committed in Year 1.`,"[F] Sc.2 · Sc.3 Step 5"],
+    ["G1",`Year 1 is the Step 8 team. Savings start in Year 2; nothing is committed in Year 1.`,"[F] Sc.2 · Sc.3 Step 5"],
     ["G2",pfm?`Savings come from ${P.items.filter(i=>i.on).length} AIOps use cases on towers with AIOps in scope, live from Year ${P.aiFrom} by default (Scenario ${R.sc} AIOps timeline), each ramping to full deflection over its ramp months. Freed capacity: ${P.realize.reduce}% reduced, ${P.realize.redeploy}% redeployed, ${P.realize.commit}% committed.`:`FTE falls ${R.savePct}% a year from Year 2 (Scenario ${R.sc} target ${R.SC.savings}), from runbook maturity, lower pass-through and automation.`,pfm?"[F] Part 3 · proposed sizing":"[F] Part 3"],
     ["G3",S.protectFloor!==false?`Savings do not reduce the Step 1 base team (${fmt(R.floor,1)} FTE), which the support window needs.`:"Savings apply to the whole team, including the Step 1 base team.","proposed"],
     ["G4",`Contingency is ${R.contPct}% in Year 1 and ${R.cont2}% from Year 2.`,"[F] 1.6"],
@@ -3497,7 +3592,7 @@ function updateS8(){
   ];
   $("exTable").innerHTML=rows.map(r=>`<tr><td class="loc-name">${r[0]}</td><td class="r num">${fmt(r[1],1)}</td><td class="r num">${fmt(r[2],2)}</td><td class="r num">${r[3]==null?"–":fmt(r[3],0)}</td><td class="r num">${sgn(r[2]-r[1],1)}</td><td>${r[0]==="Other roles"&&r[1]>0?`<span class="band lo">not in our scope</span>`:band(r[2],r[1])}</td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td class="r num"><b>${fmt(exTot,1)}</b></td><td class="r num"><b>${fmt(R.total,2)}</b></td><td class="r num"><b>${S.rounding!=="none"?fmt(R.people,0):"–"}</b></td><td class="r num"><b>${sgn(R.total-exTot,1)}</b></td><td>${band(R.total,exTot)}</td></tr>`;
-  const bars=[["Existing team","today",exTot,"var(--faint)"],["Our Year 1","Step 7 team",R.total,"var(--accent)"],[`Our ${T}-year average`,"Step 8",avg,"#8C5FA8"],[`Our Year ${T}`,"end of term",yEnd,"var(--add)"]];
+  const bars=[["Existing team","today",exTot,"var(--faint)"],["Our Year 1","Step 8 team",R.total,"var(--accent)"],[`Our ${T}-year average`,"Step 10",avg,"#8C5FA8"],[`Our Year ${T}`,"end of term",yEnd,"var(--add)"]];
   const mx=Math.max(...bars.map(b=>b[2]),0.0001);
   $("exBars").innerHTML=bars.map(b=>`<div class="rbar"><span class="t"><b>${b[0]}</b><span>${b[1]}${exTot>0&&b[0]!=="Existing team"?` · ${sgn((b[2]-exTot)/exTot*100,0)}%`:""}</span></span><span class="track"><i style="width:${b[2]/mx*100}%;background:${b[3]}"></i></span><span class="v">${fmt(b[2],1)}</span></div>`).join("");
   let v;
@@ -3517,7 +3612,7 @@ function updateS8(){
     ["H1",`The existing team is ${fmt(exTot,1)} FTE, ${S.exSource?`taken from the ${EX_SOURCE[S.exSource]}`:"source not stated"}.`,"input"],
     ["H2","Existing L3 and SRE/automation roles are compared with our L3, which includes transformation capacity. Existing service and delivery managers are compared with our SDMs.","proposed"],
     ["H3",`Differences within ±${S.exTol}% count as consistent.`,"proposed"],
-    ["H4","This stage is a check only. It does not change the estimate in steps 1–8.","agreed"]
+    ["H4","This stage is a check only. It does not change the estimate in steps 1–11.","agreed"]
   ]);
 }
 
@@ -3530,7 +3625,7 @@ function renderBar(){
   const roundAdd=sn.people-sn.fte;
   const dsp=(cur===10&&R.fin.on)?R.fin.snap:sn;
   const title=(STAGES.find(x=>x.n===cur)||{}).t||"";
-  $("barLbl").textContent=cur===10&&R.fin.on?"Final Year 1 number":cur===6||cur===7||cur===8||cur===10?"Year 1 team":cur===5||cur===9?"Part 1 team":`Team after ${title.toLowerCase()}`;
+  $("barLbl").textContent=cur===10&&R.fin.on?"Final Year 1 number":cur===6||cur===7||cur===8||cur===10?"Year 1 team":cur===5||cur===9?"Stage 1 team":`Team after ${title.toLowerCase()}`;
   $("barFte").innerHTML=`${fmt(dsp.fte,1)}<small>FTE</small>`;
   $("barHc").innerHTML=whole?`Rostered as <b>${fmt(dsp.people,0)}</b> people`:"No rounding applied";
   const chip=(cls,l,v,go)=>`<div class="chip ${cls}" ${go?`data-gochip="${go}" style="cursor:pointer"`:""}><span class="l">${l}</span><span class="v">${v}</span></div>`;
@@ -3541,7 +3636,7 @@ function renderBar(){
     if(R.ai2>0)h+=chip("add","+ AIOps",sgn(R.ai2),2);
     h+=sep()+chip(P.lift>0?"round":"base",P.lift>0?"Lifted to base":"Work team kept",P.lift>0?sgn(P.lift):fmt(R.snaps[2].fte,1),5);
   }
-  if(reached(5))h+=sep()+chip("add","3 · SDM",sgn(P.sdm),5)+chip("base","Part 1 team",fmt(P.total,1),5);
+  if(reached(5))h+=sep()+chip("add","3 · SDM",sgn(P.sdm),5)+chip("base","Stage 1 team",fmt(P.total,1),5);
   if(reached(3))h+=sep()+chip("add","5 · Skill cover",sgn(B.d3),3)+(R.s3>0&&B.d3<=0?chip("base","Absorbed",fmt(R.s3,1),3):"");
   if(reached(4))h+=chip("add","6 · Transform",sgn(B.d4),4);
   if(reached(6))h+=sep()+chip("add","SDM re-based",sgn(B.d5),6)+chip("add","7 · Contingency",sgn(R.s6),6)+chip("risk","+ Risk",sgn(R.risk6Add),6)+chip("base","Year 1 team",fmt(R.total,1),6);
@@ -3578,10 +3673,10 @@ function buildRows(){
   return [
     ["Part 1 · Base team",`Coverage ${covLabel()}, ${R.blocks.length} location window${R.blocks.length===1?"":"s"}, ${S.perShift.L2} L2 + ${S.perShift.L3} L3 on duty. Roster ${fmt(R.roster,2)} ÷ ${S.util1}% utilisation, leave backfill, ${fmt(R.rp1*100,1)}% risk`,R.s1,sn[1]],
     ["Part 1 · Service towers",`${R.towers.length} tower${R.towers.length===1?"":"s"}, ${fmt(R.towers.reduce((x,t)=>x+t.tickets,0),0)} tickets a month → ${fmt(R.demand,2)} FTE of effort${R.leave2>0?`, +${fmt(R.leave2,2)} leave backfill`:""}, ${fmt(R.rp2*100,1)}% risk${R.ai2>0?`, AI engineers (AIOps) ${fmt(R.ai2,2)} at 1:${R.ratio}`:""}. Team is the larger of base ${fmt(R.s1,2)} and work ${fmt(R.s2,2)}`,R.s2,sn[2]],
-    ["Part 1 · Reconcile & SDM",`${P.lift>0?`Work team ${fmt(P.run,2)} lifted to base ${fmt(R.s1,2)} (+${fmt(P.lift,2)})`:`Work team ${fmt(P.run,2)} kept over base ${fmt(R.s1,2)}`}${R.ai2>0?` + ${fmt(R.ai2,2)} AI engineers`:""}; SDM ${fmt(P.deliv,2)} ÷ ${R.sdmRatio}. This is the Part 1 team`,P.sdm,P],
-    ["Part 2 · Skill coverage",`Specialist cover for ${R.covSkills.length} skill set${R.covSkills.length===1?"":"s"} (on call ${S.onCallPct}%), ${fmt(R.rp3*100,1)}% risk: needs ${fmt(R.s3,2)}; the Part 1 team has ${fmt(B.spare,2)} spare, so ${B.d3>0?`${fmt(B.d3,2)} FTE of headcount is added`:"nothing is added"}`,B.d3,sn[3]],
+    ["Part 1 · Reconcile & SDM",`${P.lift>0?`Work team ${fmt(P.run,2)} lifted to base ${fmt(R.s1,2)} (+${fmt(P.lift,2)})`:`Work team ${fmt(P.run,2)} kept over base ${fmt(R.s1,2)}`}${R.ai2>0?` + ${fmt(R.ai2,2)} AI engineers`:""}; SDM ${fmt(P.deliv,2)} ÷ ${R.sdmRatio}. This is the Stage 1 team`,P.sdm,P],
+    ["Part 2 · Skill coverage",`Specialist cover for ${R.covSkills.length} skill set${R.covSkills.length===1?"":"s"} (on call ${S.onCallPct}%), ${fmt(R.rp3*100,1)}% risk: needs ${fmt(R.s3,2)}; the Stage 1 team has ${fmt(B.spare,2)} spare, so ${B.d3>0?`${fmt(B.d3,2)} FTE of headcount is added`:"nothing is added"}`,B.d3,sn[3]],
     ["Part 2 · Transformation",`Scenario ${R.sc}: POD ${R.transPct}% of ${fmt(R.runTeam,2)}${R.ai2>0?` less ${fmt(R.ai2,2)} AI engineers already added`:""}, ${fmt(R.rp4*100,1)}% risk, after any spare capacity in the base team`,B.d4,sn[4]],
-    ["Part 2 · SDM re-based",`SDM ${fmt(R.sub4,2)} ÷ ${R.sdmRatio} on the final delivery team, against ${fmt(P.sdm,2)} in Part 1`,B.d5,sn[5]],
+    ["Part 2 · SDM re-based",`SDM ${fmt(R.sub4,2)} ÷ ${R.sdmRatio} on the final delivery team, against ${fmt(P.sdm,2)} in Stage 1`,B.d5,sn[5]],
     ["Part 2 · Contingency",`${R.CX.name} complexity: ${R.contPct}% contingency; pyramid ${R.pyr.join(" : ")} (grade mix only)`,R.s6,sn[6]]
   ].map(r=>({stage:r[0],what:r[1],add:r[2],snap:r[3],ppl:ppl(r[3])}));
 }
@@ -3595,16 +3690,16 @@ function updateResults(){
   const msg={
     1:`Base team from coverage. This is the floor: step 2 builds a team from the work and the larger one is used.`,
     2:(sn[2].lift>0?`The tower support team (${fmt(R.s2run,2)}) is below the base team, so the base team still sets the size.`:`The tower support team (${fmt(R.s2run,2)}) is above the base team (${fmt(R.s1,2)}), so the work now sets the size.`)+(R.ai2>0?` ${fmt(R.ai2,2)} AI engineers (AIOps) are added on top.`:""),
-    5:`Delivery team ${fmt(P.deliv,2)} plus ${fmt(P.sdm,2)} SDM. This is the Part 1 team; Part 2 tests whether it is enough.`,
-    3:B.d3>0?`Specialist shift cover needs ${fmt(R.s3,2)} but the Part 1 team has ${fmt(B.spare,2)} spare, so ${fmt(B.d3,2)} FTE of headcount is added.`:`Specialist shift cover needs ${fmt(R.s3,2)} and the Part 1 team has ${fmt(B.spare,2)} spare: no headcount is added.`,
+    5:`Delivery team ${fmt(P.deliv,2)} plus ${fmt(P.sdm,2)} SDM. This is the Stage 1 team; Stage 2 tests whether it is enough.`,
+    3:B.d3>0?`Specialist shift cover needs ${fmt(R.s3,2)} but the Stage 1 team has ${fmt(B.spare,2)} spare, so ${fmt(B.d3,2)} FTE of headcount is added.`:`Specialist shift cover needs ${fmt(R.s3,2)} and the Stage 1 team has ${fmt(B.spare,2)} spare: no headcount is added.`,
     4:`Transformation adds ${fmt(B.d4,2)} after any spare capacity in the base team. Work team ${fmt(R.runWork,2)}${R.ai2>0?" (without AI engineers)":""} vs base ${fmt(R.s1,2)}.`,
     6:`Contingency adds ${fmt(R.s6,2)} and the SDM is re-based on the final delivery team (${sgn(B.d5,2)}). This is the Year 1 team.`
   };
   for(const n of [1,2,5,3,4,6]){
     const el=$("res-"+n);if(!el)continue;
     const cur=snOf(n), d=PREV[n]!=null?cur.fte-snOf(PREV[n]).fte:null;
-    RES_TEXT[n]=`${n===5?"Part 1 team":"Team after this step"}: ${fmt(cur.fte,2)} FTE${whole?`, ${fmt(cur.people,0)} people`:""}. ${d!=null?`${sgn(d,2)} FTE vs the previous step. `:""}${msg[n]}`;
-    el.innerHTML=`<div><div class="rl">${n===5?"Part 1 team":n===6?"Year 1 team":"Team after this step"}</div><div class="rv">${fmt(cur.fte,2)}${ppl(cur)}</div></div><div class="rd">${d!=null?`<b>${sgn(d,2)} FTE</b> vs the previous step. `:""}${esc(msg[n])}</div>`;
+    RES_TEXT[n]=`${n===5?"Stage 1 team":"Team after this step"}: ${fmt(cur.fte,2)} FTE${whole?`, ${fmt(cur.people,0)} people`:""}. ${d!=null?`${sgn(d,2)} FTE vs the previous step. `:""}${msg[n]}`;
+    el.innerHTML=`<div><div class="rl">${n===5?"Stage 1 team":n===6?"Year 1 team":"Team after this step"}</div><div class="rv">${fmt(cur.fte,2)}${ppl(cur)}</div></div><div class="rd">${d!=null?`<b>${sgn(d,2)} FTE</b> vs the previous step. `:""}${esc(msg[n])}</div>`;
   }
   const T=R.term, tr=R.termRows[T-1];
   RES_TEXT[7]=`${T}-year average: ${fmt(tr.avg,2)} FTE a year, ${T>1?"−"+fmt(tr.vs1*100,1)+"% vs a 1-year contract":"1-year term"}. Year 1 ${fmt(R.total,2)} FTE; Year ${T} ${fmt(R.years[T-1].fte,2)} FTE.`;
@@ -3640,8 +3735,8 @@ function renderDeskViews(){
   let h=wstep("1","Productive need",fmt(A.core,2),"The team with every allowance switched off: coverage and work at 100% productive time");
   h+=wstep("2","Productive-time allowance",`<span class="delta add">${sgn(A.util,2)}</span>`,`Utilisation ${S.util1}% per resource and ${S.bench.util}% on ticket effort ([F] G6). Not a buffer: people are not productive every hour`);
   h+=wstep("3","Leave &amp; holiday backfill",`<span class="delta add">${sgn(A.leave,2)}</span>`,S.backfill?"Cover while people are on leave or public holidays":"Off");
-  h+=wstep("4","Contingency",`<span class="delta add">${sgn(A.cont,2)}</span>`,S.cplx?`${R.contPct}% for ${R.CX.name.toLowerCase()} complexity`:"Complexity not set in Step 7, so none");
-  h+=wstep("5","Risk modifiers",`<span class="delta risk">${sgn(A.risk,2)}</span>`,`${Object.values(S.risks).flat().filter(r=>r.on&&+r.pct).length} active risks with a modifier. Risks on a team that the larger team replaces at Step 3 add nothing`);
+  h+=wstep("4","Contingency",`<span class="delta add">${sgn(A.cont,2)}</span>`,S.cplx?`${R.contPct}% for ${R.CX.name.toLowerCase()} complexity`:"Complexity not set in Step 8, so none");
+  h+=wstep("5","Risk modifiers",`<span class="delta risk">${sgn(A.risk,2)}</span>`,`${Object.values(S.risks).flat().filter(r=>r.on&&+r.pct).length} active risks with a modifier. Risks on a team that the larger team replaces at Step 4 add nothing`);
   h+=wstep("=","Year 1 team",`${fmt(A.total,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Buffer above productive capacity (leave + contingency + risk): ${fmt(A.buffer,2)} FTE, <b>${fmt(A.bufferPct,1)}%</b>${S.rounding!=="none"?`. Rounding to ${fmt(A.people,0)} people adds ${sgn(A.round,2)}`:""}. Each allowance is measured by switching it off in turn`,"total");
   $("finalAllow").innerHTML=h;
   R.allow=A;
@@ -3739,12 +3834,12 @@ function buildCustomerReport(){
 /* ---------- downloadable summary document ---------- */
 function tableOf(id){const el=$(id);const t=el&&el.closest("table");return t?t.outerHTML:""}
 function stageDoc(n,title,extra){
-  const auto=[...document.querySelectorAll(`#auto-s${n} li.auto`)].map(li=>`<li><b>${esc(li.children[0].textContent)}</b> ${esc(li.children[1].textContent)} <span class="src">${esc(li.children[2].textContent)}</span></li>`).join("");
-  const user=(S.assumptions["s"+n]||[]).filter(a=>a.t.trim()).map((a,i)=>`<li><b>U${i+1}</b> ${esc(a.t)} <span class="src">${esc(a.c||"")}</span></li>`).join("");
-  const risks=(S.risks["s"+n]||[]).map(r=>`<tr><td>${r.on?"Applied":"Not applied"}</td><td><b>${esc(r.title)}</b><br><span class="muted">${esc(r.note)}</span></td><td class="r">${n===8?"tracked":(r.pct>0?"+":"")+r.pct+"%"}</td></tr>`).join("");
+  const key=KEY_OF(n), auto=key?[...document.querySelectorAll(`#auto-${key} li.auto`)]:[].map(li=>`<li><b>${esc(li.children[0].textContent)}</b> ${esc(li.children[1].textContent)} <span class="src">${esc(li.children[2].textContent)}</span></li>`).join("");
+  const user=(key?S.assumptions[key]:[]||[]).filter(a=>a.t.trim()).map((a,i)=>`<li><b>U${i+1}</b> ${esc(a.t)} <span class="src">${esc(a.c||"")}</span></li>`).join("");
+  const risks=(key?S.risks[key]||[]:[]).map(r=>`<tr><td>${r.on?"Applied":"Not applied"}</td><td><b>${esc(r.title)}</b><br><span class="muted">${esc(r.note)}</span></td><td class="r">${n===8?"tracked":(r.pct>0?"+":"")+r.pct+"%"}</td></tr>`).join("");
   const steps=$("steps"+n)?$("steps"+n).innerHTML:"";
   const res=RES_TEXT[n]||"";
-  return `<section><h2>${n===10?"Part 3":n===9||n===5||n===1||n===2?"Part 1":"Part 2"} · Step ${STEPNO[n]} · ${title}</h2>${res?`<p class="result">${esc(res)}</p>`:""}${steps?`<div class="working">${steps}</div>`:""}${extra||""}
+  return `<section><h2>${PARTS_SHORT[(STAGES.find(x=>x.n===n)||{}).part]} · Step ${STEPNO[n]} · ${title}</h2>${res?`<p class="result">${esc(res)}</p>`:""}${steps?`<div class="working">${steps}</div>`:""}${extra||""}
     <h3>Assumptions</h3><ul class="assume">${auto}${user}</ul>
     <h3>Risks</h3><table><thead><tr><th>Status</th><th>Risk</th><th class="r">FTE modifier</th></tr></thead><tbody>${risks||'<tr><td colspan="3">None</td></tr>'}</tbody></table></section>`;
 }
@@ -3822,14 +3917,14 @@ function buildReport(){
   <p class="muted">Coverage ${esc(covLabel())} · ${R.blocks.length} location windows · utilisation ${S.util1}% · leave backfill ${S.backfill?"on":"off"} · complexity ${esc(R.CX.name)} · term ${T} year${T>1?"s":""}${exTot>0?` · existing team ${fmt(exTot,1)} FTE (${sgn((R.total-exTot)/exTot*100,0)}%)`:""}</p>
   ${stageDoc(1,"Base team from coverage",tableOf("locCalc"))}
   ${stageDoc(2,"Service towers",tableOf("towerCalc")+tableOf("skillCalc"))}
-  ${stageDoc(5,"Reconcile and SDM: the Part 1 team",tableOf("reconTable")+`<div class="verdict">${$("verdict").innerHTML}</div>`)}
-  ${stageDoc(9,"Triangulation of the Part 1 number",tableOf("triTable")+`<div class="verdict">${$("triVerdict").innerHTML}</div>`)}
-  ${stageDoc(3,"Skill coverage: is the Part 1 team enough?",`<div class="verdict">${$("covVerdict").innerHTML}</div>`+tableOf("covCalc"))}
-  ${stageDoc(4,"Transformation capacity",`<div class="facts">${$("scFacts").innerHTML}</div>`)}
+  ${stageDoc(9,"Triangulation of the Stage 1 number",tableOf("triTable")+`<div class="verdict">${$("triVerdict").innerHTML}</div>`)}
+  ${stageDoc(5,"Reconcile and SDM: the Stage 1 team",tableOf("reconTable")+`<div class="verdict">${$("verdict").innerHTML}</div>`)}
+  ${stageDoc(3,"Skill coverage: is the Stage 1 team enough?",`<div class="verdict">${$("covVerdict").innerHTML}</div>`+tableOf("covCalc"))}
   ${stageDoc(6,"Seniority and contingency",tableOf("gradeCalc")+`<h3>Estimate confidence · [F] Annexure 1</h3><table><thead><tr><th>Driver</th><th class="r">Weight</th><th>Score</th><th>What the score means</th><th class="r">Points</th></tr></thead><tbody>${confTableHtml(R.conf,false)}</tbody></table><div class="verdict">${$("confVerdict").innerHTML}</div>`)}
+  ${stageDoc(4,"Transformation capacity",`<div class="facts">${$("scFacts").innerHTML}</div>`)}
   ${stageDoc(7,"Term and YoY savings",tableOf("termCalc")+`<div class="verdict">${$("termVerdict").innerHTML}</div>`+(R.pf.mode==="portfolio"?`<h3>AIOps use-case portfolio</h3><table><thead><tr><th>Use case</th><th>Level</th><th class="r">Build pw</th><th class="r">Deflection %</th><th>Live from</th><th class="r">Ramp mo</th></tr></thead><tbody>${R.pf.items.filter(i=>i.on).map(i=>`<tr><td>${esc(i.u.n)}</td><td>${i.u.tier}</td><td class="r">${i.u.effort}</td><td class="r">${i.c.defl}</td><td>Year ${i.startY}</td><td class="r">${i.c.ramp}</td></tr>`).join("")}</tbody></table>${tableOf("pfYears")}<div class="verdict">${$("pfVerdict").innerHTML}</div>`:"")+(R.trans.ktW+R.trans.parW?`<h3>Transition (one-off, before service start)</h3><div class="working">${$("stepsTr").innerHTML}</div>`:""))}
   ${stageDoc(8,"Final fact check against the existing team",tableOf("exTable")+`<div class="verdict">${$("exVerdict").innerHTML}</div>`)}
-  <section><h2>Part 3 · Step 10 · Commercial position</h2>${R.fin.on?`<p class="verdict">The numbers above are the modelled ones. A proposed final number is applied: <b>Year 1 ${fmt(R.fin.total,2)} FTE</b> against ${fmt(R.total,2)} modelled. The client summary and the Excel workbook use it.</p>`:""}${commercialDoc()}</section>
+  <section><h2>Part 3 · Step 12 · Commercial position</h2>${R.fin.on?`<p class="verdict">The numbers above are the modelled ones. A proposed final number is applied: <b>Year 1 ${fmt(R.fin.total,2)} FTE</b> against ${fmt(R.total,2)} modelled. The client summary and the Excel workbook use it.</p>`:""}${commercialDoc()}</section>
   <footer>Generated by the DAMO Estimation Workflow.</footer>
   </main></body></html>`;
   return doc;
@@ -4059,7 +4154,7 @@ function summary(){
     L.push("","**Risks**");
     (S.risks[k]||[]).forEach(r=>L.push(`- ${r.on?"[applied]":"[not applied]"} ${r.title}: ${r.pct}% FTE modifier. ${r.note}`));
   };
-  L.push(`# ${S.deal||"DAMO deal"}: estimate workflow`,"",`Version ${S.meta.version} · ${approvalStale()?"changed since approval":STATUS[S.meta.status]}${S.meta.preparedBy?` · prepared by ${S.meta.preparedBy}`:""}${S.meta.status==="approved"&&S.meta.approvedBy?` · approved by ${S.meta.approvedBy}${S.meta.approvedAt?` on ${S.meta.approvedAt}`:""}`:""}`,"",`**Team: ${fmt(R.total,2)} FTE${S.rounding!=="none"?`, rostered as ${fmt(R.people,0)} people`:""}${R.fin.on?` (modelled; a proposed final number is applied in Step 10)`:""}**`);
+  L.push(`# ${S.deal||"DAMO deal"}: estimate workflow`,"",`Version ${S.meta.version} · ${approvalStale()?"changed since approval":STATUS[S.meta.status]}${S.meta.preparedBy?` · prepared by ${S.meta.preparedBy}`:""}${S.meta.status==="approved"&&S.meta.approvedBy?` · approved by ${S.meta.approvedBy}${S.meta.approvedAt?` on ${S.meta.approvedAt}`:""}`:""}`,"",`**Team: ${fmt(R.total,2)} FTE${S.rounding!=="none"?`, rostered as ${fmt(R.people,0)} people`:""}${R.fin.on?` (modelled; a proposed final number is applied in Step 12)`:""}**`);
   L.push("",`## Part 1 · Step 1 · Base team (${covLabel()}, ${R.blocks.length} location windows)`);
   L.push(`- a  Window hours to cover per week: ${fmt(Math.min(24,+S.hours||0),0)} × ${S.days} = ${fmt(R.reqH,0)}`);
   L.push(`- a′ Staffed hours per week: ${fmt(R.actH,1)} active${R.oncH>0?` + ${fmt(R.oncH,1)} on-call × ${fmt(R.oc1*100,1)}%`:""} = ${fmt(R.aEff,1)}`);
@@ -4082,41 +4177,41 @@ function summary(){
   L.push(`- Leave & holiday backfill: ${sgn(R.leave2,2)}`);
   L.push(`- Risk modifiers (${fmt(R.rp2*100,1)}%): ${sgn(R.risk2Add,2)}`);
   L.push(R.aiTowers.length?`- AI engineers (AIOps) for ${listNames(R.aiTowers)}: ${fmt(R.aiBase,2)} ÷ ${R.ratio} = ${fmt(R.ai2,2)}`:"- AIOps not in scope for any tower");
-  L.push(`- **Tower team: ${fmt(R.s2,2)} FTE** (built from the work, compared with the base team at Step 3)`);
+  L.push(`- **Tower team: ${fmt(R.s2,2)} FTE** (built from the work, compared with the base team at Step 4)`);
   rows("s2");
-  L.push("","## Part 1 · Step 3 · Reconcile and SDM");
+  L.push("","## Part 1 · Step 4 · Reconcile and SDM");
   L.push(`- Team from the towers ${fmt(R.p1.run,2)}${R.ai2>0?" (without AI engineers)":""} vs base team ${fmt(R.s1,2)} → delivery team ${fmt(R.p1.deliv,2)}${R.p1.lift>0?` (lifted +${fmt(R.p1.lift,2)})`:" (work team kept)"}${R.ai2>0?`, including ${fmt(R.ai2,2)} AI engineers`:""}`);
   L.push(`- SDM: ${fmt(R.p1.deliv,2)} ÷ ${R.sdmRatio} = ${fmt(R.p1.sdmRaw,2)}; risk modifiers (${fmt(R.rp5*100,1)}%): ${sgn(R.p1.sdm-R.p1.sdmRaw,2)}`);
-  L.push(`- **Part 1 team: ${fmt(R.p1.total,2)} FTE** (${fmt(R.p1.deliv,2)} delivery + ${fmt(R.p1.sdm,2)} SDM)`);
+  L.push(`- **Stage 1 team: ${fmt(R.p1.total,2)} FTE** (${fmt(R.p1.deliv,2)} delivery + ${fmt(R.p1.sdm,2)} SDM)`);
   L.push("","| View | FTE |","|---|---|",`| Base team (step 1) | ${fmt(R.s1,2)} |`,`| Team from the towers (step 2${R.ai2>0?", without AI engineers":""}) | ${fmt(R.p1.run,2)} |`,`| Delivery team used | ${fmt(R.p1.deliv,2)} |`);
   L.push("",$("verdict").textContent);
   rows("s5");
-  L.push("","## Part 1 · Step 4 · Triangulation: ticket volume, base team and existing team");
+  L.push("","## Part 1 · Step 3 · Triangulation: ticket volume, base team and existing team");
   L.push("",$("triVerdict").textContent);
   rows("s9");
-  L.push("","## Part 2 · Step 5 · Skill coverage: is the Part 1 team enough?","","| Skill set | Tower | Live shifts | On-call shifts | Floor | Step 2 FTE | Added |","|---|---|---|---|---|---|---|");
+  L.push("","## Part 2 · Step 5 · Skill coverage: is the Stage 1 team enough?","","| Skill set | Tower | Live shifts | On-call shifts | Floor | Step 2 FTE | Added |","|---|---|---|---|---|---|---|");
   L.push("",$("covVerdict").textContent);
   R.covSkills.forEach(k=>L.push(`| ${k.name} | ${k.tower} | ${k.live.map(i=>i+1).join(", ")||"none"} | ${k.onCall} | ${fmt(k.floor,2)} | ${fmt(k.have,2)} | ${fmt(k.top,2)} |`));
   L.push("",`- On-call allowance: ${S.onCallPct}% of a staffed shift`);
   L.push(`- Top-up for coverage: ${fmt(R.topUp,2)}; risk modifiers (${fmt(R.rp3*100,1)}%): ${sgn(R.risk3Add,2)}`);
   L.push(`- **Step 5 adds: ${fmt(R.s3,2)} FTE. Team from the work ${fmt(R.sub3,2)} FTE**`);
   rows("s3");
-  L.push("","## Part 2 · Step 6 · Transformation capacity");
+  L.push("","## Part 2 · Step 9 · Transformation capacity");
   L.push(`- Scenario ${R.sc}: ${R.SC.name} (volumetrics ${R.volAvail?"available":"unavailable"}, ${fmt(R.volShare*100,0)}% of tower FTE from ticket history)`);
   L.push(`- Transformation POD: ${fmt(R.runTeam,2)} support FTE × ${R.transPct}% = ${fmt(R.pod,2)}`);
   L.push(`- AI engineers already added in Step 2: ${fmt(R.aiops,2)}`);
   L.push(`- Added (POD less AI engineers): ${fmt(R.stage4raw,2)}; risk modifiers (${fmt(R.rp4*100,1)}%): ${sgn(R.risk4Add,2)}`);
-  L.push(`- **Step 6 adds: ${fmt(R.s4,2)} FTE. Team from the work ${fmt(R.workTeam,2)} FTE**`);
+  L.push(`- **Step 9 adds: ${fmt(R.s4,2)} FTE. Team from the work ${fmt(R.workTeam,2)} FTE**`);
   L.push(`- Scenario guidance: confidence ${R.SC.conf}, Y1 contingency ${R.SC.cont}, ${R.SC.shape}, ${R.SC.comm}`);
   rows("s4");
-  L.push("","## Part 2 · Step 7 · Seniority and contingency");
+  L.push("","## Part 2 · Step 8 · Seniority and contingency");
   L.push(`- Complexity: ${R.CX.name}. Contingency ${R.contPct}%: ${fmt(R.sub5,2)} × ${R.contPct}% = ${fmt(R.contRaw,2)}; risk modifiers ${sgn(R.risk6Add,2)}`);
-  L.push(`- **Step 7 adds: ${fmt(R.s6,2)} FTE. Team ${fmt(R.total,2)} FTE**`);
+  L.push(`- **Step 8 adds: ${fmt(R.s6,2)} FTE. Team ${fmt(R.total,2)} FTE**`);
   L.push(`- Pyramid Lead : Senior : Consultant = ${R.pyr.join(" : ")} (grade mix only, no FTE change)`);
   if(R.gradeRows){L.push("","| Grade | Share | FTE | People |","|---|---|---|---|");R.gradeRows.forEach(r=>L.push(`| ${r.g} | ${fmt(r.sh*100,0)}% | ${fmt(r.fte,2)} | ${S.rounding!=="none"?r.people:"–"} |`));}
   {const C=R.conf||confidence();L.push("","### Estimate confidence ([F] Annexure 1)","","| Driver | Weight | Score | Points |","|---|---|---|---|");C.rows.forEach(r=>L.push(`| ${r.name} | ${r.w} | ${r.sc}${r.user?"":" (suggested)"} | ${fmt(r.pts,1)} |`));L.push(`| **Score** | 100 | | **${fmt(C.score,1)}** (${C.band}) |`,"",`- Range at ±${C.rangePct}% demand: ${fmt(C.lo,1)} – ${fmt(C.hi,1)} FTE`);if(C.weak.length)L.push(`- Due diligence items: ${C.weak.map(r=>r.name).join("; ")}`);}
   rows("s6");
-  L.push("","## Part 2 · Step 8 · Term and YoY savings");
+  L.push("","## Part 2 · Step 10 · Term and YoY savings");
   L.push(`- Savings ${R.savePct}% a year from Y2${S.protectFloor!==false?`, above the ${fmt(R.floor,2)} FTE coverage floor`:""}; contingency ${R.contPct}% in Y1, ${R.cont2}% from Y2`);
   L.push("","| Term | Y1 | Y2 | Y3 | Y4 | Y5 | FTE-years | Avg FTE/yr | vs 1-year |","|---|---|---|---|---|---|---|---|---|");
   R.termRows.forEach(t=>L.push(`| ${t.T} yr${t.T>1?"s":""}${t.T===R.term?" (selected)":""} | ${[0,1,2,3,4].map(i=>i<t.T?fmt(R.years[i].fte,1):"–").join(" | ")} | ${fmt(t.sum,1)} | ${fmt(t.avg,2)} | ${t.T===1?"–":"−"+fmt(t.vs1*100,1)+"%"} |`));
@@ -4125,7 +4220,7 @@ function summary(){
   if(R.trans.ktW+R.trans.parW){const T=R.trans;L.push("","### Transition (one-off, before service start)",`- Knowledge transfer ${T.ktW} weeks × ${fmt(T.ktP*100,0)}% of the Year 1 team: ${fmt(T.kt,1)} FTE-months`,`- Parallel run ${T.parW} weeks × full team: ${fmt(T.par,1)} FTE-months`,`- Transition management ${fmt(T.mgr,1)} FTE: ${fmt(T.mg,1)} FTE-months`,`- **Transition effort ${fmt(T.total,1)} FTE-months**, average ${fmt(T.avg,1)} FTE, peak ${fmt(T.peak,1)} FTE`);}
   rows("s7");
   {const ex=S.ex||{}, n=k=>Math.max(0,+ex[k]||0), exTot=EX_TIERS.reduce((x,[k])=>x+n(k),0);
-  L.push("","## Part 2 · Step 9 · Final fact check against the existing team","","| Tier | Existing | Our Y1 FTE |","|---|---|---|",
+  L.push("","## Part 2 · Step 11 · Final fact check against the existing team","","| Tier | Existing | Our Y1 FTE |","|---|---|---|",
     `| L2 | ${fmt(n("L2"),1)} | ${fmt(R.L2,2)} |`,`| L3 incl. SRE / automation | ${fmt(n("L3")+n("trans"),1)} | ${fmt(R.L3,2)} |`,`| Governance (SDM) | ${fmt(n("gov"),1)} | ${fmt(R.G,2)} |`,`| Other roles | ${fmt(n("other"),1)} | 0.00 |`,`| **Total** | **${fmt(exTot,1)}** | **${fmt(R.total,2)}** |`);
   L.push("",$("exVerdict").textContent);}
   rows("s8");
