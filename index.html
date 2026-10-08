@@ -2574,7 +2574,7 @@ function commercialDoc(){
 }
 function commercialMd(L){
   const F=R.fin,c=commercialOptions(),A=S.adj;
-  L.push("","## Part 3 · Step 12 · Commercial position (internal, effort only, no price)");
+  L.push("",`## ${PARTS_SHORT[4]} · Step ${STEPNO[10]} · Commercial position (internal, effort only, no price)`);
   if(F.on){
     L.push(`- Reason: ${adjReasonLabel(A.reason)}${A.note?` — ${A.note}`:""}. The cut comes out of contingency first, then the delivery team (SDM included).`);
     F.years.forEach((y,i)=>{const a=F.adjYears[i];L.push(a?`- Year ${y.n}: modelled ${fmt(a.fteM,2)} FTE, proposed **${fmt(y.fte,2)}** FTE (${sgn(y.fte-a.fteM,2)}).`:`- Year ${y.n}: unchanged at ${fmt(y.fte,2)} FTE.`)});
@@ -2630,6 +2630,8 @@ function runSelfTests(){
   withState(testState(st=>{st.towers=[amsTower(100,{own:{L1:"customer",L2:"us",L3:"vendor"}})]}),R=>add("Coordination uplift, us L2 only","2 interfaces × 4% = +8%",`+${fmt(R.towers[0].hand*100,0)}%`,near(R.towers[0].hand,0.08),"proposed"));
   withState(testState(st=>{const t=Object.assign(mkTower("IMS"),{vol:true,inc:200,sr:0,estate:"modern",sre:true,skills:[mkSkill("infra",100)]});st.towers=[t]}),R=>{const t=R.towers[0], sum=t.skills.reduce((x,k)=>x+k.fte,0);
     add("SRE takes 78% of IMS L3, no extra headcount",`SRE ${fmt(t.fte3*SRE_SHARE,2)}; skills sum ${fmt(t.fte,2)}`,`SRE ${fmt(t.sreF,2)}; skills sum ${fmt(sum,2)}`,near(t.sreF,t.fte3*SRE_SHARE)&&near(sum,t.fte),"damo-estimator role policy")});
+  withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>{const rr=runCompute(), tr=R.total-rr.total;add("Run team excludes AI engineers and the transformation POD","run team has 0 AI engineers; Year 1 = run team + transformation",`AI ${fmt(rr.ai2,2)} · ${fmt(rr.total,2)} + ${fmt(tr,2)} = ${fmt(R.total,2)}`,rr.ai2===0&&tr>0&&Math.abs(rr.total+tr-R.total)<1e-9&&rr.total<R.total,"proposed")});
+  withState(testState(st=>{st.towers=[amsTower(300,{})];st.transPct=0}),R=>{const rr=runCompute();add("With no transformation and no AIOps the run team is the whole team","run team = Year 1 team",`${fmt(rr.total,3)} vs ${fmt(R.total,3)}`,Math.abs(rr.total-R.total)<1e-9,"proposed")});
   withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>add("AIOps ratio, low AI adoption","1 : 4",`1 : ${R.ratio}`,R.ratio===4,"[F] Part 3"));
   withState(testState(st=>{st.aiMaturity="moderate";st.towers=[amsTower(300,{aiops:true})]}),R=>add("AIOps ratio, moderate AI adoption","1 : 8 (≤ 20 FTE)",`1 : ${R.ratio} on ${fmt(R.aiBase,1)} FTE`,R.aiBase>20?R.ratio===6:R.ratio===8,"[F] Sc.4 Step 3"));
   withState(testState(st=>{st.aiMaturity="moderate";st.towers=[amsTower(2000,{aiops:true})]}),R=>add("AIOps ratio flexes for large estates","1 : 6 over 20 FTE",`1 : ${R.ratio} on ${fmt(R.aiBase,1)} FTE`,R.ratio===6,"[F] Sc.4 Step 3"));
@@ -2738,7 +2740,7 @@ async function exportExcel(){
   sheet("Towers",[["Tower","Kind","We provide","SLA","Demand from","Counts at","Tickets/mo","L1 tickets","L2 tickets","L3 tickets","SLA uplift L2 %","SLA uplift L3 %","Coordination %","A hrs","B hrs","C hrs","FTE","AIOps","AI engineers","Incidents/mo","SRs/mo","CRs/mo","SR hours","CR hours"]].concat(R.towers.map(t=>[t.name,t.kind,ownedText(t),slaText(t),t.src,t.lvl.toUpperCase(),t.tickets,t.l1t,t.l2t,t.l3t,t.sm.l2*100,t.sm.l3*100,t.hand*100,t.A,t.Bh,t.C,t.fte,t.aiops===true?"Yes":"No",t.ai,t.incN,t.srN,t.crN,t.srHrs,t.crHrs])),[22,6,14,34,18,8]);
   sheet("Team by role",[["Role","Tower","FTE"]].concat(R.fin.roles.map(r=>[r.role,r.tower,r.fte])).concat([["Total","",R.fin.total]]),[44,22,10]);
   sheet("Team by location",[["Location","L2 (incl. L1) FTE","L3 FTE","SDM FTE","People"]].concat(R.fin.snap.cells.filter(c=>c.a2+c.a3+c.g>0).map(c=>[c.name,c.a2,c.a3,c.g,whole?c.people:""])),[18,16,10,10,10]);
-  sheet("Years",[["Year","FTE","Before contingency","Contingency"].concat(R.pf.mode==="portfolio"?["FTE freed by AIOps","Reduced","Redeployed","Committed"]:[])].concat(R.fin.years.map((y,i)=>[y.n,y.fte,y.base,y.cont].concat(R.pf.mode==="portfolio"?[R.pf.years[i].gross,R.pf.years[i].reduce,R.pf.years[i].redeploy,R.pf.years[i].commit]:[]))),[8,10,18,12,18,10,12,12]);
+  sheet("Years",[["Year","FTE","Before contingency","Contingency","Run team (modelled)","Transformation capacity (modelled)"].concat(R.pf.mode==="portfolio"?["FTE freed by AIOps","Reduced","Redeployed","Committed"]:[])].concat(R.fin.years.map((y,i)=>[y.n,y.fte,y.base,y.cont,R.run.years[i].fte,R.years[i].fte-R.run.years[i].fte].concat(R.pf.mode==="portfolio"?[R.pf.years[i].gross,R.pf.years[i].reduce,R.pf.years[i].redeploy,R.pf.years[i].commit]:[]))),[8,10,18,12,18,22,18,10,12,12]);
   sheet("Commercial position",cpSheetRows(),[30,100,22]);
   sheet("Allowances",[["Step","FTE"],["Productive need",A.core],["Productive-time allowance (utilisation)",A.util],["Leave and holiday backfill",A.leave],["Contingency",A.cont],["Risk modifiers",A.risk],["Year 1 team",A.total],["Buffer above productive capacity",A.buffer],["Buffer %",A.bufferPct],["Rounding",A.round]],[40,10]);
   sheet("Deviations",[["Setting","Framework","Used","Source"]].concat((R.devs||deviations()).map(d=>[d[0],String(d[1]),String(d[2]),d[3]])),[44,20,24,16]);
@@ -3062,7 +3064,7 @@ function runCompute(){
 function asRun(fn){const M=R; R=M.run; try{fn()}finally{R=M}}
 function update(){
   R=compute(); R.run=runCompute();
-  updateS1(); updateS2(); asRun(updateS3); updateS4(); updateS5(); asRun(updateS6); R.gradeRows=gradeRowsFor(R); R.conf=confidence(); updateS7(); updateTrans(); asRun(updateS9); asRun(updateS11); asRun(updateS12); updateS8(); updateCP(); updateResults(); renderBar(); renderNav(); setNavH(); updateMeta(); save();
+  updateS1(); updateS2(); asRun(updateS3); updateS4(); asRun(updateS5); asRun(updateS6); R.gradeRows=gradeRowsFor(R); R.conf=confidence(); updateS7(); updateTrans(); asRun(updateS9); asRun(updateS11); asRun(updateS12); updateS8(); updateCP(); updateResults(); renderBar(); renderNav(); setNavH(); updateMeta(); save();
 }
 /* A compact version of the coverage timeline for the inputs panel: one 48-cell bar per row, on the customer clock from the window start. */
 function miniHtml(C){
@@ -3177,7 +3179,7 @@ function updateS2(){
     if(sr&&t.sre===true)sr.innerHTML=t.fte3>0?`<b>SRE: ${fmt(t.sreF,2)} FTE</b> = ${fmt(SRE_SHARE*100,0)}% of this tower's ${fmt(t.fte3,2)} L3 FTE (proposed, as in the DAMO estimator). A role-mix change, not extra headcount; the tower's other skill sets share the rest.`:"No L3 effort on this tower yet, so no SRE is sized. SRE needs us to provide L3.";
     else if(sr&&t.sre===false)sr.textContent="No SRE role for this tower; L3 work stays with its skill sets.";
     const ai=$("tai-"+t.id);
-    if(ai&&t.aiops===true)ai.innerHTML=`<b>AI Engineer (AIOps): ${fmt(t.ai,2)} FTE</b> = ${fmt(t.run,2)} support FTE ÷ ${R.ratio}. Builds the automation; does not staff shifts.`;
+    if(ai&&t.aiops===true)ai.innerHTML=`<b>AI Engineer (AIOps): ${fmt(t.ai,2)} FTE</b> = ${fmt(t.run,2)} support FTE ÷ ${R.ratio}. Builds the automation; does not staff shifts. Counted in Stage 3.`;
     else if(ai&&t.aiops===false)ai.textContent="No AI engineers for this tower.";
   });
   document.querySelectorAll("[data-ai]").forEach(b=>b.setAttribute("aria-pressed",String(S.aiMaturity===b.dataset.ai)));
@@ -3201,8 +3203,8 @@ function updateS2(){
   h+=wstep("5","Tower FTE",fmt(R.demand,2),`(A + B${Ch>0?" + C":""}) ÷ ${B.hrsMonth} hours a month`);
   h+=wstep("6","Leave &amp; holiday backfill",`<span class="delta add">${sgn(R.leave2,2)}</span>`,S.backfill?`Tower FTE ÷ availability of the locations it sits in (spread like the Step 1 roster): ×${fmt(R.bf2,3)}`:"Off, as in Step 1");
   h+=wstep("7","Risk modifiers",`<span class="delta risk">${sgn(R.risk2Add,2)}</span>`,`${fmt(R.added*R.bf2,2)} × ${fmt(R.rp2*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
-  h+=wstep("8","AI engineers (AIOps)",`<span class="delta add">${sgn(R.ai2,2)}</span>`,R.aiTowers.length?`${listNames(R.aiTowers)}: ${fmt(R.aiBase,2)} support FTE ÷ ${R.ratio} (1 AI engineer per ${R.ratio} support FTE)`:`No tower has AIOps in scope`);
-  h+=wstep("=","Tower team",`${fmt(R.s2,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Built from the work, separately from the ${fmt(R.s1,2)} FTE base team · L2 ${fmt(R.add2,2)} · L3 ${fmt(R.add3,2)} before risk${R.ai2>0?` · AI engineers ${fmt(R.ai2,2)}`:""}. The two are compared at Step 4.`,"total");
+  h+=wstep("8","AI engineers (AIOps)",`<span class="muted">Stage 3</span>`,R.aiTowers.length?`${listNames(R.aiTowers)}: ${fmt(R.aiBase,2)} support FTE ÷ ${R.ratio} = ${fmt(R.ai2,2)} FTE. Counted as transformation capacity in Stage 3, not in the run team`:`No tower has AIOps in scope`);
+  h+=wstep("=","Tower team",`${fmt(R.run.s2,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Built from the work, separately from the ${fmt(R.s1,2)} FTE base team · L2 ${fmt(R.add2,2)} · L3 ${fmt(R.add3,2)} before risk. The two are compared at Step 4.`,"total");
   $("steps2").innerHTML=h;
   $("towerCalc").innerHTML=R.towers.length?R.towers.map(t=>`<tr><td class="loc-name">${esc(t.name)}<small>${t.kind}${t.estate==="legacy"?(t.kind==="AI"?" · self-hosted":" · legacy"):""}</small></td><td>${esc(t.src)}</td><td class="r num">${fmt(t.tickets,0)}</td><td class="r num">${fmt(t.l1t,1)}</td><td class="r num">${fmt(t.l2t,1)}</td><td class="r num">${fmt(t.l3t,1)}</td><td class="r num">${fmt(t.A,0)}</td><td class="r num">${fmt(t.Bh,0)}</td><td class="r num">${fmt(t.C,0)}</td><td class="r num"><b>${fmt(t.fte,2)}</b></td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td></td><td class="r num">${fmt(tk,0)}</td><td class="r num">${fmt(R.towers.reduce((x,t)=>x+t.l1t,0),1)}</td><td class="r num">${fmt(l2,1)}</td><td class="r num">${fmt(l3,1)}</td><td class="r num">${fmt(A,0)}</td><td class="r num">${fmt(Bh,0)}</td><td class="r num">${fmt(R.towers.reduce((x,t)=>x+t.C,0),0)}</td><td class="r num"><b>${fmt(R.demand,2)}</b></td></tr>`
@@ -3726,6 +3728,7 @@ function updateResults(){
     RES_TEXT[n]=`${lbl}: ${fmt(cur.fte,2)} FTE${whole?`, ${fmt(cur.people,0)} people`:""}. ${d!=null?`${sgn(d,2)} FTE vs the previous step. `:""}${msg[n]}`;
     el.innerHTML=`<div><div class="rl">${lbl}</div><div class="rv">${fmt(cur.fte,2)}${ppl(cur)}</div></div><div class="rd">${d!=null?`<b>${sgn(d,2)} FTE</b> vs the previous step. `:""}${esc(msg[n])}</div>`;
   }
+  [11,12].forEach(n=>{const el=$("res-"+n);if(el)RES_TEXT[n]=el.innerText.replace(/\s+/g," ").trim()});
   {
     const el=$("res-4"), txt=`Transformation capacity adds ${fmt(trans,2)} FTE to the ${fmt(Rr.total,2)} FTE run team, giving a Year 1 team of ${fmt(R.total,2)} FTE.${R.ai2>0?` ${fmt(R.ai2,2)} of the POD is AI engineers (AIOps).`:""}`;
     RES_TEXT[4]=txt;
@@ -3879,7 +3882,7 @@ function buildReport(){
   const date=new Date().toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"});
   const rows=buildRows();
   const build=rows.map(r=>`<tr><td><b>${r.stage}</b></td><td>${esc(r.what)}</td><td class="r">${r.add==null?"–":sgn(r.add,2)}</td><td class="r"><b>${fmt(r.snap.fte,2)}</b>${esc(r.ppl)}</td></tr>`).join("")
-    +(whole?`<tr><td><b>Rounding</b></td><td>${({cell:"Up per location and tier; SDM to nearest person",loc:"Up per location",total:"Total rounded up"})[S.rounding]}</td><td class="r">${sgn(R.roundAdd,2)}</td><td class="r"><b>${fmt(R.people,0)} people</b></td></tr>`:"")
+    +(whole?`<tr><td><b>Rounding</b></td><td>${({cell:"Up per location and tier; SDM to nearest person",loc:"Up per location",total:"Total rounded up"})[S.rounding]}</td><td class="r">${sgn(R.roundAdd,2)}</td><td class="r"><b>${fmt(R.people,0)} people</b></td></tr>`:"")+
     `<tr class="final"><td><b>Year 1 team</b></td><td>Final estimate</td><td></td><td class="r"><b>${fmt(R.total,2)} FTE${whole?` · ${fmt(R.people,0)} people`:""}</b></td></tr>`;
   const locRows=last.cells.filter(c=>c.a2+c.a3+c.g>0).map(c=>`<tr><td>${esc(c.name)}</td><td class="r">${fmt(c.a2,2)}</td><td class="r">${fmt(c.a3,2)}</td><td class="r">${fmt(c.g,2)}</td><td class="r"><b>${whole&&S.rounding!=="total"?fmt(c.people,0):fmt(c.a2+c.a3+c.g,2)}</b></td></tr>`).join("");
   const css=`body{font:14px/1.5 "IBM Plex Sans","Segoe UI",system-ui,sans-serif;color:#18202B;background:#fff;margin:0}
@@ -3947,14 +3950,16 @@ function buildReport(){
   <p class="muted">Coverage ${esc(covLabel())} · ${R.blocks.length} location windows · utilisation ${S.util1}% · leave backfill ${S.backfill?"on":"off"} · complexity ${esc(R.CX.name)} · term ${T} year${T>1?"s":""}${exTot>0?` · existing team ${fmt(exTot,1)} FTE (${sgn((R.total-exTot)/exTot*100,0)}%)`:""}</p>
   ${stageDoc(1,"Base team from coverage",tableOf("locCalc"))}
   ${stageDoc(2,"Service towers",tableOf("towerCalc")+tableOf("skillCalc"))}
-  ${stageDoc(9,"Triangulation of the Stage 1 number",tableOf("triTable")+`<div class="verdict">${$("triVerdict").innerHTML}</div>`)}
-  ${stageDoc(5,"Reconcile and SDM: the Stage 1 team",tableOf("reconTable")+`<div class="verdict">${$("verdict").innerHTML}</div>`)}
-  ${stageDoc(3,"Skill coverage: is the Stage 1 team enough?",`<div class="verdict">${$("covVerdict").innerHTML}</div>`+tableOf("covCalc"))}
-  ${stageDoc(6,"Seniority and contingency",tableOf("gradeCalc")+`<h3>Estimate confidence · [F] Annexure 1</h3><table><thead><tr><th>Driver</th><th class="r">Weight</th><th>Score</th><th>What the score means</th><th class="r">Points</th></tr></thead><tbody>${confTableHtml(R.conf,false)}</tbody></table><div class="verdict">${$("confVerdict").innerHTML}</div>`)}
-  ${stageDoc(4,"Transformation capacity",`<div class="facts">${$("scFacts").innerHTML}</div>`)}
-  ${stageDoc(7,"Term and YoY savings",tableOf("termCalc")+`<div class="verdict">${$("termVerdict").innerHTML}</div>`+(R.pf.mode==="portfolio"?`<h3>AIOps use-case portfolio</h3><table><thead><tr><th>Use case</th><th>Level</th><th class="r">Build pw</th><th class="r">Deflection %</th><th>Live from</th><th class="r">Ramp mo</th></tr></thead><tbody>${R.pf.items.filter(i=>i.on).map(i=>`<tr><td>${esc(i.u.n)}</td><td>${i.u.tier}</td><td class="r">${i.u.effort}</td><td class="r">${i.c.defl}</td><td>Year ${i.startY}</td><td class="r">${i.c.ramp}</td></tr>`).join("")}</tbody></table>${tableOf("pfYears")}<div class="verdict">${$("pfVerdict").innerHTML}</div>`:"")+(R.trans.ktW+R.trans.parW?`<h3>Transition (one-off, before service start)</h3><div class="working">${$("stepsTr").innerHTML}</div>`:""))}
+  ${stageDoc(9,"Current team: ticket volume, base team and the existing team as a reference range",tableOf("triTable")+`<div class="verdict">${$("triVerdict").innerHTML}</div>`)}
+  ${stageDoc(5,"Required team size: the Stage 1 team",tableOf("reconTable")+`<div class="verdict">${$("verdict").innerHTML}</div>`)}
+  ${stageDoc(3,"Skill type: is the Stage 1 team enough?",`<div class="verdict">${$("covVerdict").innerHTML}</div>`+tableOf("covCalc"))}
+  ${stageDoc(11,"Location distribution of the run team",tableOf("locDist")+`<div class="verdict">${$("locVerdict").innerHTML}</div>`)}
+  ${stageDoc(12,"Managerial capacity",tableOf("mgrTable")+`<div class="verdict">${$("mgrVerdict").innerHTML}</div>`)}
+  ${stageDoc(6,"Complexity, seniority and contingency: the run team",tableOf("gradeCalc")+`<h3>Estimate confidence · [F] Annexure 1</h3><table><thead><tr><th>Driver</th><th class="r">Weight</th><th>Score</th><th>What the score means</th><th class="r">Points</th></tr></thead><tbody>${confTableHtml(R.conf,false)}</tbody></table><div class="verdict">${$("confVerdict").innerHTML}</div>`)}
+  ${stageDoc(4,"Transformation capacity on top of the run team",`<div class="facts">${$("scFacts").innerHTML}</div>`)}
+  ${stageDoc(7,"Capacity ramp and savings",tableOf("termCalc")+`<div class="verdict">${$("termVerdict").innerHTML}</div>`+(R.pf.mode==="portfolio"?`<h3>AIOps use-case portfolio</h3><table><thead><tr><th>Use case</th><th>Level</th><th class="r">Build pw</th><th class="r">Deflection %</th><th>Live from</th><th class="r">Ramp mo</th></tr></thead><tbody>${R.pf.items.filter(i=>i.on).map(i=>`<tr><td>${esc(i.u.n)}</td><td>${i.u.tier}</td><td class="r">${i.u.effort}</td><td class="r">${i.c.defl}</td><td>Year ${i.startY}</td><td class="r">${i.c.ramp}</td></tr>`).join("")}</tbody></table>${tableOf("pfYears")}<div class="verdict">${$("pfVerdict").innerHTML}</div>`:"")+(R.trans.ktW+R.trans.parW?`<h3>Transition (one-off, before service start)</h3><div class="working">${$("stepsTr").innerHTML}</div>`:""))}
   ${stageDoc(8,"Final fact check against the existing team",tableOf("exTable")+`<div class="verdict">${$("exVerdict").innerHTML}</div>`)}
-  <section><h2>Part 3 · Step 12 · Commercial position</h2>${R.fin.on?`<p class="verdict">The numbers above are the modelled ones. A proposed final number is applied: <b>Year 1 ${fmt(R.fin.total,2)} FTE</b> against ${fmt(R.total,2)} modelled. The client summary and the Excel workbook use it.</p>`:""}${commercialDoc()}</section>
+  <section><h2>${PARTS_SHORT[4]} · Step ${STEPNO[10]} · Commercial position</h2>${R.fin.on?`<p class="verdict">The numbers above are the modelled ones. A proposed final number is applied: <b>Year 1 ${fmt(R.fin.total,2)} FTE</b> against ${fmt(R.total,2)} modelled. The client summary and the Excel workbook use it.</p>`:""}${commercialDoc()}</section>
   <footer>Generated by the DAMO Estimation Workflow.</footer>
   </main></body></html>`;
   return doc;
@@ -4177,7 +4182,7 @@ document.addEventListener("submit",e=>{
 
 /* ---------- summary export ---------- */
 function summary(){
-  const L=[], rows=(k)=>{
+  const Rr=R.run, L=[], rows=(k)=>{
     L.push("","**Assumptions**");
     document.querySelectorAll(`#auto-${k} li.auto`).forEach(li=>L.push(`- ${li.children[1].textContent}`));
     S.assumptions[k].filter(a=>a.t.trim()).forEach(a=>L.push(`- ${a.t}`));
@@ -4185,72 +4190,81 @@ function summary(){
     (S.risks[k]||[]).forEach(r=>L.push(`- ${r.on?"[applied]":"[not applied]"} ${r.title}: ${r.pct}% FTE modifier. ${r.note}`));
   };
   L.push(`# ${S.deal||"DAMO deal"}: estimate workflow`,"",`Version ${S.meta.version} · ${approvalStale()?"changed since approval":STATUS[S.meta.status]}${S.meta.preparedBy?` · prepared by ${S.meta.preparedBy}`:""}${S.meta.status==="approved"&&S.meta.approvedBy?` · approved by ${S.meta.approvedBy}${S.meta.approvedAt?` on ${S.meta.approvedAt}`:""}`:""}`,"",`**Team: ${fmt(R.total,2)} FTE${S.rounding!=="none"?`, rostered as ${fmt(R.people,0)} people`:""}${R.fin.on?` (modelled; a proposed final number is applied in Step 12)`:""}**`);
-  L.push("",`## Part 1 · Step 1 · Base team (${covLabel()}, ${R.blocks.length} location windows)`);
-  L.push(`- a  Window hours to cover per week: ${fmt(Math.min(24,+S.hours||0),0)} × ${S.days} = ${fmt(R.reqH,0)}`);
-  L.push(`- a′ Staffed hours per week: ${fmt(R.actH,1)} active${R.oncH>0?` + ${fmt(R.oncH,1)} on-call × ${fmt(R.oc1*100,1)}%`:""} = ${fmt(R.aEff,1)}`);
+  L.push("",`## ${PARTS_SHORT[1]} · Step ${STEPNO[1]} · Coverage: base team (${covLabel()}, ${Rr.blocks.length} location windows)`);
+  L.push(`- a  Window hours to cover per week: ${fmt(Math.min(24,+S.hours||0),0)} × ${S.days} = ${fmt(Rr.reqH,0)}`);
+  L.push(`- a′ Staffed hours per week: ${fmt(Rr.actH,1)} active${Rr.oncH>0?` + ${fmt(Rr.oncH,1)} on-call × ${fmt(Rr.oc1*100,1)}%`:""} = ${fmt(Rr.aEff,1)}`);
   L.push(`- b  Contracted hours per FTE per week: ${S.fteHours}`);
-  L.push(`- c  People per shift: ${S.perShift.L2} L2 + ${S.perShift.L3} L3 = ${R.c}`);
-  L.push(`- Roster FTE (a×c)÷b: ${fmt(R.roster,2)}`);
-  L.push(`- Utilisation ${S.util1}% per resource: ${sgn(R.utilAdd,2)}`);
-  L.push(`- Leave & holiday backfill: ${sgn(R.leaveAdd,2)}`);
-  L.push(`- Risk modifiers (${fmt(R.rp1*100,1)}%): ${sgn(R.risk1Add,2)}`);
-  L.push(`- **Step 1 FTE: ${fmt(R.s1,2)}**`);
+  L.push(`- c  People per shift: ${S.perShift.L2} L2 + ${S.perShift.L3} L3 = ${Rr.c}`);
+  L.push(`- Roster FTE (a×c)÷b: ${fmt(Rr.roster,2)}`);
+  L.push(`- Utilisation ${S.util1}% per resource: ${sgn(Rr.utilAdd,2)}`);
+  L.push(`- Leave & holiday backfill: ${sgn(Rr.leaveAdd,2)}`);
+  L.push(`- Risk modifiers (${fmt(Rr.rp1*100,1)}%): ${sgn(Rr.risk1Add,2)}`);
+  L.push(`- **Step 1 FTE: ${fmt(Rr.s1,2)}**`);
   L.push("","| Location | Shifts/wk | Roster | +Util | +Leave | +Risk | FTE |","|---|---|---|---|---|---|---|");
-  R.locs.forEach(l=>L.push(`| ${l.name} | ${l.sw} | ${fmt(l.roster,2)} | ${fmt(l.utilised-l.roster,2)} | ${fmt(l.buffered-l.utilised,2)} | ${fmt(l.risked-l.buffered,2)} | ${fmt(l.risked,2)} |`));
+  Rr.locs.forEach(l=>L.push(`| ${l.name} | ${l.sw} | ${fmt(l.roster,2)} | ${fmt(l.utilised-l.roster,2)} | ${fmt(l.buffered-l.utilised,2)} | ${fmt(l.risked-l.buffered,2)} | ${fmt(l.risked,2)} |`));
   rows("s1");
-  L.push("","## Part 1 · Step 2 · Service towers");
+  L.push("",`## ${PARTS_SHORT[1]} · Step ${STEPNO[2]} · Service towers`);
   L.push("","| Tower | Demand from | Tickets/mo | L1 | L2 | L3 | A hrs | B hrs | C hrs | FTE |","|---|---|---|---|---|---|---|---|---|---|");
-  R.towers.forEach(t=>L.push(`| ${t.kind} · ${t.name} (we provide ${ownedText(t)}${t.sm.l2||t.sm.l3?`; SLA +${fmt(t.sm.l2*100,0)}/${fmt(t.sm.l3*100,0)}%`:""}${t.hand?`; coordination +${fmt(t.hand*100,0)}%`:""}) | ${t.src}${t.lvl!=="l1"?`, counted at ${t.lvl.toUpperCase()}`:""} | ${fmt(t.tickets,0)} | ${fmt(t.l1t,1)} | ${fmt(t.l2t,1)} | ${fmt(t.l3t,1)} | ${fmt(t.A,0)} | ${fmt(t.Bh,0)} | ${fmt(t.C,0)} | ${fmt(t.fte,2)} |`));
+  Rr.towers.forEach(t=>L.push(`| ${t.kind} · ${t.name} (we provide ${ownedText(t)}${t.sm.l2||t.sm.l3?`; SLA +${fmt(t.sm.l2*100,0)}/${fmt(t.sm.l3*100,0)}%`:""}${t.hand?`; coordination +${fmt(t.hand*100,0)}%`:""}) | ${t.src}${t.lvl!=="l1"?`, counted at ${t.lvl.toUpperCase()}`:""} | ${fmt(t.tickets,0)} | ${fmt(t.l1t,1)} | ${fmt(t.l2t,1)} | ${fmt(t.l3t,1)} | ${fmt(t.A,0)} | ${fmt(t.Bh,0)} | ${fmt(t.C,0)} | ${fmt(t.fte,2)} |`));
   L.push("","| Skill set | Tower | Share | FTE | Base has skill |","|---|---|---|---|---|");
-  R.skills.forEach(k=>L.push(`| ${k.name} | ${k.tower} | ${fmt(k.norm*100,0)}% | ${fmt(k.fte,2)} | ${k.absorb?"Yes, every shift":"No"} |`));
-  L.push("",`- Tower FTE (A + B) ÷ ${S.bench.hrsMonth}: ${fmt(R.demand,2)}`);
-  L.push(`- Leave & holiday backfill: ${sgn(R.leave2,2)}`);
-  L.push(`- Risk modifiers (${fmt(R.rp2*100,1)}%): ${sgn(R.risk2Add,2)}`);
-  L.push(R.aiTowers.length?`- AI engineers (AIOps) for ${listNames(R.aiTowers)}: ${fmt(R.aiBase,2)} ÷ ${R.ratio} = ${fmt(R.ai2,2)}`:"- AIOps not in scope for any tower");
-  L.push(`- **Tower team: ${fmt(R.s2,2)} FTE** (built from the work, compared with the base team at Step 4)`);
+  Rr.skills.forEach(k=>L.push(`| ${k.name} | ${k.tower} | ${fmt(k.norm*100,0)}% | ${fmt(k.fte,2)} | ${k.absorb?"Yes, every shift":"No"} |`));
+  L.push("",`- Tower FTE (A + B) ÷ ${S.bench.hrsMonth}: ${fmt(Rr.demand,2)}`);
+  L.push(`- Leave & holiday backfill: ${sgn(Rr.leave2,2)}`);
+  L.push(`- Risk modifiers (${fmt(Rr.rp2*100,1)}%): ${sgn(Rr.risk2Add,2)}`);
+  L.push("- AI engineers (AIOps) are part of the transformation capacity in Stage 3, not of the run team");
+  L.push(`- **Tower team: ${fmt(Rr.s2,2)} FTE** (built from the work, compared with the base team at Step 4)`);
   rows("s2");
-  L.push("","## Part 1 · Step 4 · Reconcile and SDM");
-  L.push(`- Team from the towers ${fmt(R.p1.run,2)}${R.ai2>0?" (without AI engineers)":""} vs base team ${fmt(R.s1,2)} → delivery team ${fmt(R.p1.deliv,2)}${R.p1.lift>0?` (lifted +${fmt(R.p1.lift,2)})`:" (work team kept)"}${R.ai2>0?`, including ${fmt(R.ai2,2)} AI engineers`:""}`);
-  L.push(`- SDM: ${fmt(R.p1.deliv,2)} ÷ ${R.sdmRatio} = ${fmt(R.p1.sdmRaw,2)}; risk modifiers (${fmt(R.rp5*100,1)}%): ${sgn(R.p1.sdm-R.p1.sdmRaw,2)}`);
-  L.push(`- **Stage 1 team: ${fmt(R.p1.total,2)} FTE** (${fmt(R.p1.deliv,2)} delivery + ${fmt(R.p1.sdm,2)} SDM)`);
-  L.push("","| View | FTE |","|---|---|",`| Base team (step 1) | ${fmt(R.s1,2)} |`,`| Team from the towers (step 2${R.ai2>0?", without AI engineers":""}) | ${fmt(R.p1.run,2)} |`,`| Delivery team used | ${fmt(R.p1.deliv,2)} |`);
-  L.push("",$("verdict").textContent);
-  rows("s5");
-  L.push("","## Part 1 · Step 3 · Triangulation: ticket volume, base team and existing team");
+  L.push("",`## ${PARTS_SHORT[1]} · Step ${STEPNO[9]} · Current team: ticket volume, base team and existing team (reference range)`);
   L.push("",$("triVerdict").textContent);
   rows("s9");
-  L.push("","## Part 2 · Step 5 · Skill coverage: is the Stage 1 team enough?","","| Skill set | Tower | Live shifts | On-call shifts | Floor | Step 2 FTE | Added |","|---|---|---|---|---|---|---|");
+  L.push("",`## ${PARTS_SHORT[1]} · Step ${STEPNO[5]} · Required team size`);
+  L.push(`- Team from the towers ${fmt(Rr.p1.run,2)}${Rr.ai2>0?" (without AI engineers)":""} vs base team ${fmt(Rr.s1,2)} → delivery team ${fmt(Rr.p1.deliv,2)}${Rr.p1.lift>0?` (lifted +${fmt(Rr.p1.lift,2)})`:" (work team kept)"}${Rr.ai2>0?`, including ${fmt(Rr.ai2,2)} AI engineers`:""}`);
+  L.push(`- SDM: ${fmt(Rr.p1.deliv,2)} ÷ ${Rr.sdmRatio} = ${fmt(Rr.p1.sdmRaw,2)}; risk modifiers (${fmt(Rr.rp5*100,1)}%): ${sgn(Rr.p1.sdm-Rr.p1.sdmRaw,2)}`);
+  L.push(`- **Stage 1 team: ${fmt(Rr.p1.total,2)} FTE** (${fmt(Rr.p1.deliv,2)} delivery + ${fmt(Rr.p1.sdm,2)} SDM)`);
+  L.push("","| View | FTE |","|---|---|",`| Base team (step 1) | ${fmt(Rr.s1,2)} |`,`| Team from the towers (step 2${Rr.ai2>0?", without AI engineers":""}) | ${fmt(Rr.p1.run,2)} |`,`| Delivery team used | ${fmt(Rr.p1.deliv,2)} |`);
+  L.push("",$("verdict").textContent);
+  L.push("",`## ${PARTS_SHORT[2]} · Step ${STEPNO[3]} · Skill type: is the Stage 1 team enough?`,"","| Skill set | Tower | Live shifts | On-call shifts | Floor | Step 2 FTE | Added |","|---|---|---|---|---|---|---|");
   L.push("",$("covVerdict").textContent);
-  R.covSkills.forEach(k=>L.push(`| ${k.name} | ${k.tower} | ${k.live.map(i=>i+1).join(", ")||"none"} | ${k.onCall} | ${fmt(k.floor,2)} | ${fmt(k.have,2)} | ${fmt(k.top,2)} |`));
+  Rr.covSkills.forEach(k=>L.push(`| ${k.name} | ${k.tower} | ${k.live.map(i=>i+1).join(", ")||"none"} | ${k.onCall} | ${fmt(k.floor,2)} | ${fmt(k.have,2)} | ${fmt(k.top,2)} |`));
   L.push("",`- On-call allowance: ${S.onCallPct}% of a staffed shift`);
-  L.push(`- Top-up for coverage: ${fmt(R.topUp,2)}; risk modifiers (${fmt(R.rp3*100,1)}%): ${sgn(R.risk3Add,2)}`);
-  L.push(`- **Step 5 adds: ${fmt(R.s3,2)} FTE. Team from the work ${fmt(R.sub3,2)} FTE**`);
+  L.push(`- Top-up for coverage: ${fmt(Rr.topUp,2)}; risk modifiers (${fmt(Rr.rp3*100,1)}%): ${sgn(Rr.risk3Add,2)}`);
+  L.push(`- **Step 5 adds: ${fmt(Rr.s3,2)} FTE. Team from the work ${fmt(Rr.sub3,2)} FTE**`);
   rows("s3");
-  L.push("","## Part 2 · Step 9 · Transformation capacity");
+  L.push("",`## ${PARTS_SHORT[2]} · Step ${STEPNO[11]} · Location distribution`);
+  asRun(()=>{const cs=R.snaps[6].cells.filter(c=>c.a2+c.a3+c.g>0);L.push("","| Location | L2 | L3 | SDM | Total |","|---|---|---|---|---|");cs.forEach(c=>L.push(`| ${c.name} | ${fmt(c.a2,2)} | ${fmt(c.a3,2)} | ${fmt(c.g,2)} | ${fmt(c.a2+c.a3+c.g,2)} |`))});
+  L.push("",$("locVerdict").textContent);
+  L.push("",`## ${PARTS_SHORT[2]} · Step ${STEPNO[12]} · Managerial capacity`);
+  L.push(`- SDM ${fmt(Rr.sub4,2)} ÷ ${Rr.sdmRatio} = ${fmt(Rr.sdmRaw,2)}; risk modifiers (${fmt(Rr.rp5*100,1)}%): ${sgn(Rr.s5-Rr.sdmRaw,2)}; **SDM ${fmt(Rr.s5,2)} FTE**`);
+  L.push("",$("mgrVerdict").textContent);
+  rows("s5");
+  L.push("",`## ${PARTS_SHORT[2]} · Step ${STEPNO[6]} · Complexity, seniority and contingency`);
+  L.push(`- Complexity: ${Rr.CX.name}. Contingency ${Rr.contPct}%: ${fmt(Rr.sub5,2)} × ${Rr.contPct}% = ${fmt(Rr.contRaw,2)}; risk modifiers ${sgn(Rr.risk6Add,2)}`);
+  L.push(`- **Contingency adds ${fmt(Rr.s6,2)} FTE. Run team ${fmt(Rr.total,2)} FTE**`);
+  L.push(`- Pyramid Lead : Senior : Consultant = ${Rr.pyr.join(" : ")} (grade mix only, no FTE change)`);
+  if(Rr.gradeRows){L.push("","| Grade | Share | FTE | People |","|---|---|---|---|");Rr.gradeRows.forEach(r=>L.push(`| ${r.g} | ${fmt(r.sh*100,0)}% | ${fmt(r.fte,2)} | ${S.rounding!=="none"?r.people:"–"} |`));}
+  {const C=Rr.conf||confidence();L.push("","### Estimate confidence ([F] Annexure 1)","","| Driver | Weight | Score | Points |","|---|---|---|---|");C.rows.forEach(r=>L.push(`| ${r.name} | ${r.w} | ${r.sc}${r.user?"":" (suggested)"} | ${fmt(r.pts,1)} |`));L.push(`| **Score** | 100 | | **${fmt(C.score,1)}** (${C.band}) |`,"",`- Range at ±${C.rangePct}% demand: ${fmt(C.lo,1)} – ${fmt(C.hi,1)} FTE`);if(C.weak.length)L.push(`- Due diligence items: ${C.weak.map(r=>r.name).join("; ")}`);}
+  rows("s6");
+  L.push("",`## ${PARTS_SHORT[3]} · Step ${STEPNO[4]} · Transformation`);
   L.push(`- Scenario ${R.sc}: ${R.SC.name} (volumetrics ${R.volAvail?"available":"unavailable"}, ${fmt(R.volShare*100,0)}% of tower FTE from ticket history)`);
   L.push(`- Transformation POD: ${fmt(R.runTeam,2)} support FTE × ${R.transPct}% = ${fmt(R.pod,2)}`);
-  L.push(`- AI engineers already added in Step 2: ${fmt(R.aiops,2)}`);
+  L.push(`- AI engineers (AIOps) inside the POD: ${fmt(R.aiops,2)}`);
   L.push(`- Added (POD less AI engineers): ${fmt(R.stage4raw,2)}; risk modifiers (${fmt(R.rp4*100,1)}%): ${sgn(R.risk4Add,2)}`);
   L.push(`- **Step 9 adds: ${fmt(R.s4,2)} FTE. Team from the work ${fmt(R.workTeam,2)} FTE**`);
   L.push(`- Scenario guidance: confidence ${R.SC.conf}, Y1 contingency ${R.SC.cont}, ${R.SC.shape}, ${R.SC.comm}`);
   rows("s4");
-  L.push("","## Part 2 · Step 8 · Seniority and contingency");
-  L.push(`- Complexity: ${R.CX.name}. Contingency ${R.contPct}%: ${fmt(R.sub5,2)} × ${R.contPct}% = ${fmt(R.contRaw,2)}; risk modifiers ${sgn(R.risk6Add,2)}`);
-  L.push(`- **Step 8 adds: ${fmt(R.s6,2)} FTE. Team ${fmt(R.total,2)} FTE**`);
-  L.push(`- Pyramid Lead : Senior : Consultant = ${R.pyr.join(" : ")} (grade mix only, no FTE change)`);
-  if(R.gradeRows){L.push("","| Grade | Share | FTE | People |","|---|---|---|---|");R.gradeRows.forEach(r=>L.push(`| ${r.g} | ${fmt(r.sh*100,0)}% | ${fmt(r.fte,2)} | ${S.rounding!=="none"?r.people:"–"} |`));}
-  {const C=R.conf||confidence();L.push("","### Estimate confidence ([F] Annexure 1)","","| Driver | Weight | Score | Points |","|---|---|---|---|");C.rows.forEach(r=>L.push(`| ${r.name} | ${r.w} | ${r.sc}${r.user?"":" (suggested)"} | ${fmt(r.pts,1)} |`));L.push(`| **Score** | 100 | | **${fmt(C.score,1)}** (${C.band}) |`,"",`- Range at ±${C.rangePct}% demand: ${fmt(C.lo,1)} – ${fmt(C.hi,1)} FTE`);if(C.weak.length)L.push(`- Due diligence items: ${C.weak.map(r=>r.name).join("; ")}`);}
-  rows("s6");
-  L.push("","## Part 2 · Step 10 · Term and YoY savings");
+  L.push(`- Run team from Stage 2: ${fmt(R.run.total,2)} FTE`);
+  L.push(`- **Transformation capacity: ${fmt(R.total-R.run.total,2)} FTE (including the SDM and contingency that follow). Year 1 team ${fmt(R.total,2)} FTE = run team ${fmt(R.run.total,2)} + transformation ${fmt(R.total-R.run.total,2)}**`);
+  L.push("",`## ${PARTS_SHORT[3]} · Step ${STEPNO[7]} · Capacity ramp and savings`);
   L.push(`- Savings ${R.savePct}% a year from Y2${S.protectFloor!==false?`, above the ${fmt(R.floor,2)} FTE coverage floor`:""}; contingency ${R.contPct}% in Y1, ${R.cont2}% from Y2`);
   L.push("","| Term | Y1 | Y2 | Y3 | Y4 | Y5 | FTE-years | Avg FTE/yr | vs 1-year |","|---|---|---|---|---|---|---|---|---|");
   R.termRows.forEach(t=>L.push(`| ${t.T} yr${t.T>1?"s":""}${t.T===R.term?" (selected)":""} | ${[0,1,2,3,4].map(i=>i<t.T?fmt(R.years[i].fte,1):"–").join(" | ")} | ${fmt(t.sum,1)} | ${fmt(t.avg,2)} | ${t.T===1?"–":"−"+fmt(t.vs1*100,1)+"%"} |`));
   L.push("",$("termVerdict").textContent);
   if(R.pf.mode==="portfolio"){L.push("","### AIOps use-case portfolio","","| Use case | Level | Build pw | Deflection % | Live from | Ramp mo |","|---|---|---|---|---|---|");R.pf.items.filter(i=>i.on).forEach(i=>L.push(`| ${i.u.n} | ${i.u.tier} | ${i.u.effort} | ${i.c.defl} | Year ${i.startY} | ${i.c.ramp} |`));L.push("","| Year | L2 defl. | L3 defl. | FTE freed | Reduced | Redeployed | Committed |","|---|---|---|---|---|---|---|");R.pf.years.forEach(v=>L.push(`| ${v.n} | ${fmt(v.dL2*100,1)}% | ${fmt(v.dL3*100,1)}% | ${fmt(v.gross,2)} | ${fmt(v.reduce,2)} | ${fmt(v.redeploy,2)} | ${fmt(v.commit,2)} |`));}
   if(R.trans.ktW+R.trans.parW){const T=R.trans;L.push("","### Transition (one-off, before service start)",`- Knowledge transfer ${T.ktW} weeks × ${fmt(T.ktP*100,0)}% of the Year 1 team: ${fmt(T.kt,1)} FTE-months`,`- Parallel run ${T.parW} weeks × full team: ${fmt(T.par,1)} FTE-months`,`- Transition management ${fmt(T.mgr,1)} FTE: ${fmt(T.mg,1)} FTE-months`,`- **Transition effort ${fmt(T.total,1)} FTE-months**, average ${fmt(T.avg,1)} FTE, peak ${fmt(T.peak,1)} FTE`);}
+  L.push("","| Year | Run team | Transformation capacity | Total |","|---|---|---|---|");R.years.slice(0,R.term).forEach((v,i)=>L.push(`| Year ${v.n} | ${fmt(R.run.years[i].fte,2)} | ${sgn(v.fte-R.run.years[i].fte,2)} | ${fmt(v.fte,2)} |`));
   rows("s7");
   {const ex=S.ex||{}, n=k=>Math.max(0,+ex[k]||0), exTot=EX_TIERS.reduce((x,[k])=>x+n(k),0);
-  L.push("","## Part 2 · Step 11 · Final fact check against the existing team","","| Tier | Existing | Our Y1 FTE |","|---|---|---|",
+  L.push("",`## ${PARTS_SHORT[4]} · Step ${STEPNO[8]} · Final fact check against the existing team`,"","| Tier | Existing | Our Y1 FTE |","|---|---|---|",
     `| L2 | ${fmt(n("L2"),1)} | ${fmt(R.L2,2)} |`,`| L3 incl. SRE / automation | ${fmt(n("L3")+n("trans"),1)} | ${fmt(R.L3,2)} |`,`| Governance (SDM) | ${fmt(n("gov"),1)} | ${fmt(R.G,2)} |`,`| Other roles | ${fmt(n("other"),1)} | 0.00 |`,`| **Total** | **${fmt(exTot,1)}** | **${fmt(R.total,2)}** |`);
   L.push("",$("exVerdict").textContent);}
   rows("s8");
