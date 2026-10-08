@@ -2119,7 +2119,6 @@ function compute(){
     const thinFte=thinCnt.reduce((x,v,i)=>x+v*(+thinRate[i]||0),0), thinN=thinCnt[0]+thinCnt[1]+thinCnt[2];
     const thinOn=thinK&&t.basis==="thin", thinL3=Math.max(0,Math.min(100,+TH.l3||0))/100;
     if(thinOn)src=`Thin slices (${thinN} ${t.kind==="AMS"?"applications":"data products"})`;
-    const devFrac=(t.kind==="AMS"&&!thinOn&&fteV>0)?Math.min(1,(crH/u*(1+hand)*(1+bp)+C)/B.hrsMonth/fteV):0;
     /* special roles are added by hand, on top of the tower's skill sets, as L3 specialist effort */
     const specList=(t.special||[]).filter(x=>SPEC_ROLES[x.role]&&n0(x.fte)>0), specF=specList.reduce((x,y)=>x+n0(y.fte),0);
     const fte1=thinOn?0:fteV1, fte2=thinOn?thinFte*(1-thinL3):fteV2, fte3=(thinOn?thinFte*thinL3:fteV3)+specF, fte=fte2+fte3;
@@ -2133,7 +2132,7 @@ function compute(){
     specList.forEach(x=>skills.push({id:"sp-"+x.id,skill:"sp_"+x.role,name:SPEC_ROLES[x.role].name+" (special role)",share:0,absorb:true,synthetic:true,special:true,tower:t.name,towerId:t.id,norm:fte>0?n0(x.fte)/fte:0,fte:n0(x.fte),f2:0,f3:n0(x.fte)}));
     if(sreOn)skills.unshift({id:"sre-"+t.id,skill:"sre",name:"Service Reliability Engineer (SRE)",share:0,absorb:true,synthetic:true,tower:t.name,towerId:t.id,norm:sreF/fte,fte:sreF,f2:0,f3:sreF});
     const userSkills=t.skills.length, unassigned=0;
-    return {...t,thinOn,thinK,thinN,thinFte,volFte:fteV,devFrac,sreOn,sreF,specF,userSkills,unassigned,tickets,src,score,lvl,sv,own,bnd,hand,sm,slaAdd,handAdd,entry:[e1,e2,e3],mixUsed:!!(mx&&lvl==="l1"),l1Unknown,l2Unknown,l1t,l2t,l3t,A,Bh,bp,enhH,C,fte1,fte,fte2,fte3,shareSum,skills,incN:hist?n0(t.inc):0,srN:hist?n0(t.sr):0,crN:hist?n0(t.cr):0,srHrs:srH[0]+srH[1]+srH[2],crHrs:crH,srSh,crSh};
+    return {...t,thinOn,thinK,thinN,thinFte,volFte:fteV,sreOn,sreF,specF,userSkills,unassigned,tickets,src,score,lvl,sv,own,bnd,hand,sm,slaAdd,handAdd,entry:[e1,e2,e3],mixUsed:!!(mx&&lvl==="l1"),l1Unknown,l2Unknown,l1t,l2t,l3t,A,Bh,bp,enhH,C,fte1,fte,fte2,fte3,shareSum,skills,incN:hist?n0(t.inc):0,srN:hist?n0(t.sr):0,crN:hist?n0(t.cr):0,srHrs:srH[0]+srH[1]+srH[2],crHrs:crH,srSh,crSh};
   });
   const skills=towers.flatMap(t=>t.skills);
   const demand=sum(towers,"fte");
@@ -2313,7 +2312,7 @@ function compute(){
   const roles=[];
   towers.forEach(t=>{
     if(t.unassigned>0)roles.push({role:"Not yet assigned to a skill set",tower:t.name,fte:t.unassigned*bf2*(1+rp2),tw:t.id,sk:"",kind:t.kind});
-    t.skills.forEach(k=>{const cs=covSkills.find(c=>c.id===k.id);roles.push({role:k.name,tower:t.name,fte:k.added*bf2*(1+rp2)+(cs&&cs.top>0?cs.top*(1+rp3):0),tw:t.id,sk:k.skill,kind:t.kind})});
+    t.skills.forEach(k=>{const cs=covSkills.find(c=>c.id===k.id);roles.push({role:k.name,tower:t.name,fte:k.added*bf2*(1+rp2)+(cs&&cs.top>0?cs.top*(1+rp3):0),tw:t.id,sk:k.skill,kind:t.kind,l3:(k.f2+k.f3)>0?k.f3/(k.f2+k.f3):0.5})});
     if(t.ai>0)roles.push({role:"AI Engineer (AIOps)",tower:t.name,fte:t.ai,tw:t.id,sk:"aiops",kind:t.kind});
   });
   if(s4>0)roles.push({role:"Transformation: SRE, automation, CI/CD",tower:"All towers",fte:s4,sk:"trans"});
@@ -2797,8 +2796,8 @@ function runSelfTests(){
     add("Team shape adds up to the team at every point","run team, Year 1 and every later year",`${fmt(s1.total,2)} vs ${fmt(rr.total,2)}; ${fmt(sf.total,2)} vs ${fmt(R.total,2)}`,ok1&&okF&&okY,"proposed");
     const pse=id("pse"), sa=id("sa");
     add("Cross-cutting roles come from the ratios: 1 Product Support Engineer per tower with L1.5 and 10% Solution Architect once per deal","PSE 2.00 for 2 towers with L1.5 and SA 0.10 for the deal, carved out of the team",`PSE ${fmt(pse?pse.fte:0,2)}, SA ${fmt(sa?sa.fte:0,2)}`,pse&&sa&&Math.abs(pse.fte-2)<1e-9&&Math.abs(sa.fte-0.1)<1e-9,"proposed");
-    add("DMS support splits into Data Analyst (L2) and Data Engineer (L3)","both roles present",`DA ${fmt((id("da")||{fte:0}).fte,2)}, DE ${fmt((id("de")||{fte:0}).fte,2)}`,id("da")&&id("de")&&id("de").fte>0,"proposed");
-    add("Back-end developers map to Developer and the SDM to Service Delivery Manager","Developer and SDM rows present",`Dev ${fmt((id("dev")||{fte:0}).fte,2)}, SDM ${fmt((id("sdm")||{fte:0}).fte,2)}`,id("dev")&&id("sdm")&&Math.abs(id("sdm").fte-R.s5)<1e-9,"proposed");
+    add("DMS is staffed with Data Support Engineer at L2 and Data Engineer at L3","both roles present",`DSE ${fmt((id("dse")||{fte:0}).fte,2)}, DE ${fmt((id("de")||{fte:0}).fte,2)}`,id("dse")&&id("de")&&id("de").fte>0,"agreed");
+    add("AMS L3 is staffed as Developer and the SDM is the Service Delivery Manager","Developer and SDM rows present",`Dev ${fmt((id("dev")||{fte:0}).fte,2)}, SDM ${fmt((id("sdm")||{fte:0}).fte,2)}`,id("dev")&&id("sdm")&&Math.abs(id("sdm").fte-R.s5)<1e-9,"proposed");
     const aie=sy.years.map(y=>y.by.aie);
     add("AI engineers stay constant through the term while the rest of the team scales","same AI engineer FTE in every year",aie.map(v=>fmt(v,2)).join(" / "),aie.every(v=>Math.abs(v-aie[0])<1e-9)&&aie[0]>0,"proposed")});
   withState(testState(st=>{st.towers=[amsTower(300,{skills:[mkSkill("sse",100)]})]}),R=>{const sf=shapeOf(R.roles,R), has=i=>sf.rows.some(r=>r.id===i);add("Roles appear only where they are in scope: no Product Support Engineer, SRE or AI Engineer unless L1.5, SRE or AIOps is answered Yes","only System Support Engineer and SDM",sf.rows.map(r=>r.id).join(", "),!has("pse")&&!has("sre")&&!has("aie")&&has("sse"),"proposed")});
@@ -2819,6 +2818,10 @@ function runSelfTests(){
    const two=withState(mk(st=>{const id=blocksOf(st)[0].id;st.cov[st.towers[0].skills[0].id]={shifts:[],people:1,p:{[id]:2}}}),R=>R.covSkills[0].floor);
    const one=withState(mk(st=>{const id=blocksOf(st)[0].id;st.cov[st.towers[0].skills[0].id]={shifts:[],people:1,p:{[id]:1}}}),R=>R.covSkills[0].floor);
    add("Skills required per shift: two people live in a window need more cover than one, and both more than on call only","on call < 1 live < 2 live",`${fmt(base,2)} < ${fmt(one,2)} < ${fmt(two,2)}`,base<one&&one<two,"proposed")}
+  withState(testState(st=>{const o={vol:true,inc:300,sr:0,estate:"modern",own:{L1:"customer",L2:"us",L3:"us"}};st.towers=[Object.assign(mkTower("AMS"),o),Object.assign(mkTower("IMS"),o),Object.assign(mkTower("DMS"),o),Object.assign(mkTower("AI"),o)]}),R=>{
+    const per=k=>{const t=R.towers.find(x=>x.kind===k);const X={towers:[t],roles:R.roles.filter(r=>r.tw===t.id)};const sf=shapeOf(X.roles,X);return sf.rows.map(r=>r.id).filter(i=>!["sdm","sa"].includes(i)).sort().join("+")};
+    const got=["AMS","IMS","DMS","AI"].map(per).join(" | "), want=["dev+sse","ie+isu","de+dse","aie+aio"].join(" | ");
+    add("Each tower is staffed L2 then L3: AMS System Support Engineer and Developer, IMS Infra Support Engineer and Infra Engineer, DMS Data Support Engineer and Data Engineer, agentic AI Ops Engineer and AI Engineer",want,got,got===want,"agreed")});
   withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>{const rr=runCompute(), tr=R.total-rr.total;add("Run team excludes AI engineers and the transformation POD","run team has 0 AI engineers; Year 1 = run team + transformation",`AI ${fmt(rr.ai2,2)} · ${fmt(rr.total,2)} + ${fmt(tr,2)} = ${fmt(R.total,2)}`,rr.ai2===0&&tr>0&&Math.abs(rr.total+tr-R.total)<1e-9&&rr.total<R.total,"proposed")});
   withState(testState(st=>{st.towers=[amsTower(300,{})];st.transPct=0}),R=>{const rr=runCompute();add("With no transformation and no AIOps the run team is the whole team","run team = Year 1 team",`${fmt(rr.total,3)} vs ${fmt(R.total,3)}`,Math.abs(rr.total-R.total)<1e-9,"proposed")});
   withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>add("AIOps ratio, low AI adoption","1 : 4",`1 : ${R.ratio}`,R.ratio===4,"[F] Part 3"));
@@ -3303,24 +3306,28 @@ function updateRiskDeltas(k,base,add,pct){
 let R;
 /* ---------- indicative team shape: the DAMO roles guidance map ---------- */
 const GROLES=[
-  ["sse","System Support Engineer","AMS support: L2/L3 support, incidents, service requests, RCA, minor enhancements","FTE derivation from scope and effort estimate (core-stream aligned)","core"],
-  ["isu","Infra Support Engineer","IMS support: L2/L3 support, incidents, service requests, RCA, cloud operations, patching, upgrades","FTE derivation from scope and estimate (core-stream aligned)","core"],
-  ["da","Data Analyst","DMS support: L2/L3 support, incidents, service requests","FTE derivation from scope and estimate (core-stream aligned)","core"],
-  ["de","Data Engineer","DMS support: L2/L3 support, incidents, service requests, RCA, minor enhancements, resolving complex data pipeline failures, platform performance, data quality, data lineage","FTE derivation from scope and estimate (core-stream aligned)","core"],
+  ["sse","System Support Engineer","AMS L2: support, incidents, service requests, RCA, minor enhancements","Staffed at L2 on AMS towers; FTE derived from scope and effort estimate (core-stream aligned)","core"],
+  ["isu","Infra Support Engineer","IMS L2: support, incidents, service requests, cloud operations, patching, upgrades","Staffed at L2 on IMS towers; FTE derived from scope and estimate (core-stream aligned)","core"],
+  ["dse","Data Support Engineer","DMS L2: support, incidents, service requests","Staffed at L2 on DMS towers; FTE derived from scope and estimate (core-stream aligned)","core"],
+  ["de","Data Engineer","DMS L3: incidents, RCA, minor enhancements, resolving complex data pipeline failures, platform performance, data quality, data lineage","Staffed at L3 on DMS towers; FTE derived from scope and estimate (core-stream aligned)","core"],
+  ["ie","Infra Engineer","IMS L3: complex infrastructure problems, RCA, automation of operations, upgrades and platform changes","Staffed at L3 on IMS towers; FTE derived from scope and estimate (core-stream aligned)","core"],
+  ["aio","AI Ops Engineer","Agentic tower L2: monitoring and support of agents and models, incidents, service requests, runbooks","Staffed at L2 on agentic (AI platform) towers; FTE derived from scope and estimate (core-stream aligned)","core"],
   ["pse","Product Support Engineer","Ticket triage (L1.5), service management, ticket communication and reporting","Cross-cutting role. 1 per stream, distributed across PODs","cross"],
-  ["dev","Developer","Software engineering, AIFSD, AI/works, product development and feature enhancements","FTE derivation from scope and estimate (core-stream aligned)","core"],
+  ["dev","Developer","AMS L3: software engineering, AIFSD, AI/works, product development and feature enhancements","Staffed at L3 on AMS towers; FTE derived from scope and estimate (core-stream aligned)","core"],
   ["mob","Mobile Developer","Mobile platform, UI development, testing and automation, mobile path to production","FTE derivation from scope and estimate (core-stream aligned)","core"],
   ["qa","Quality Analyst","Test automation, test data management, product validation","Cross-cutting role, across PODs","cross"],
   ["ba","Business Analyst","Requirements analysis, scope management, product vision and roadmapping","Cross-cutting role, product aligned","cross"],
   ["sre","Service Reliability Engineer","Observability, availability, IaC, performance, reliability, CI/CD deployments, platform engineering","Cross-cutting role, shared capability across PODs","cross"],
-  ["aie","AI Engineer (AIOps engineer)","Use cases, generative and agentic AI solutions, evaluations, guardrails, bias mitigation, responsible AI","Cross-cutting role, shared capability across PODs","cross"],
+  ["aie","AI Engineer","Use cases, generative and agentic AI solutions, evaluations, guardrails, bias mitigation, responsible AI. Agentic tower L3, and the AI engineers where AIOps is in scope","Staffed at L3 on agentic towers; cross-cutting shared capability where AIOps is in scope","cross"],
   ["sa","Solution Architect","Solution design, architecture standards, risk, deliverability, commercial models","Cross-cutting role, 10%","cross"],
   ["sdm","Service Delivery Manager","Ops leader (day to day): incident, problem, request and service level management","Cross-cutting role: 1 SDM for 12 FTE","mgmt"],
   ["oth","Other skill sets","Skill sets that are not in the roles guidance map, for example L1 support, AI platform skills or a named niche skill","Core-stream, from the tower's estimate","core"],
   ["trn","Transformation engineers","Automation, CI/CD and AI adoption from the Transformation POD, when SRE is not in scope","Stage 3 transformation capacity","xform"]
 ];
-const GMAP={sse:"sse",fs:"dev",be:"dev",fe:"dev",mob:"mob",infra:"isu",sre:"sre",qa:"qa",l1:"oth",dse:"dms",dba:"de",data:"de",ai:"oth",prompt:"oth",mlops:"oth",llmops:"oth",aieval:"oth",ds:"oth",spec:"oth",sp_qa:"qa",sp_ba:"ba",sp_sa:"sa",sp_mob:"mob"};
-const GCORE=["sse","isu","da","de","dev","mob","oth"];
+const GMAP={mob:"mob",qa:"qa",sre:"sre",l1:"oth",spec:"oth",sp_qa:"qa",sp_ba:"ba",sp_sa:"sa",sp_mob:"mob"};  /* skill sets that name their own role; every other skill set is staffed by the tower's L2 and L3 roles */
+const GCORE=["sse","isu","dse","de","ie","aio","dev","mob","oth"];
+/* how DAMO staffs a tower: the L2 role, then the L3 role */
+const TIER_ROLES={AMS:["sse","dev"],IMS:["isu","ie"],DMS:["dse","de"],AI:["aio","aie"]};
 /* Groups a team's role list (compute's roles) under the guidance map. Totals never change: core-stream roles are
    the work itself, and the cross-cutting roles that the ratios ask for are carved out of the core-stream roles. */
 function shapeOf(list,X){
@@ -3332,13 +3339,11 @@ function shapeOf(list,X){
     if(r.sk==="aiops"){add("aie",r.fte);fixed+=r.fte;return}
     if(r.sk==="trans"){add(X.towers.some(t=>t.sre===true)?"sre":"trn",r.fte);return}
     if(r.sk==="lift"){lifts.push(r.fte);return}
-    const t=tw(r.tw), kindG=({AMS:"sse",IMS:"isu",DMS:"dms"})[r.kind]||"oth";
-    const id=(r.sk&&GMAP[r.sk])||kindG;
-    let f=r.fte, dv=0;
-    if(t&&t.devFrac>0&&id!=="dev"&&id!=="mob"){dv=f*t.devFrac;f-=dv}
-    if(id==="dms"){const l2=Math.max(0,(t?t.fte2-t.fte1:0)),l3=t?t.fte3:0,sh=l2+l3>0?l3/(l2+l3):0.5;add("da",f*(1-sh));add("de",f*sh)}
-    else add(id,f);
-    add("dev",dv);
+    const own=r.sk&&GMAP[r.sk], tr=TIER_ROLES[r.kind];
+    if(own){add(own,r.fte);return}
+    if(!tr){add("oth",r.fte);return}
+    const l3=r.l3==null?0.5:r.l3;
+    add(tr[0],r.fte*(1-l3));add(tr[1],r.fte*l3);
   });
   const liftSum=lifts.reduce((x,v)=>x+v,0), coreSum0=GCORE.reduce((x,i)=>x+(g[i]||0),0);
   if(liftSum>0){if(coreSum0>0)GCORE.forEach(i=>{if(g[i])g[i]+=liftSum*g[i]/coreSum0});else add("sse",liftSum)}
