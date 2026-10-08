@@ -965,6 +965,23 @@ tr.sel td{background:var(--accent-soft)}
           <div class="lbl">AI engineers (AIOps) <span class="tag">from Step 2</span></div>
           <div class="derived" id="aiopsDerived"></div>
         </div>
+        <div class="divider"></div>
+        <div class="field">
+          <div class="lbl">Application life stage <span class="tag">proposed</span></div>
+          <div class="seg" id="lifeSeg" role="group" aria-label="Application life stage"></div>
+          <div class="hint">Where most of the estate is in its life. Growth estates carry more change to transform; sunset estates are being retired, so little is worth improving.</div>
+        </div>
+        <div class="field">
+          <div class="lbl">Client appetite for transformation <span class="tag">proposed</span></div>
+          <div class="seg" id="appSeg" role="group" aria-label="Client appetite for transformation"></div>
+          <div class="hint">Whether the client will fund and sponsor improvement work, or only wants the service run.</div>
+        </div>
+        <div class="field">
+          <div class="lbl">Clarity of improvement pathways <span class="tag">proposed</span></div>
+          <div class="seg" id="pathSeg" role="group" aria-label="Clarity of improvement pathways"></div>
+          <div class="hint">How well the automation and AIOps opportunities are already identified. It sets how much of the targeted saving is credited from Year 2.</div>
+        </div>
+        <div class="derived" id="lifeDerived"></div>
       </div>
 
       <div class="panel">
@@ -1655,7 +1672,8 @@ function defaultBench(){return {
   ims:{wEnv:1,wHost:1.5,wDb:1,sec:3,tpp:4.5},                                      /* proposed, from damo-estimator */
   dms:{wDp:1,wPipe:0.5,wInt:1,wUp:0.75,wDown:0.75,tpp:3.4},                        /* proposed */
   ai:{wAgent:2,wModel:1.5,wTool:0.5,wKs:0.75,risk:4,tpp:3.5},                      /* proposed */
-  thin:{amsCrit:0.6,amsImp:0.3,amsStd:0.12,dmsCrit:0.5,dmsImp:0.25,dmsStd:0.1,l3:35} /* proposed: FTE per thin slice by criticality (an application for AMS, a data product for DMS), and the share of it that is L3 */
+  thin:{amsCrit:0.6,amsImp:0.3,amsStd:0.12,dmsCrit:0.5,dmsImp:0.25,dmsStd:0.1,l3:35}, /* proposed: FTE per thin slice by criticality (an application for AMS, a data product for DMS), and the share of it that is L3 */
+  life:{growth:125,steady:100,sunset:50,appLow:50,appMed:100,appHigh:125,pwClear:100,pwPartial:75,pwUnclear:50} /* proposed: % applied to the transformation POD (life stage, client appetite) and to the savings credited (clarity of improvement pathways) */
 }}
 
 function uid(){return Math.random().toString(36).slice(2,9)}
@@ -1749,7 +1767,7 @@ function defaultsRaw(){
     bench:defaultBench(),
     sparePct:25,
     onCallPct:15,
-    aiMaturity:null,transPct:null,aiRatio:"auto",
+    aiMaturity:null,transPct:null,aiRatio:"auto",life:{stage:null,appetite:null,pathway:null},
     sdmRatio:8,sdmLoc:null,
     cplx:null,pyr:{},contPct:null,
     term:null,savePct:null,cont2:null,protectFloor:true,
@@ -1816,7 +1834,7 @@ const ACATS=["Coverage & locations","Demand & volumes","Service scope & ownershi
 const ACAT_OF={A1:"Coverage & locations",A2:"Effort benchmarks",A3:"Effort benchmarks",A4:"Coverage & locations",A5:"Coverage & locations",A6:"Coverage & locations",A7:"Service scope & ownership",
   B1:"Demand & volumes",B1a:"Service scope & ownership",B1b:"SLA & service levels",B1c:"Skills & specialists",B2:"Effort benchmarks",B3:"Effort benchmarks",B4:"Demand & volumes",B5:"Demand & volumes",B6:"Skills & specialists",B7:"Skills & specialists",B8:"Transformation & AIOps",B9:"Coverage & locations",
   C1:"Skills & specialists",C2:"Skills & specialists",C3:"Skills & specialists",C4:"Coverage & locations",
-  D1:"Transformation & AIOps",D2:"Transformation & AIOps",D3:"Transformation & AIOps",D4:"Transformation & AIOps",D5:"Client responsibilities",D6:"Transformation & AIOps",
+  D1:"Transformation & AIOps",D2:"Transformation & AIOps",D3:"Transformation & AIOps",D4:"Transformation & AIOps",D5:"Client responsibilities",D6:"Transformation & AIOps",D7:"Transformation & AIOps",
   E1:"Governance & SDM",E2:"Governance & SDM",E3:"Governance & SDM",E4:"Governance & SDM",
   F1:"Seniority & contingency",F2:"Seniority & contingency",F3:"Seniority & contingency",F4:"Seniority & contingency",
   G1:"Term & savings",G2:"Term & savings",G3:"Term & savings",G4:"Term & savings",G5:"Term & savings",
@@ -1838,6 +1856,7 @@ function migrate(p){
       if(Array.isArray(p.assumptions))p.assumptions={s1:p.assumptions};
       if(Array.isArray(p.risks))p.risks={s1:p.risks};
       const st=Object.assign(d,p);
+      st.life=Object.assign({stage:null,appetite:null,pathway:null},p.life||{});
       st.assumptions=Object.assign(defaults().assumptions,p.assumptions||{});
       /* assumptions saved as plain text become {t, c} with the step's default category */
       Object.keys(st.assumptions).forEach(k=>{st.assumptions[k]=(st.assumptions[k]||[]).map(a=>typeof a==="string"?{t:a,c:/^Service desk \(L1\)/.test(a)?"Service scope & ownership":(ACAT_DEFAULT[k]||"Other")}:a)});
@@ -1845,7 +1864,7 @@ function migrate(p){
       st.cov=p.cov||{};
       if(!Array.isArray(p.towers)||p.towers.some(t=>!t.kind))st.towers=defaults().towers;
       const db=defaultBench(), pb=p.bench||{};
-      st.bench=Object.assign(db,pb,{tpa:Object.assign(db.tpa,pb.tpa||{}),ims:Object.assign(db.ims,pb.ims||{}),dms:Object.assign(db.dms,pb.dms||{}),ai:Object.assign(db.ai,pb.ai||{}),sla:Object.assign(db.sla,pb.sla||{}),routing:Object.assign(db.routing,pb.routing||{}),srLvl:Object.assign(db.srLvl,pb.srLvl||{}),crLvl:Object.assign(db.crLvl,pb.crLvl||{}),thin:Object.assign(db.thin,pb.thin||{})});
+      st.bench=Object.assign(db,pb,{tpa:Object.assign(db.tpa,pb.tpa||{}),ims:Object.assign(db.ims,pb.ims||{}),dms:Object.assign(db.dms,pb.dms||{}),ai:Object.assign(db.ai,pb.ai||{}),sla:Object.assign(db.sla,pb.sla||{}),routing:Object.assign(db.routing,pb.routing||{}),srLvl:Object.assign(db.srLvl,pb.srLvl||{}),crLvl:Object.assign(db.crLvl,pb.crLvl||{}),thin:Object.assign(db.thin,pb.thin||{}),life:Object.assign(db.life,pb.life||{})});
       /* towers saved before a field existed get its default; the old L2/L3 choice becomes tier ownership */
       st.towers=st.towers.map(t=>{const n=Object.assign(mkTower(t.kind),t);n.sla=Object.assign(mkTower(t.kind).sla,t.sla||{});
         if(!t.own&&t.levels)n.own={both:{L1:"customer",L2:"us",L3:"us"},l2:{L1:"customer",L2:"us",L3:"vendor"},l3:{L1:"customer",L2:"customer",L3:"us"}}[t.levels]||null;return n});
@@ -2070,7 +2089,12 @@ function compute(){
   const mod=S.aiMaturity==="moderate";
   const sc=volAvail?(mod?4:3):(mod?2:1);
   const SC=SCENARIOS[sc];
-  const transPct=S.transPct==null?SC.pct:+S.transPct;
+  /* the POD share starts from the scenario and moves with the application life stage and the client's appetite (blank answer = 100%); a typed share overrides both */
+  const LF=B.life||{}, lf=S.life||{}, pc=v=>v==null||isNaN(+v)?1:Math.max(0,+v)/100;
+  const stageMul=pc(({growth:LF.growth,steady:LF.steady,sunset:LF.sunset})[lf.stage]), appMul=pc(({low:LF.appLow,medium:LF.appMed,high:LF.appHigh})[lf.appetite]);
+  const pathMul=pc(({clear:LF.pwClear,partial:LF.pwPartial,unclear:LF.pwUnclear})[lf.pathway]);
+  const transAuto=Math.min(50,SC.pct*stageMul*appMul);
+  const transPct=S.transPct==null?transAuto:+S.transPct;
   const pod=runTeam*transPct/100;
   /* AI engineers (AIOps) were added per tower in Step 2 and sit inside the POD: add only the rest of the POD */
   const aiops=ai2;
@@ -2125,7 +2149,7 @@ function compute(){
   const shares=pyr.map(v=>v/pSum);
 
   /* Step 10: year-by-year FTE. Savings compound from Y2 on the part above the coverage floor; contingency tapers from Y2 */
-  const savePct=S.savePct==null?SAVE_BY_SC[sc]:+S.savePct;
+  const savePct=S.savePct==null?SAVE_BY_SC[sc]*pathMul:+S.savePct;
   const r7=savePct/100;
   const cont2=S.cont2==null?Math.min(contPct,6):+S.cont2;
   const floor=S.protectFloor!==false?Math.min(s1,sub5):0;
@@ -2141,7 +2165,7 @@ function compute(){
   const levelAt=(it,monthEnd)=>{const el=monthEnd-(it.startY-1)*12, m=Math.max(0,+it.c.ramp||0);return el<=0?0:m<=0?1:Math.min(1,el/m)};
   const pfYears=[1,2,3,4,5].map(n=>{
     const end=(n-1)*12, sh={L2:[],L3:[]};
-    pfItems.filter(i=>i.on).forEach(i=>sh[i.u.tier].push(Math.max(0,Math.min(100,+i.c.defl||0))/100*levelAt(i,end)));
+    pfItems.filter(i=>i.on).forEach(i=>sh[i.u.tier].push(Math.max(0,Math.min(100,+i.c.defl||0))/100*levelAt(i,end)*pathMul));
     const comb=k=>Math.min(ceiling,1-sh[k].reduce((p,x)=>p*(1-x),1));
     const dL2=comb("L2"), dL3=comb("L3"), gross=tierFte.L2*dL2+tierFte.L3*dL3;
     const rz=PF.realize, rs=(+rz.reduce||0)+(+rz.redeploy||0)+(+rz.commit||0)||1;
@@ -2281,7 +2305,7 @@ function compute(){
     towers,skills,demand,demAbs,capacity,absorbed,added,add2,add3,rp2,s2,s2run,bf2,leave2,risk2Add:s2run-added*bf2,warnings2,
     aiTowers,aiBase,scRatio,ai2,
     covSkills,topUp,rp3,s3,risk3Add:s3-topUp,sub2:s2,sub3,runTeam,workTeam,runWork,lift,
-    volShare,volAvail,sc,SC,transPct,pod,autoRatio,ratio:aiRatioN,aiops,stage4raw,otherTrans,rp4,s4,risk4Add:s4-stage4raw,
+    volShare,volAvail,sc,SC,transPct,transAuto,stageMul,appMul,pathMul,pod,autoRatio,ratio:aiRatioN,aiops,stage4raw,otherTrans,rp4,s4,risk4Add:s4-stage4raw,
     sub4,sdmRatio,sdmRaw,rp5,s5,risk5Add:s5-sdmRaw,sdmLoc,
     sub5,CX,contPct,contRaw,rp6,s6,risk6Add:s6-contRaw,pyr,shares,
     savePct,cont2,floor,rp7,years,termRows,term,pf:{mode:PF.mode,items:pfItems,years:pfYears,tierFte,ceiling,aiFrom,capacity:ai2*BUILD_PW,realize:PF.realize},
@@ -2650,6 +2674,10 @@ function runSelfTests(){
   withState(testState(st=>{const t=amsTower(300,{});t.basis="thin";t.thin={crit:4,imp:10,std:20};st.towers=[t]}),R=>{const t=R.towers[0], B=S.bench.thin, exp=4*B.amsCrit+10*B.amsImp+20*B.amsStd;add("Thin slices: AMS applications by criticality at the FTE per slice","4 Critical, 10 Important, 20 Standard = 7.80 FTE, 35% L3",`${fmt(t.fte,2)} FTE, L3 ${fmt(t.fte3/t.fte*100,0)}%`,Math.abs(t.fte-exp)<1e-9&&Math.abs(t.fte3/t.fte-0.35)<1e-9&&t.thinOn&&R.sc===1,"proposed")});
   withState(testState(st=>{const t=amsTower(300,{});t.thin={crit:4,imp:10,std:20};st.towers=[t]}),R=>{const t=R.towers[0], x=xcheckOf(t);add("Volumetrics basis is unchanged by thin slices, which only cross-check","FTE as without slices; cross-check shows the slice number",`${fmt(t.fte,2)} used, ${x?fmt(x.other,2):"–"} cross-check`,!t.thinOn&&Math.abs(t.fte-t.volFte)<1e-9&&x&&Math.abs(x.other-t.thinFte)<1e-9,"proposed")});
   withState(testState(st=>{const t=Object.assign(mkTower("DMS"),{vol:true,inc:100,own:{L1:"customer",L2:"us",L3:"us"},basis:"thin",thin:{crit:2,imp:0,std:0}});const i=Object.assign(mkTower("IMS"),{vol:true,inc:100,own:{L1:"customer",L2:"us",L3:"us"},basis:"thin",thin:{crit:5}});st.towers=[t,i]}),R=>{const d=R.towers[0], i=R.towers[1];add("Thin slices apply to DMS data products; other towers ignore them","DMS 2 Critical = 1.00 FTE; IMS stays on volumetrics",`DMS ${fmt(d.fte,2)} · IMS ${fmt(i.fte,2)} (${i.src})`,Math.abs(d.fte-2*S.bench.thin.dmsCrit)<1e-9&&!i.thinOn&&i.src==="Ticket history","proposed")});
+  {const base=withState(testState(st=>{st.towers=[amsTower(300,{})]}),R=>({pct:R.transPct,tr:R.total-runCompute().total,y2:R.years[1].fte,save:R.savePct}));
+   withState(testState(st=>{st.towers=[amsTower(300,{})];st.life={stage:"growth",appetite:"high",pathway:"unclear"}}),R=>{const sc=R.SC.pct, exp=Math.min(50,sc*1.25*1.25);add("Life stage and appetite move the POD share; pathway clarity credits the savings","POD share = scenario × 125% × 125%; savings × 50%",`POD ${fmt(R.transPct,2)}% (expect ${fmt(exp,2)}), savings ${fmt(R.savePct,2)}% (was ${fmt(base.save,2)}%)`,Math.abs(R.transPct-exp)<1e-9&&Math.abs(R.savePct-base.save*0.5)<1e-9&&R.total-runCompute().total>base.tr,"proposed")});
+   withState(testState(st=>{st.towers=[amsTower(300,{})];st.life={stage:"sunset",appetite:"low",pathway:null};st.transPct=10}),R=>add("A typed POD share overrides life stage and appetite","10%",`${fmt(R.transPct,2)}%`,R.transPct===10,"proposed"));
+   withState(testState(st=>{st.towers=[amsTower(300,{})]}),R=>add("Unanswered life stage, appetite and pathways leave the numbers unchanged","multipliers 100%",`${R.stageMul}, ${R.appMul}, ${R.pathMul}`,R.stageMul===1&&R.appMul===1&&R.pathMul===1&&R.transPct===R.SC.pct,"proposed"))}
   withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>{const rr=runCompute(), tr=R.total-rr.total;add("Run team excludes AI engineers and the transformation POD","run team has 0 AI engineers; Year 1 = run team + transformation",`AI ${fmt(rr.ai2,2)} · ${fmt(rr.total,2)} + ${fmt(tr,2)} = ${fmt(R.total,2)}`,rr.ai2===0&&tr>0&&Math.abs(rr.total+tr-R.total)<1e-9&&rr.total<R.total,"proposed")});
   withState(testState(st=>{st.towers=[amsTower(300,{})];st.transPct=0}),R=>{const rr=runCompute();add("With no transformation and no AIOps the run team is the whole team","run team = Year 1 team",`${fmt(rr.total,3)} vs ${fmt(R.total,3)}`,Math.abs(rr.total-R.total)<1e-9,"proposed")});
   withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>add("AIOps ratio, low AI adoption","1 : 4",`1 : ${R.ratio}`,R.ratio===4,"[F] Part 3"));
@@ -2796,7 +2824,7 @@ const BENCH_LBL={are1:"L1 hours per incident",handoff:"Coordination uplift % per
   "tpa.S":"AMS tickets per S app","tpa.M":"AMS tickets per M app","tpa.L":"AMS tickets per L app","tpa.XL":"AMS tickets per XL app","tpa.XXL":"AMS tickets per XXL app",
   "ims.wEnv":"IMS points per environment","ims.wHost":"IMS points per hosting platform","ims.wDb":"IMS points per database","ims.sec":"IMS points for security","ims.tpp":"IMS tickets per point",
   "dms.wDp":"DMS points per data product","dms.wPipe":"DMS points per pipeline","dms.wInt":"DMS points per integration","dms.wUp":"DMS points per upstream","dms.wDown":"DMS points per downstream","dms.tpp":"DMS tickets per point",
-  "ai.wAgent":"AI points per agent","ai.wModel":"AI points per model","ai.wTool":"AI points per tool integration","ai.wKs":"AI points per knowledge source","ai.risk":"AI points for high-risk use","ai.tpp":"AI tickets per point","srLvl.low":"Service request hours, Low complexity","srLvl.medium":"Service request hours, Medium complexity","srLvl.high":"Service request hours, High complexity","crLvl.low":"Change request hours, Low complexity","crLvl.medium":"Change request hours, Medium complexity","crLvl.high":"Change request hours, High complexity","thin.amsCrit":"Thin slice FTE, AMS Critical application","thin.amsImp":"Thin slice FTE, AMS Important application","thin.amsStd":"Thin slice FTE, AMS Standard application","thin.dmsCrit":"Thin slice FTE, DMS Critical data product","thin.dmsImp":"Thin slice FTE, DMS Important data product","thin.dmsStd":"Thin slice FTE, DMS Standard data product","thin.l3":"Thin slice, L3 share %"};
+  "ai.wAgent":"AI points per agent","ai.wModel":"AI points per model","ai.wTool":"AI points per tool integration","ai.wKs":"AI points per knowledge source","ai.risk":"AI points for high-risk use","ai.tpp":"AI tickets per point","srLvl.low":"Service request hours, Low complexity","srLvl.medium":"Service request hours, Medium complexity","srLvl.high":"Service request hours, High complexity","crLvl.low":"Change request hours, Low complexity","crLvl.medium":"Change request hours, Medium complexity","crLvl.high":"Change request hours, High complexity","thin.amsCrit":"Thin slice FTE, AMS Critical application","thin.amsImp":"Thin slice FTE, AMS Important application","thin.amsStd":"Thin slice FTE, AMS Standard application","thin.dmsCrit":"Thin slice FTE, DMS Critical data product","thin.dmsImp":"Thin slice FTE, DMS Important data product","thin.dmsStd":"Thin slice FTE, DMS Standard data product","thin.l3":"Thin slice, L3 share %","life.growth":"POD % for a growth estate","life.steady":"POD % for a steady-state estate","life.sunset":"POD % for a sunset estate","life.appLow":"POD % for low client appetite","life.appMed":"POD % for medium client appetite","life.appHigh":"POD % for high client appetite","life.pwClear":"Savings credited, clear pathways %","life.pwPartial":"Savings credited, partial pathways %","life.pwUnclear":"Savings credited, unclear pathways %"};
 function deviations(){
   const out=[], add=(l,d,u,src)=>{if(String(d)!==String(u))out.push([l,d,u,src])};
   add("Utilisation per resource (Step 1) %",85,S.util1,"[F] G6");
@@ -2808,6 +2836,8 @@ function deviations(){
   Object.keys(BENCH_LBL).forEach(k=>{const [a,b]=k.split(".");const d=b?db[a][b]:db[a], u=b?S.bench[a][b]:S.bench[a];add(BENCH_LBL[k],d,u,k.startsWith("sla")?"[F] Sc.3 Step 2":(k.includes(".")&&!k.startsWith("tpa"))||k==="handoff"?"proposed":"[F] 1.1–1.5")});
   if(S.aiRatio!=="auto"&&R.aiTowers.length)add("AIOps engineer ratio",`1:${R.autoRatio}`,`1:${S.aiRatio}`,"[F] Part 3");
   if(S.transPct!=null)add("Transformation POD %",R.SC.pct,S.transPct,"[F] Part 3");
+  else if(R.stageMul!==1||R.appMul!==1)out.push(["Transformation POD % (life stage and appetite)",`${R.SC.pct}%`,`${fmt(R.transAuto,1)}%`,"proposed"]);
+  if(S.savePct==null&&R.pathMul!==1)out.push(["Savings credited (clarity of improvement pathways)","100%",`${fmt(R.pathMul*100,0)}%`,"proposed"]);
   add("SDM ratio","1:8",`1:${S.sdmRatio}`,"DAMO convention");
   if(S.contPct!=null&&S.cplx)add("Y1 contingency %",R.CX.cont,S.contPct,"proposed");
   if(S.pyr&&S.pyr[S.cplx]&&S.cplx)add("Pyramid Lead : Senior : Consultant",CPLX[S.cplx].pyr.join(" : "),pyrOf().join(" : "),"[P]");
@@ -3031,6 +3061,8 @@ function renderS2(){
     <h4>AMS tickets per app a month · [F] Sc.1 midpoints</h4><div class="tgrid">${SIZES.map(z=>bi("tpa."+z,z,B.tpa[z],0.5,200)).join("")}</div>
     <h4>Thin slices, FTE per slice · proposed</h4>
     <div class="hint">AMS: an application. DMS: a data product. By criticality; L3 share is the part of a slice's FTE that is L3 work.</div><div class="tgrid">${bi("thin.amsCrit","AMS Critical",B.thin.amsCrit,0.05,20)}${bi("thin.amsImp","AMS Important",B.thin.amsImp,0.05,20)}${bi("thin.amsStd","AMS Standard",B.thin.amsStd,0.05,20)}${bi("thin.dmsCrit","DMS Critical",B.thin.dmsCrit,0.05,20)}${bi("thin.dmsImp","DMS Important",B.thin.dmsImp,0.05,20)}${bi("thin.dmsStd","DMS Standard",B.thin.dmsStd,0.05,20)}${bi("thin.l3","L3 share of a slice %",B.thin.l3,1,100)}</div>
+    <h4>Transformation adjustments, % · proposed</h4>
+    <div class="hint">Applied to the scenario's POD share: life stage and client appetite. Pathway clarity is applied to the savings credited from Year 2.</div><div class="tgrid">${bi("life.growth","Growth estate",B.life.growth,5,300)}${bi("life.steady","Steady state",B.life.steady,5,300)}${bi("life.sunset","Sunset estate",B.life.sunset,5,300)}${bi("life.appLow","Appetite low",B.life.appLow,5,300)}${bi("life.appMed","Appetite medium",B.life.appMed,5,300)}${bi("life.appHigh","Appetite high",B.life.appHigh,5,300)}${bi("life.pwClear","Pathways clear",B.life.pwClear,5,200)}${bi("life.pwPartial","Pathways partial",B.life.pwPartial,5,200)}${bi("life.pwUnclear","Pathways unclear",B.life.pwUnclear,5,200)}</div>
     <h4>IMS complexity points · proposed</h4><div class="tgrid">${bi("ims.wEnv","Per environment",B.ims.wEnv,0.25,20)}${bi("ims.wHost","Per hosting platform",B.ims.wHost,0.25,20)}${bi("ims.wDb","Per database",B.ims.wDb,0.25,20)}${bi("ims.sec","Security in scope",B.ims.sec,0.5,50)}${bi("ims.tpp","Tickets per point",B.ims.tpp,0.1,50)}</div>
     <h4>DMS complexity points · proposed</h4><div class="tgrid">${bi("dms.wDp","Per data product",B.dms.wDp,0.25,20)}${bi("dms.wPipe","Per pipeline",B.dms.wPipe,0.05,20)}${bi("dms.wInt","Per integration",B.dms.wInt,0.25,20)}${bi("dms.wUp","Per upstream",B.dms.wUp,0.25,20)}${bi("dms.wDown","Per downstream",B.dms.wDown,0.25,20)}${bi("dms.tpp","Tickets per point",B.dms.tpp,0.1,50)}</div>
     <h4>AI platform complexity points · proposed</h4><div class="tgrid">${bi("ai.wAgent","Per agent / workflow",B.ai.wAgent,0.25,20)}${bi("ai.wModel","Per model served",B.ai.wModel,0.25,20)}${bi("ai.wTool","Per tool integration",B.ai.wTool,0.05,20)}${bi("ai.wKs","Per knowledge source",B.ai.wKs,0.25,20)}${bi("ai.risk","Regulated / high-risk",B.ai.risk,0.5,50)}${bi("ai.tpp","Tickets per point",B.ai.tpp,0.1,50)}</div>`;
@@ -3328,6 +3360,10 @@ function updateS3(){
 function renderS4(){
   $("aiSeg").innerHTML=[["low","Low"],["moderate","Moderate"]].map(([k,l])=>`<button type="button" data-ai="${k}" aria-pressed="${S.aiMaturity===k}">${l}</button>`).join("");
   $("transPct").value=S.transPct==null?"":S.transPct;
+  const L=S.bench.life, seg=(id,attr,val,list)=>{$(id).innerHTML=list.map(([k,l,m])=>`<button type="button" ${attr}="${k}" aria-pressed="${val===k}">${l}<small style="display:block;font-weight:400">${m}%</small></button>`).join("")};
+  seg("lifeSeg","data-life",(S.life||{}).stage,[["growth","Growth / new build",L.growth],["steady","Steady state",L.steady],["sunset","Sunset / retiring",L.sunset]]);
+  seg("appSeg","data-app",(S.life||{}).appetite,[["low","Low",L.appLow],["medium","Medium",L.appMed],["high","High",L.appHigh]]);
+  seg("pathSeg","data-path",(S.life||{}).pathway,[["clear","Clear",L.pwClear],["partial","Partial",L.pwPartial],["unclear","Unclear",L.pwUnclear]]);
 }
 function updateS4(){
   const SC=R.SC;
@@ -3336,13 +3372,14 @@ function updateS4(){
   const order=[1,3,2,4];
   $("scGrid").innerHTML=order.map(n=>`<div class="sc-cell ${R.sc===n?"on":""}"><b>Scenario ${n}</b><span>${n<=2?(n===1?"Low AI":"Moderate AI"):(n===3?"Low AI":"Moderate AI")} · POD ${SCENARIOS[n].range} · AIOps 1:${SCENARIOS[n].ratio}</span></div>`).join("");
   $("transPct").placeholder=`${SC.pct} (scenario default)`;
-  $("transHint").textContent=`Scenario ${R.sc} guidance: ${SC.range}. Leave blank to use ${SC.pct}%.`;
+  $("transHint").textContent=`Scenario ${R.sc} guidance: ${SC.range}. Leave blank to use ${fmt(R.transAuto,1)}%${R.stageMul!==1||R.appMul!==1?` (${SC.pct}% × life stage ${fmt(R.stageMul*100,0)}% × appetite ${fmt(R.appMul*100,0)}%)`:""}.`;
+  $("lifeDerived").innerHTML=(S.life&&(S.life.stage||S.life.appetite||S.life.pathway))?`POD share <b>${fmt(R.transAuto,1)}%</b> = scenario ${SC.pct}% × life stage ${fmt(R.stageMul*100,0)}% × appetite ${fmt(R.appMul*100,0)}%${S.transPct!=null?` (overridden by the ${S.transPct}% typed above)`:""}. Savings credited from Year 2: <b>${fmt(R.pathMul*100,0)}%</b> of the target.`:"None answered: the scenario share and the full savings target are used. Change the percentages in Benchmarks and assumptions.";
   $("aiopsDerived").innerHTML=R.aiTowers.length?`<b>${fmt(R.ai2,2)} FTE</b> at 1:${R.ratio} for ${esc(listNames(R.aiTowers))}. Change which towers have AIOps, or the ratio, in Step 2.`:"No tower has AIOps in scope, so the POD is added in full. Set AIOps per tower in Step 2.";
   const nR=S.risks.s4.filter(r=>r.on&&+r.pct).length;
   let h="";
   h+=wstep("1","Support team from the work",fmt(R.runTeam,2),`steps 2 and 5 without AI engineers: ${fmt(R.sub3,2)} − ${fmt(R.ai2,2)}`);
   h+=wstep("2","Scenario",String(R.sc),`${esc(SC.name)}`);
-  h+=wstep("3","Transformation POD",fmt(R.pod,2),`${fmt(R.runTeam,2)} × ${R.transPct}%`);
+  h+=wstep("3","Transformation POD",fmt(R.pod,2),`${fmt(R.runTeam,2)} × ${fmt(R.transPct,1)}%`);
   h+=wstep("4","AI engineers already in the POD",fmt(R.aiops,2),R.aiTowers.length?`At 1:${R.ratio} for ${esc(listNames(R.aiTowers))} (towers with AIOps in scope, Step 2)`:"AIOps not in scope for any tower");
   h+=wstep("5","Transformation added",`<span class="delta add">${sgn(R.stage4raw,2)}</span>`,`POD ${fmt(R.pod,2)} − AI engineers ${fmt(R.aiops,2)}: other transformation (SRE, automation, CI/CD)${R.pod<R.aiops?". The AI engineers already exceed the POD, so nothing more is added":""}`);
   h+=wstep("6","Risk modifiers",`<span class="delta risk">${sgn(R.risk4Add,2)}</span>`,`${fmt(R.stage4raw,2)} × ${fmt(R.rp4*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
@@ -3355,7 +3392,8 @@ function updateS4(){
   updateRiskDeltas("s4",R.stage4raw,R.risk4Add,R.rp4);
   renderAuto("s4",[
     ["D1",`Scenario ${R.sc} (${SC.name}). Volumetrics count as available when towers with ticket history carry at least half of the tower FTE.`,"[F] Part 2–3"],
-    ["D2",`Transformation POD is ${R.transPct}% of the support team from the work (steps 2 and 5, without AI engineers) (scenario guidance ${SC.range}). It covers SRE, automation, CI/CD and AI adoption.`,"[F] 1.7"],
+    ["D2",`Transformation POD is ${fmt(R.transPct,1)}% of the support team from the work (steps 2 and 5, without AI engineers) (scenario guidance ${SC.range}). It covers SRE, automation, CI/CD and AI adoption.`,"[F] 1.7"],
+    ["D7",R.stageMul!==1||R.appMul!==1||R.pathMul!==1?`Application life stage (${fmt(R.stageMul*100,0)}%) and client appetite (${fmt(R.appMul*100,0)}%) move the POD share; clarity of improvement pathways credits ${fmt(R.pathMul*100,0)}% of the savings target from Year 2.`:"Life stage, client appetite and pathway clarity are not answered, so the scenario's POD share and full savings target apply.","proposed"],
     ["D3",R.aiTowers.length?`AI engineers (AIOps) are sized per tower in Step 2 at 1:${R.ratio} and sit inside the Transformation POD, so the POD adds only what they don't already cover.`:"AIOps is not in scope for any tower, so the whole POD is other transformation capacity.","[F] Sc.4 Step 3"],
     ["D4",`AIOps timeline for this scenario: ${SC.aiops}. This stage sizes steady-state capacity; the year-by-year ramp is set in Step 10.`,"[F] Part 3"],
     ["D5","AI tools, licences, tokens and hyperscaler AI API costs are paid by the client.","[F] G5"],
@@ -3563,8 +3601,8 @@ function renderS7(){
 }
 function updateS7(){
   document.querySelectorAll("[data-term]").forEach(b=>b.setAttribute("aria-pressed",String(S.term===+b.dataset.term)));
-  $("savePct").placeholder=String(SAVE_BY_SC[R.sc]);
-  $("saveHint").textContent=`Scenario ${R.sc} target ${R.SC.savings}. Leave blank to use ${SAVE_BY_SC[R.sc]}%.`;
+  $("savePct").placeholder=String(+(SAVE_BY_SC[R.sc]*R.pathMul).toFixed(2));
+  $("saveHint").textContent=`Scenario ${R.sc} target ${R.SC.savings}${R.pathMul!==1?`, credited at ${fmt(R.pathMul*100,0)}% for improvement-pathway clarity`:""}. Leave blank to use ${fmt(SAVE_BY_SC[R.sc]*R.pathMul,2)}%.`;
   $("cont2").placeholder=String(Math.min(R.contPct,6));
   $("cont2Hint").textContent=`Year 1 uses ${R.contPct}% from Step 8. Leave blank to use ${Math.min(R.contPct,6)}% from Year 2.`;
   const T=R.term, tr=R.termRows[T-1], y=R.years, P=R.pf, pfm=P.mode==="portfolio";
@@ -3746,7 +3784,7 @@ function buildRows(){
     ["Stage 2 · Managerial capacity",`SDM ${fmt(Rr.sub4,2)} ÷ ${Rr.sdmRatio} on the delivery team, against ${fmt(P.sdm,2)} in Stage 1`,B.d5,sn[5]],
     ["Stage 2 · Contingency",`${Rr.CX.name} complexity: ${Rr.contPct}% contingency; pyramid ${Rr.pyr.join(" : ")} (grade mix only)`,Rr.s6,sn[6]],
     ["Stage 2 · Run team",`Stage 1 and Stage 2 together: the team that runs the service, before any transformation capacity`,null,sn[6]],
-    ["Stage 3 · Transformation capacity",`Scenario ${R.sc}: POD ${R.transPct}% of ${fmt(R.runTeam,2)}${R.ai2>0?`, including ${fmt(R.ai2,2)} AI engineers (AIOps) at 1:${R.ratio}`:""}, ${fmt(R.rp4*100,1)}% risk, after any spare capacity in the base team; SDM and contingency follow`,trans,R.snaps[6]]
+    ["Stage 3 · Transformation capacity",`Scenario ${R.sc}: POD ${fmt(R.transPct,1)}% of ${fmt(R.runTeam,2)}${R.ai2>0?`, including ${fmt(R.ai2,2)} AI engineers (AIOps) at 1:${R.ratio}`:""}, ${fmt(R.rp4*100,1)}% risk, after any spare capacity in the base team; SDM and contingency follow`,trans,R.snaps[6]]
   ].map(r=>({stage:r[0],what:r[1],add:r[2],snap:r[3],ppl:ppl(r[3])}));
 }
 let RES_TEXT={};
@@ -4094,6 +4132,7 @@ document.addEventListener("click",e=>{
   else if(d.term){S.term=+d.term;update();}
   else if(d.cplx){S.cplx=d.cplx;renderS6();update();}
   else if(d.ai){S.aiMaturity=d.ai;update();}
+  else if(d.life||d.app||d.path){S.life=S.life||{};const [k,v]=d.life?["stage",d.life]:d.app?["appetite",d.app]:["pathway",d.path];S.life[k]=S.life[k]===v?null:v;renderS4();update();}
   else if(d.kshift){const [id,i]=pair(d.kshift);const cv=covOf(id);cv.shifts=cv.shifts.includes(i)?cv.shifts.filter(x=>x!==i):[...cv.shifts,i];renderS3();update();}
   else if(d.callall){const cv=covOf(d.callall);cv.shifts=blocksOf(S).map(k=>k.id);renderS3();update();}
   else if(d.rmskill){const tw=twr(t);tw.skills=tw.skills.filter(k=>k.id!==d.rmskill);renderS2();update();}
@@ -4293,8 +4332,9 @@ function summary(){
   rows("s6");
   L.push("",`## ${PARTS_SHORT[3]} · Step ${STEPNO[4]} · Transformation`);
   L.push(`- Scenario ${R.sc}: ${R.SC.name} (volumetrics ${R.volAvail?"available":"unavailable"}, ${fmt(R.volShare*100,0)}% of tower FTE from ticket history)`);
-  L.push(`- Transformation POD: ${fmt(R.runTeam,2)} support FTE × ${R.transPct}% = ${fmt(R.pod,2)}`);
+  L.push(`- Transformation POD: ${fmt(R.runTeam,2)} support FTE × ${fmt(R.transPct,1)}% = ${fmt(R.pod,2)}`);
   L.push(`- AI engineers (AIOps) inside the POD: ${fmt(R.aiops,2)}`);
+  L.push(`- Life stage ${({growth:"growth",steady:"steady state",sunset:"sunset"})[(S.life||{}).stage]||"not answered"} (${fmt(R.stageMul*100,0)}%), client appetite ${(S.life||{}).appetite||"not answered"} (${fmt(R.appMul*100,0)}%), improvement pathways ${(S.life||{}).pathway||"not answered"} (${fmt(R.pathMul*100,0)}% of the savings target credited)`);
   L.push(`- Added (POD less AI engineers): ${fmt(R.stage4raw,2)}; risk modifiers (${fmt(R.rp4*100,1)}%): ${sgn(R.risk4Add,2)}`);
   L.push(`- **Step 9 adds: ${fmt(R.s4,2)} FTE. Team from the work ${fmt(R.workTeam,2)} FTE**`);
   L.push(`- Scenario guidance: confidence ${R.SC.conf}, Y1 contingency ${R.SC.cont}, ${R.SC.shape}, ${R.SC.comm}`);
