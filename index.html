@@ -2311,7 +2311,7 @@ function compute(){
   const roles=[];
   towers.forEach(t=>{
     if(t.unassigned>0)roles.push({role:"Not yet assigned to a skill set",tower:t.name,fte:t.unassigned*bf2*(1+rp2),tw:t.id,sk:"",kind:t.kind});
-    t.skills.forEach(k=>{const cs=covSkills.find(c=>c.id===k.id);roles.push({role:k.name,tower:t.name,fte:k.added*bf2*(1+rp2)+(cs&&cs.top>0?cs.top*(1+rp3):0),tw:t.id,sk:k.skill,kind:t.kind,l3:(k.f2+k.f3)>0?k.f3/(k.f2+k.f3):0.5})});
+    t.skills.forEach(k=>{const cs=covSkills.find(c=>c.id===k.id);roles.push({role:k.name,tower:t.name,fte:k.added*bf2*(1+rp2)+(cs&&cs.top>0?cs.top*(1+rp3):0),tw:t.id,sk:k.skill,kind:t.kind,syn:!!k.synthetic,l3:(k.f2+k.f3)>0?k.f3/(k.f2+k.f3):0.5})});
     if(t.ai>0)roles.push({role:"AI Engineer (AIOps)",tower:t.name,fte:t.ai,tw:t.id,sk:"aiops",kind:t.kind});
   });
   if(s4>0)roles.push({role:"Transformation: SRE, automation, CI/CD",tower:"All towers",fte:s4,sk:"trans"});
@@ -2821,6 +2821,7 @@ function runSelfTests(){
     const per=k=>{const t=R.towers.find(x=>x.kind===k);const X={towers:[t],roles:R.roles.filter(r=>r.tw===t.id)};const sf=shapeOf(X.roles,X);return sf.rows.map(r=>r.id).filter(i=>!["sdm","sa"].includes(i)).sort().join("+")};
     const got=["AMS","IMS","DMS","AI"].map(per).join(" | "), want=["dev+sse","ie+isu","de+dse","aie+aio"].join(" | ");
     add("Each tower is staffed L2 then L3: AMS System Support Engineer and Developer, IMS Infra Support Engineer and Infra Engineer, DMS Data Support Engineer and Data Engineer, agentic AI Ops Engineer and AI Engineer",want,got,got===want,"agreed")});
+  withState(testState(st=>{st.towers=[amsTower(300,{skills:[mkSkill("sse",50),mkSkill("mob",40),mkSkill("qa",10)]})]}),R=>{const sf=shapeOf(R.roles,R), has=i=>sf.rows.some(r=>r.id===i);add("A Mobile dev or QA skill set share does not create a Mobile Developer or Quality Analyst: only typed special roles do","AMS staffed as System Support Engineer and Developer only",sf.rows.map(r=>r.id).join(", "),!has("mob")&&!has("qa")&&has("sse")&&has("dev"),"agreed")});
   withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>{const rr=runCompute(), tr=R.total-rr.total;add("Run team excludes AI engineers and the transformation POD","run team has 0 AI engineers; Year 1 = run team + transformation",`AI ${fmt(rr.ai2,2)} · ${fmt(rr.total,2)} + ${fmt(tr,2)} = ${fmt(R.total,2)}`,rr.ai2===0&&tr>0&&Math.abs(rr.total+tr-R.total)<1e-9&&rr.total<R.total,"proposed")});
   withState(testState(st=>{st.towers=[amsTower(300,{})];st.transPct=0}),R=>{const rr=runCompute();add("With no transformation and no AIOps the run team is the whole team","run team = Year 1 team",`${fmt(rr.total,3)} vs ${fmt(R.total,3)}`,Math.abs(rr.total-R.total)<1e-9,"proposed")});
   withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>add("AIOps ratio, low AI adoption","1 : 4",`1 : ${R.ratio}`,R.ratio===4,"[F] Part 3"));
@@ -3324,7 +3325,7 @@ const GROLES=[
   ["oth","Other skill sets","Skill sets that are not in the roles guidance map, for example L1 support, AI platform skills or a named niche skill","Core-stream, from the tower's estimate","core"],
   ["trn","Transformation engineers","Automation, CI/CD and AI adoption from the Transformation POD","Stage 3 transformation capacity","xform"]
 ];
-const GMAP={mob:"mob",qa:"qa",sre:"sre",l1:"oth",spec:"oth",sp_qa:"qa",sp_ba:"ba",sp_sa:"sa",sp_mob:"mob"};  /* skill sets that name their own role; every other skill set is staffed by the tower's L2 and L3 roles */
+const GMAP={sre:"sre",sp_qa:"qa",sp_ba:"ba",sp_sa:"sa",sp_mob:"mob"};  /* only the SRE FTE typed on a tower and the special roles name their own role; every skill set is staffed by the tower's L2 and L3 roles, whatever its share */
 const GCORE=["sse","isu","dse","de","ie","aio","dev","mob","oth"];
 /* how DAMO staffs a tower: the L2 role, then the L3 role */
 const TIER_ROLES={AMS:["sse","dev"],IMS:["isu","ie"],DMS:["dse","de"],AI:["aio","aie"]};
@@ -3339,7 +3340,7 @@ function shapeOf(list,X){
     if(r.sk==="aiops"){add("aie",r.fte);fixed+=r.fte;return}
     if(r.sk==="trans"){add("trn",r.fte);return}
     if(r.sk==="lift"){lifts.push(r.fte);return}
-    const own=r.sk&&GMAP[r.sk], tr=TIER_ROLES[r.kind];
+    const own=r.syn&&GMAP[r.sk], tr=TIER_ROLES[r.kind];
     if(own){add(own,r.fte);return}
     if(!tr){add("oth",r.fte);return}
     const l3=r.l3==null?0.5:r.l3;
