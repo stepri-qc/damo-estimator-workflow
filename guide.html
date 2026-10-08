@@ -325,7 +325,7 @@ quiz:[
 <li><div><b>Service levels (SLA), optional.</b> P1/P2 response and restore, availability class, or <span class="ui">Gold</span> / <span class="ui">Silver</span> / <span class="ui">Bronze</span>. Stringent targets add effort on L2/L3 ([F] Sc.3 Step 2), capped at 40%. </div></li>
 <li><div><b>Demand, in order.</b> Ticket history if the client has it: <b>incidents, service requests and change requests a month</b>. Incidents are split by <b>severity</b> (P1 to P4, counts or %; with counts at L1 the mix sends P1/P2 straight to L2/L3) and counted at L1, L2 or L3. Service requests and change requests are each split by <b>complexity</b> (Low / Medium / High, counts or %): SRs are costed by complexity and done by L1 (Low), L2 (Medium) or L3 (High); CRs are planned engineering work on L3 (or L2). The AREs are in the Benchmarks panel. If not, the estate's structural complexity (T-shirt sizing for apps, environments/DBs for IMS, pipelines for DMS, agents/models for AI). If not even that, monthly active users.</div></li>
 <li><div><b>Enhancement pool</b> (optional hours a month, separate from change requests) and <b>estate</b> (modern or complex legacy: 25% or 35% non-ticketing effort).</div></li>
-<li><div><b>L1.5, SRE and AIOps</b>: each tower asks whether they are in scope. SRE (any tower kind): an SRE takes 78% of that tower's L3 FTE, a role-mix change, not extra headcount. L1.5 brings a Product Support Engineer into the team shape and AIOps brings the AI engineers.</div></li>
+<li><div><b>L1.5, SRE and AIOps</b>: each tower asks whether they are in scope. SRE (any tower kind): you type the SRE FTE, carved out of that tower's L3, a role-mix change, not extra headcount. L1.5: you type the Product Support Engineer FTE, carved out of that tower's L2.  AIOps brings the AI engineers.</div></li>
 <li><div><b>Skill sets and special roles</b> are no longer entered on the tower: they live in Step 5 (Skill type), together with the skills required on each shift.</div></li>
 <li><div><b>AIOps</b>: if in scope, AI engineers are added at 1 per 4 support FTE (low AI adoption) or 1 per 8 (moderate; 1:6 above 20 FTE).</div></li>
 <li><div><b>Core support role</b>: every tower has one (Systems Support Engineer for AMS, Infra support engineer for IMS, Data Support Engineer for DMS, AI platform engineering for AI). It takes the share of the tower that added skill sets do not, and the base roster covers it on every shift.</div></li>
@@ -349,7 +349,7 @@ ${tryTool(2,"Add a tower and answer its questions top to bottom.")}
 quiz:[
  {q:"The client's ITSM export has every ticket raised. Where are the counts measured?",o:["All tickets (L1)","Tickets reaching L2","Tickets reaching L3"],a:0,why:"A whole-queue export is L1 inflow; 70% passes to L2. An incumbent's L2 queue would be 'reaching L2'."},
  {q:"We provide L2 only, the client runs L1 and another supplier runs L3. What coordination uplift applies?",o:["0%","4%","8%"],a:2,why:"Two interfaces (L1→L2 and L2→L3) with different owners, 4% each."},
- {q:"SRE is set to Yes on a tower. What happens to headcount?",o:["It adds SREs on top","It doesn't change; SRE takes 78% of that tower's L3 FTE","It removes L2"],a:1,why:"SRE changes who does the L3 work, not how much work there is."}
+ {q:"SRE is set to Yes on a tower. What happens to headcount?",o:["It adds SREs on top","It doesn't change; the SRE FTE you type is carved out of that tower's L3","It removes L2"],a:1,why:"SRE changes who does the L3 work, not how much work there is."}
 ]},
 
 {id:"s9",grp:"Stage 1 · Size the team",t:"Step 3 · Current team (reference range)",html:()=>`
@@ -453,8 +453,8 @@ quiz:[
 <ol class="steps">
 <li><div>Read the <b>team by role</b> table: the run team that Stages 1 and 2 qualified, beside the Year 1 team once Stage 3's transformation capacity is added, with each role's description and guidance from the map.</div></li>
 <li><div>Core-stream roles come from the estimate, staffed L2 then L3 by tower: <b>AMS</b> System Support Engineer and Developer; <b>IMS</b> Infra Support Engineer and Infra Engineer; <b>DMS</b> Data Support Engineer and Data Engineer; <b>agentic (AI platform)</b> AI Ops Engineer and AI Engineer. Mobile Developer, the Service Reliability Engineer and the special roles come from the skill sets and special roles you add in Step 5.</div></li>
-<li><div>Set the <b>cross-cutting ratios</b>: Product Support Engineer 1 per tower with L1.5 in scope and Solution Architect 10% of an FTE once per deal (0.8 hours of an 8-hour day) come from the map. They are carved out of the core-stream roles, capped at 60% of them, so the total never changes.</div></li>
-<li><div><b>Roles appear only where they are in scope</b>: the Product Support Engineer where a tower has L1.5 in scope, the SRE where SRE is in scope, the AI Engineer where AIOps is in scope. Quality Analyst, Business Analyst, Solution Architect and Mobile Developer come from the <b>Special roles</b> you add on a tower in Step 2.</div></li>
+<li><div>The <b>Solution Architect</b> is 10% of an FTE once per deal (0.8 hours of an 8-hour day), editable here, carved out of the core-stream roles (capped at 60% of them), so the total never changes.</div></li>
+<li><div><b>Roles appear only where they are in scope, sized by what you type</b>: the Product Support Engineer FTE on a tower with L1.5 in scope (carved out of its L2), the SRE FTE on a tower with SRE in scope (carved out of its L3), the AI Engineer where AIOps is in scope. A Yes with no FTE typed shows no role. The transformation POD's automation and CI/CD work is its own Transformation engineers row. Quality Analyst, Business Analyst, Solution Architect and Mobile Developer come from the <b>Special roles</b> you add in Step 5.</div></li>
 </ol>
 <div class="note"><b>The Year 1 column moves with Stage 3</b> It includes the AI engineers (AIOps) and the rest of the transformation capacity, so it changes as you answer Step 10. The Service Delivery Manager follows the ratio in Step 7 (default 1 per 12 FTE, as in the map).</div>
 ${tryTool(13,"Review the Year 1 team by role.")}`},
@@ -595,7 +595,7 @@ const EXAMPLE=[
  ["Run team (step 8)","23.08 FTE","Stage 1 team + SDM re-base + 7.5% contingency (Medium)"],
  ["Transformation capacity (step 10)","5.08 FTE","POD 12.5% of 19.82 = 2.48 is less than the 4.36 AI engineers inside it, so the AI engineers set it; plus the SDM and contingency that follow"],
  ["Year 1 team","28.15 FTE · 29 people","Run team 23.08 + transformation 5.08"],
- ["SRE","0.80 FTE","78% of the IMS tower's L3 FTE (incl. contingency share)"],
+ ["SRE","0.91 FTE","0.75 FTE typed on the IMS tower, carved out of its L3 (incl. contingency share)"],
  ["3-year average","25.15 FTE a year","28.2 → 24.9 → 22.4; 13.5% a year above the floor"],
  ["Confidence","51 · Medium","Range about 23.9 – 32.4 FTE"]
 ];
@@ -634,7 +634,7 @@ const GLOSS=[
  ["SLA uplift","Extra L2/L3 effort for stringent SLAs: P1 response ≤15 min +25%, ≤30 min +12%, 99.9% availability +10%, P1 restore ≤2 h +10% on L3; cap 40%."],
  ["AIOps","AI for operations: intelligent alerting, automated root-cause analysis, ticket classification, self-healing."],
  ["AI engineers","Built into towers with AIOps in scope at 1:4 (low AI adoption) or 1:8 (moderate) of support FTE."],
- ["SRE","Site/Service Reliability Engineering. On any tower, takes 78% of that tower's L3 FTE when SRE is in scope."],
+ ["SRE","Site/Service Reliability Engineering. On any tower, the SRE FTE typed for the tower, carved out of its L3, when SRE is in scope."],
  ["Transformation POD","Capacity for SRE, automation, CI/CD and AI adoption: 12.5–20% of the support team by scenario."],
  ["Scenario","Framework Part 3: 1–4 from client AI adoption × volumetrics availability. Sets POD share, AIOps ratio and savings target."],
  ["SDM","Service Delivery Manager: governance, one per 12 delivery FTE."],

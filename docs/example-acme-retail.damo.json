@@ -151,6 +151,7 @@
     "hiRisk": false,
     "aiops": false,
     "sre": true,
+    "sreFte": 0.75,
     "levels": null,
     "tktLevel": null,
     "enh": null,
