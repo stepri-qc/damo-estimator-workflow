@@ -1147,6 +1147,8 @@ tr.sel td{background:var(--accent-soft)}
         <header><h3>How the number is built</h3><span class="sub">Year-by-year FTE for the chosen term</span></header>
         <div class="working" id="steps7"></div>
         <div class="yrs" id="yrChart" aria-label="FTE by year"></div>
+        <div class="loc-table" style="margin-top:12px"><table><thead><tr><th>Year</th><th class="r">Run team</th><th class="r">Transformation capacity</th><th class="r">Total</th></tr></thead><tbody id="yrLines"></tbody></table></div>
+        <div class="hint" id="yrLinesNote" style="margin-top:6px"></div>
       </div>
     </div>
 
@@ -2732,7 +2734,7 @@ async function exportExcel(){
   const C=R.conf||confidence(), A=R.allow||allowances(), T=R.term, whole=S.rounding!=="none";
   sheet("Summary",[["Deal",S.deal||""],["Version",S.meta.version],["Status",approvalStale()?"Changed since approval":STATUS[S.meta.status]],["Prepared by",S.meta.preparedBy],["Approved by",S.meta.status==="approved"?S.meta.approvedBy:""],["Approval date",S.meta.status==="approved"?S.meta.approvedAt:""],["Exported",new Date().toISOString().slice(0,10)],[],
     ["Year 1 team (FTE)",R.fin.total],["Rostered people",whole?R.fin.people:""],[`${T}-year average (FTE a year)`,R.fin.termRows[T-1].avg],R.fin.on?["Modelled Year 1 team (FTE, before the commercial position)",R.total]:["Commercial position","none"],["Confidence score",C.score],["Confidence band",C.band],["Range low (FTE)",C.lo],["Range high (FTE)",C.hi],["Coverage",covLabel()],["Framework scenario",`${R.sc}: ${R.SC.name}`],["Transition (FTE-months)",R.trans.total],[],["FTE only: no rates, cost or price."]],[34,40]);
-  sheet("Build",[["Step","What it did","Step FTE","Team after (FTE)","People"]].concat(buildRows().map(r=>[r.stage,r.what,r.add,r.snap.fte,whole?r.snap.people:""])).concat(whole?[["Rounding","",R.roundAdd,"",R.people]]:[]).concat(R.fin.on?[["Commercial position",adjReasonLabel(S.adj.reason),R.fin.total-R.total,R.fin.total,whole?R.fin.people:""]]:[]),[22,90,12,16,10]);
+  sheet("Build",[["Step","What it did","Step FTE","Team after (FTE)","People"]].concat(buildRows().map(r=>[r.stage,r.what,r.add==null?"":r.add,r.snap.fte,whole?r.snap.people:""])).concat(whole?[["Rounding","",R.roundAdd,"",R.people]]:[]).concat(R.fin.on?[["Commercial position",adjReasonLabel(S.adj.reason),R.fin.total-R.total,R.fin.total,whole?R.fin.people:""]]:[]),[22,90,12,16,10]);
   sheet("Towers",[["Tower","Kind","We provide","SLA","Demand from","Counts at","Tickets/mo","L1 tickets","L2 tickets","L3 tickets","SLA uplift L2 %","SLA uplift L3 %","Coordination %","A hrs","B hrs","C hrs","FTE","AIOps","AI engineers","Incidents/mo","SRs/mo","CRs/mo","SR hours","CR hours"]].concat(R.towers.map(t=>[t.name,t.kind,ownedText(t),slaText(t),t.src,t.lvl.toUpperCase(),t.tickets,t.l1t,t.l2t,t.l3t,t.sm.l2*100,t.sm.l3*100,t.hand*100,t.A,t.Bh,t.C,t.fte,t.aiops===true?"Yes":"No",t.ai,t.incN,t.srN,t.crN,t.srHrs,t.crHrs])),[22,6,14,34,18,8]);
   sheet("Team by role",[["Role","Tower","FTE"]].concat(R.fin.roles.map(r=>[r.role,r.tower,r.fte])).concat([["Total","",R.fin.total]]),[44,22,10]);
   sheet("Team by location",[["Location","L2 (incl. L1) FTE","L3 FTE","SDM FTE","People"]].concat(R.fin.snap.cells.filter(c=>c.a2+c.a3+c.g>0).map(c=>[c.name,c.a2,c.a3,c.g,whole?c.people:""])),[18,16,10,10,10]);
@@ -2831,9 +2833,9 @@ function renderNav(){
   const tab=(p,label,long,fig,sub,target)=>`<button type="button" class="ptab ${curPart===p?"on":""}" role="tab" aria-selected="${curPart===p}" data-go="${target}"><span class="pl">${label}<span class="lg"> · ${long}</span></span><span class="pf"><b>${fig}</b><span>${sub}</span></span></button>`;
   const P=R?R.p1.total:0, T=R?R.total:0;
   let tabs=`<button type="button" class="ptab ${curPart===0?"on":""}" role="tab" aria-selected="${curPart===0}" data-go="0"><span class="pl">Step 0</span><span class="pf"><b style="font-size:14px;font-family:var(--body)">Documents</b><span>optional</span></span></button>`;
-  const Pr=R?R.p1.total:0;
+  const Pr=R?R.run.p1.total:0, Rn=R?R.run.total:0;
   tabs+=tab(1,"Stage 1","Size the team",R?`${fmt(Pr,1)} FTE`:"–",`${ready(1)} of ${partOf(1).length} ready`,partOf(1)[0].n);
-  tabs+=tab(2,"Stage 2","Qualify the team",R?`${fmt(T,1)} FTE`:"–",`${ready(2)} of ${partOf(2).length} ready`,partOf(2)[0].n);
+  tabs+=tab(2,"Stage 2","Qualify the team",R?`${fmt(Rn,1)} FTE`:"–",`${ready(2)} of ${partOf(2).length} ready`,partOf(2)[0].n);
   tabs+=tab(3,"Stage 3","Transformation",R?`${fmt(T,1)} FTE`:"–",`${ready(3)} of ${partOf(3).length} ready`,partOf(3)[0].n);
   tabs+=tab(4,"Review","Check and commercial",R?`${fmt(R.fin.total,1)} FTE`:"–",R&&R.fin.on?"proposed":"optional",partOf(4)[0].n);
   const list=curPart?partOf(curPart):[], pos=ORDER.indexOf(cur);
@@ -3050,9 +3052,17 @@ function updateRiskDeltas(k,base,add,pct){
 
 /* ---------- live update ---------- */
 let R;
+/* The run team: the same engine with no transformation POD and no AI engineers. Stage 2 qualifies this team; Stage 3 adds the transformation capacity on top. */
+function runCompute(){
+  const sp=S.transPct, ai=S.towers.map(t=>t.aiops);
+  S.transPct=0; S.towers.forEach(t=>{if(t.aiops===true)t.aiops=false});
+  try{return compute()}
+  finally{S.transPct=sp; S.towers.forEach((t,i)=>{t.aiops=ai[i]})}
+}
+function asRun(fn){const M=R; R=M.run; try{fn()}finally{R=M}}
 function update(){
-  R=compute();
-  updateS1(); updateS2(); updateS3(); updateS4(); updateS5(); updateS6(); updateS7(); updateTrans(); updateS9(); updateS11(); updateS12(); updateS8(); updateCP(); updateResults(); renderBar(); renderNav(); setNavH(); updateMeta(); save();
+  R=compute(); R.run=runCompute();
+  updateS1(); updateS2(); asRun(updateS3); updateS4(); updateS5(); asRun(updateS6); R.gradeRows=gradeRowsFor(R); R.conf=confidence(); updateS7(); updateTrans(); asRun(updateS9); asRun(updateS11); asRun(updateS12); updateS8(); updateCP(); updateResults(); renderBar(); renderNav(); setNavH(); updateMeta(); save();
 }
 /* A compact version of the coverage timeline for the inputs panel: one 48-cell bar per row, on the customer clock from the window start. */
 function miniHtml(C){
@@ -3287,10 +3297,12 @@ function updateS4(){
   h+=wstep("1","Support team from the work",fmt(R.runTeam,2),`steps 2 and 5 without AI engineers: ${fmt(R.sub3,2)} − ${fmt(R.ai2,2)}`);
   h+=wstep("2","Scenario",String(R.sc),`${esc(SC.name)}`);
   h+=wstep("3","Transformation POD",fmt(R.pod,2),`${fmt(R.runTeam,2)} × ${R.transPct}%`);
-  h+=wstep("4","AI engineers already in the POD",fmt(R.aiops,2),R.aiTowers.length?`Added in Step 2 at 1:${R.ratio} for ${esc(listNames(R.aiTowers))}`:"AIOps not in scope for any tower");
+  h+=wstep("4","AI engineers already in the POD",fmt(R.aiops,2),R.aiTowers.length?`At 1:${R.ratio} for ${esc(listNames(R.aiTowers))} (towers with AIOps in scope, Step 2)`:"AIOps not in scope for any tower");
   h+=wstep("5","Transformation added",`<span class="delta add">${sgn(R.stage4raw,2)}</span>`,`POD ${fmt(R.pod,2)} − AI engineers ${fmt(R.aiops,2)}: other transformation (SRE, automation, CI/CD)${R.pod<R.aiops?". The AI engineers already exceed the POD, so nothing more is added":""}`);
   h+=wstep("6","Risk modifiers",`<span class="delta risk">${sgn(R.risk4Add,2)}</span>`,`${fmt(R.stage4raw,2)} × ${fmt(R.rp4*100,1)}% from ${nR} active risk${nR===1?"":"s"}`);
   h+=wstep("=","Step 9 adds",`${sgn(R.s4,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Team from the work: ${fmt(R.sub3,2)} + ${fmt(R.s4,2)} = ${fmt(R.workTeam,2)} FTE, compared with the ${fmt(R.s1,2)} FTE base team at Step 4`,"total");
+  h+=wstep("7","Run team from Stage 2",fmt(R.run.total,2),"Stage 1 and Stage 2: the team that runs the service, with its SDM and contingency");
+  h+=wstep("=","Year 1 team",`${fmt(R.total,2)} <small style="font-size:13px;color:var(--muted)">FTE</small>`,`Run team ${fmt(R.run.total,2)} + transformation capacity ${fmt(R.total-R.run.total,2)}. The capacity line includes the SDM and contingency that follow the extra people`,"total");
   if(S.aiMaturity==null)h=`<div class="alert" style="margin-bottom:10px">Choose the client's AI adoption. Low is used until you do.</div>`+h;
   $("steps4").innerHTML=h;
   $("scFacts").innerHTML=[["Estimation confidence",SC.conf],["Y1 contingency",SC.cont],["Team shape",SC.shape],["AIOps timeline",SC.aiops],["Commercial model",SC.comm],["Volume band clause",SC.band],["YoY savings target",SC.savings]].map(([k,v])=>`<div><span>${k}</span><b>${esc(v)}</b></div>`).join("");
@@ -3384,14 +3396,14 @@ function updateS9(){
   const P=R.p1, ex=S.ex||{}, n=k=>Math.max(0,+ex[k]||0);
   const exSup=n("L2")+n("L3")+n("trans"), exTot=EX_TIERS.reduce((x,[k])=>x+n(k),0);
   const tol=(+S.exTol||0)/100, cell=S.rounding==="cell", supp=P.deliv-R.ai2;
-  const pts=[["Ticket volume","Step 2: tower effort, without AI engineers",P.run,"#6B7C93"],["Base team","Step 1: the support window's floor",R.s1,"var(--accent)"],["Existing team","today: L2 + L3 + SRE / automation",exSup,"var(--faint)"],["Stage 1 support team","larger of ticket volume and base team",supp,"var(--add)"]];
+  const pts=[["Ticket volume","Step 2: tower effort, without AI engineers",P.run,"#6B7C93"],["Base team","Step 1: the support window's floor",R.s1,"var(--accent)"],["Existing team",`today: L2 + L3 + SRE / automation, a reference range of ±${S.exTol}%`,exSup,"var(--faint)"],["Stage 1 support team","larger of ticket volume and base team",supp,"var(--add)"]];
   const mx=Math.max(...pts.map(p=>p[2]),0.0001);
-  $("triBars").innerHTML=pts.map(p=>`<div class="rbar"><span class="t"><b>${p[0]}</b><span>${p[1]}</span></span><span class="track"><i style="width:${p[2]/mx*100}%;background:${p[3]}"></i></span><span class="v">${p[0]==="Existing team"&&!(exSup>0)?"–":fmt(p[2],2)}</span></div>`).join("");
+  $("triBars").innerHTML=pts.map(p=>`<div class="rbar"><span class="t"><b>${p[0]}</b><span>${p[1]}</span></span><span class="track"><i style="width:${p[2]/mx*100}%;background:${p[3]}"></i></span><span class="v">${p[0]==="Existing team"?(exSup>0?`${fmt(exSup*(1-tol),1)}–${fmt(exSup*(1+tol),1)}`:"–"):fmt(p[2],2)}</span></div>`).join("");
   const band=(ours,theirs)=>{if(!(theirs>0))return ours>0?`<span class="band hi">new</span>`:"–";const p=(ours-theirs)/theirs;return Math.abs(p)<=tol?`<span class="band ok">consistent</span>`:p>0?`<span class="band hi">${fmt(p*100,0)}% above</span>`:`<span class="band lo">${fmt(-p*100,0)}% below</span>`};
   const rows=[["L2",n("L2"),P.L2,cell?P.L2p:null],["L3 incl. SRE / automation and AI engineers",n("L3")+n("trans"),P.L3,cell?P.L3p:null],["Governance (SDM)",n("gov"),P.G,cell?P.Gp:null],["Other roles",n("other"),0,cell?0:null]];
   $("triTable").innerHTML=rows.map(r=>`<tr><td class="loc-name">${r[0]}</td><td class="r num">${fmt(r[1],1)}</td><td class="r num">${fmt(r[2],2)}</td><td class="r num">${r[3]==null?"–":fmt(r[3],0)}</td><td class="r num">${sgn(r[2]-r[1],1)}</td><td>${r[0]==="Other roles"&&r[1]>0?`<span class="band lo">not in our scope</span>`:band(r[2],r[1])}</td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td class="r num"><b>${fmt(exTot,1)}</b></td><td class="r num"><b>${fmt(P.total,2)}</b></td><td class="r num"><b>${S.rounding!=="none"?fmt(P.people,0):"–"}</b></td><td class="r num"><b>${sgn(P.total-exTot,1)}</b></td><td>${band(P.total,exTot)}</td></tr>`;
-  let v=`<b>${P.lift>0?"The support window sets the Stage 1 number.":"The ticket volume sets the Stage 1 number."}</b> The towers need ${fmt(P.run,2)} FTE of support and the base team is ${fmt(R.s1,2)}. The larger, ${fmt(supp,2)}, is used${R.ai2>0?`, with ${fmt(R.ai2,2)} AI engineers on top`:""}, plus ${fmt(P.sdm,2)} SDM: <b>${fmt(P.total,2)} FTE</b>.`;
+  let v=`<b>${P.lift>0?"Binding dimension: coverage. The support window sets the Stage 1 number.":"Binding dimension: ticket volume. The work sets the Stage 1 number."}</b> The towers need ${fmt(P.run,2)} FTE of support and the base team is ${fmt(R.s1,2)}. The larger, ${fmt(supp,2)}, is used${R.ai2>0?`, with ${fmt(R.ai2,2)} AI engineers on top`:""}, plus ${fmt(P.sdm,2)} SDM: <b>${fmt(P.total,2)} FTE</b>.`;
   const vals=[P.run,R.s1].concat(exSup>0?[exSup]:[]).filter(x=>x>0), lo=Math.min(...vals), hi=Math.max(...vals), spread=lo>0?(hi-lo)/lo:0;
   if(!(exSup>0))v+=" Enter the existing team to complete the triangulation: with only two views there is nothing to check them against.";
   else{
@@ -3404,7 +3416,7 @@ function updateS9(){
   }
   $("triVerdict").innerHTML=v;
   renderAuto("s9",[
-    ["I1","The Stage 1 number is the larger of the ticket-volume team and the base team, plus SDM. The existing team is a cross-check and does not change it.","agreed"],
+    ["I1","The Stage 1 number is the larger of the ticket-volume team and the base team, plus SDM. The existing team is a reference range (today's team ± the tolerance) and does not change it.","agreed"],
     ["I2",`The existing team is ${fmt(exTot,1)} FTE, ${S.exSource?`taken from the ${EX_SOURCE[S.exSource]}`:"source not stated"}. L2, L3 and SRE / automation roles are compared with our support team before the SDM; managers with our SDM.`,"input"],
     ["I3",`Differences within ±${S.exTol}% count as consistent.`,"proposed"]
   ]);
@@ -3438,6 +3450,19 @@ function gradePeople(split,delivP,sdmP){
   while(sdmP>fl[1]&&fl[2]>0){fl[2]--;fl[1]++}
   return [fl[0]+sdmP,fl[1],fl[2]];
 }
+function gradeRowsFor(X){
+  const L2=X.L2, L3=X.L3, G=X.G, gsp=gradeSplit(L2,L3,G,X.shares);
+  const rowsF=GRADES.map((g,i)=>({g,l2:gsp[i].l2,l3:gsp[i].l3,sdm:gsp[i].sdm}));
+  rowsF.forEach(r=>{r.fte=r.l2+r.l3+r.sdm;r.sh=r.fte/Math.max(L2+L3+G,1e-9)});
+  const whole=S.rounding!=="none";
+  const sdmP=whole?(S.rounding==="cell"?X.Gp:Math.max(G>0?1:0,Math.round(G))):G;
+  const delivP=whole?Math.max(0,X.people-sdmP):0;
+  if(whole){
+    const gp=gradePeople(gsp,delivP,sdmP);
+    rowsF.forEach((r,i)=>r.people=gp[i]);
+  }
+  return rowsF;
+}
 function updateS6(){
   const CX=R.CX;
   const C=confidence();R.conf=C;
@@ -3460,17 +3485,8 @@ function updateS6(){
   if(!S.cplx)h=`<div class="alert" style="margin-bottom:10px">Choose the engagement complexity. No contingency is added until you do.</div>`+h;
   $("steps6").innerHTML=h;
   /* grade table */
-  const L2=R.L2, L3=R.L3, G=R.G;
-  const gsp=gradeSplit(L2,L3,G,R.shares);
-  const rowsF=GRADES.map((g,i)=>({g,l2:gsp[i].l2,l3:gsp[i].l3,sdm:gsp[i].sdm}));
-  rowsF.forEach(r=>{r.fte=r.l2+r.l3+r.sdm;r.sh=r.fte/Math.max(L2+L3+G,1e-9)});
-  const whole=S.rounding!=="none";
-  const sdmP=whole?(S.rounding==="cell"?R.Gp:Math.max(G>0?1:0,Math.round(G))):G;
-  const delivP=whole?Math.max(0,R.people-sdmP):0;
-  if(whole){
-    const gp=gradePeople(gsp,delivP,sdmP);
-    rowsF.forEach((r,i)=>r.people=gp[i]);
-  }
+  const L2=R.L2, L3=R.L3, G=R.G, whole=S.rounding!=="none";
+  const rowsF=gradeRowsFor(R);
   $("gradeCalc").innerHTML=rowsF.map(r=>`<tr><td class="loc-name">${r.g}</td><td class="r num">${fmt(r.sh*100,0)}%</td><td class="r num">${fmt(r.l2,2)}</td><td class="r num">${fmt(r.l3,2)}</td><td class="r num">${fmt(r.sdm,2)}</td><td class="r num">${fmt(r.fte,2)}</td><td class="r num"><b>${whole?r.people:"–"}</b></td></tr>`).join("")
     +`<tr><td><b>Total</b></td><td class="r num">100%</td><td class="r num">${fmt(L2,2)}</td><td class="r num">${fmt(L3,2)}</td><td class="r num">${fmt(G,2)}</td><td class="r num">${fmt(R.total,2)}</td><td class="r num"><b>${whole?fmt(R.people,0):"–"}</b></td></tr>`;
   const mx=Math.max(...rowsF.map(r=>r.fte),0.0001);
@@ -3536,6 +3552,8 @@ function updateS7(){
   $("yrChart").innerHTML=y.map(v=>`<div class="yr ${v.n>T?"off":""}"><span class="n">${fmt(v.fte,1)}</span><span class="col" style="height:${v.fte/mx*140}px"></span><span class="l">Y${v.n}${v.n>T?" · outside term":""}</span></div>`).join("")
     +(R.floor>0?`<div class="floorline" style="bottom:${R.floor/mx*140+22}px"><span>floor ${fmt(R.floor,1)}</span></div>`:"");
   $("termCalc").innerHTML=R.termRows.map(t=>`<tr class="${t.T===T?"sel":""}"><td class="loc-name">${t.T} year${t.T>1?"s":""}</td>${[0,1,2,3,4].map(i=>`<td class="r num">${i<t.T?fmt(y[i].fte,1):"–"}</td>`).join("")}<td class="r num">${fmt(t.sum,1)}</td><td class="r num"><b>${fmt(t.avg,2)}</b></td><td class="r num">${t.T===1?"–":"−"+fmt(t.vs1*100,1)+"%"}</td></tr>`).join("");
+  $("yrLines").innerHTML=y.slice(0,Math.max(T,1)).map((v,i)=>{const r=R.run.years[i].fte;return `<tr><td class="loc-name">Year ${v.n}</td><td class="r num">${fmt(r,2)}</td><td class="r num">${sgn(v.fte-r,2)}</td><td class="r num"><b>${fmt(v.fte,2)}</b></td></tr>`}).join("");
+  $("yrLinesNote").textContent="Run team: the Stage 1 and 2 team with the same savings rule and contingency taper. Transformation capacity: the difference to the full team, net of any AIOps savings, so it can fall below zero in later years.";
   const t1=R.termRows[0], t3=R.termRows[2], t5=R.termRows[4];
   $("termVerdict").innerHTML=`<b>A 3-year term averages ${fmt(t3.avg,1)} FTE a year, ${fmt(t3.vs1*100,0)}% below a 1-year contract (${fmt(t1.avg,1)}); 5 years averages ${fmt(t5.avg,1)} (−${fmt(t5.vs1*100,0)}%).</b> A 1-year contract pays for transition, hypercare risk and the full Year 1 contingency, then ends before automation and runbook maturity reduce the team. From Year 3 the team is ${fmt(y[2].fte,1)} FTE against ${fmt(y[0].fte,1)} in Year 1.`;
   updateRiskDeltas("s7",y.slice(1,T).reduce((x,v)=>x+v.fte/(1+R.rp7),0)/Math.max(1,T-1),0,R.rp7);
@@ -3619,30 +3637,32 @@ function updateS8(){
 function renderBar(){
   document.body.classList.toggle("on-docs",S.active===0);
   const cur=ORDER.includes(S.active)?S.active:1, pos=ORDER.indexOf(cur), reached=id=>ORDER.indexOf(id)<=pos;
-  const P=R.p1, B=R.bridge;
-  const sn=cur===1?R.snaps[1]:cur===2?R.snaps[2]:(cur===5||cur===9)?P:cur===3?R.snaps[3]:cur===4?R.snaps[4]:R.snaps[6];
+  /* Stages 1 and 2 describe the run team (no transformation, no AI engineers); Stage 3 adds the transformation capacity on top */
+  const Rr=R.run, P=Rr.p1, B=Rr.bridge, trans=R.total-Rr.total;
+  const sn=cur===1?Rr.snaps[1]:cur===2?Rr.snaps[2]:(cur===5||cur===9)?P:(cur===3||cur===11)?Rr.snaps[3]:cur===12?Rr.snaps[5]:cur===6?Rr.snaps[6]:R.snaps[6];
   const whole=S.rounding!=="none", cell=S.rounding==="cell";
   const roundAdd=sn.people-sn.fte;
   const dsp=(cur===10&&R.fin.on)?R.fin.snap:sn;
   const title=(STAGES.find(x=>x.n===cur)||{}).t||"";
-  $("barLbl").textContent=cur===10&&R.fin.on?"Final Year 1 number":cur===6||cur===7||cur===8||cur===10?"Year 1 team":cur===5||cur===9?"Stage 1 team":`Team after ${title.toLowerCase()}`;
+  $("barLbl").textContent=cur===10&&R.fin.on?"Final Year 1 number":cur===6?"Run team":cur===4||cur===7||cur===8||cur===10?"Year 1 team":cur===5||cur===9?"Stage 1 team":`Team after ${title.toLowerCase()}`;
   $("barFte").innerHTML=`${fmt(dsp.fte,1)}<small>FTE</small>`;
   $("barHc").innerHTML=whole?`Rostered as <b>${fmt(dsp.people,0)}</b> people`:"No rounding applied";
   const chip=(cls,l,v,go)=>`<div class="chip ${cls}" ${go?`data-gochip="${go}" style="cursor:pointer"`:""}><span class="l">${l}</span><span class="v">${v}</span></div>`;
   const sep=t=>`<div class="chip sep">${t||"›"}</div>`;
-  let h=chip("base","Roster",fmt(R.roster,1),1)+chip("add","+ Util",sgn(R.utilAdd),1)+chip("add","+ Leave",sgn(R.leaveAdd),1)+chip("risk","+ Risk",sgn(R.risk1Add),1)+chip("base","1 · Base team",fmt(R.s1,1),1);
+  const no=id=>STEPNO[id]+" · ";
+  let h=chip("base","Roster",fmt(Rr.roster,1),1)+chip("add","+ Util",sgn(Rr.utilAdd),1)+chip("add","+ Leave",sgn(Rr.leaveAdd),1)+chip("risk","+ Risk",sgn(Rr.risk1Add),1)+chip("base",no(1)+"Base team",fmt(Rr.s1,1),1);
   if(reached(2)){
-    h+=sep("vs")+chip("add","2 · Towers",fmt(R.added,1),2)+(R.leave2>0?chip("add","+ Leave",sgn(R.leave2),2):"")+chip("risk","+ Risk",sgn(R.risk2Add),2);
-    if(R.ai2>0)h+=chip("add","+ AIOps",sgn(R.ai2),2);
-    h+=sep()+chip(P.lift>0?"round":"base",P.lift>0?"Lifted to base":"Work team kept",P.lift>0?sgn(P.lift):fmt(R.snaps[2].fte,1),5);
+    h+=sep("vs")+chip("add",no(2)+"Towers",fmt(Rr.added,1),2)+(Rr.leave2>0?chip("add","+ Leave",sgn(Rr.leave2),2):"")+chip("risk","+ Risk",sgn(Rr.risk2Add),2);
+    h+=sep()+chip(P.lift>0?"round":"base",P.lift>0?"Lifted to base":"Work team kept",P.lift>0?sgn(P.lift):fmt(Rr.snaps[2].fte,1),5);
   }
-  if(reached(5))h+=sep()+chip("add","3 · SDM",sgn(P.sdm),5)+chip("base","Stage 1 team",fmt(P.total,1),5);
-  if(reached(3))h+=sep()+chip("add","5 · Skill cover",sgn(B.d3),3)+(R.s3>0&&B.d3<=0?chip("base","Absorbed",fmt(R.s3,1),3):"");
-  if(reached(4))h+=chip("add","6 · Transform",sgn(B.d4),4);
-  if(reached(6))h+=sep()+chip("add","SDM re-based",sgn(B.d5),6)+chip("add","7 · Contingency",sgn(R.s6),6)+chip("risk","+ Risk",sgn(R.risk6Add),6)+chip("base","Year 1 team",fmt(R.total,1),6);
-  if(reached(7))h+=sep()+chip("base",`8 · ${R.term}-yr avg`,fmt(R.termRows[R.term-1].avg,1),7)+chip("add","vs 1-year",R.term>1?"−"+fmt(R.termRows[R.term-1].vs1*100,0)+"%":"–",7);
-  if(reached(8)){const exTot=EX_TIERS.reduce((x,[q])=>x+Math.max(0,+(S.ex||{})[q]||0),0);h+=sep()+chip("base","9 · vs existing",exTot>0?sgn((R.total-exTot)/exTot*100,0)+"%":"–",8);}
-  if(reached(10)&&R.fin.on)h+=sep()+chip("risk","10 · Commercial",sgn(R.fin.total-R.total),10)+chip("base","Final Year 1",fmt(R.fin.total,1),10);
+  if(reached(5))h+=sep()+chip("add",no(5)+"SDM",sgn(P.sdm),5)+chip("base","Stage 1 team",fmt(P.total,1),5);
+  if(reached(3))h+=sep()+chip("add",no(3)+"Skill cover",sgn(B.d3),3)+(Rr.s3>0&&B.d3<=0?chip("base","Absorbed",fmt(Rr.s3,1),3):"");
+  if(reached(12))h+=chip("add",no(12)+"SDM re-based",sgn(B.d5),12);
+  if(reached(6))h+=sep()+chip("add",no(6)+"Contingency",sgn(Rr.s6),6)+chip("risk","+ Risk",sgn(Rr.risk6Add),6)+chip("base","Run team",fmt(Rr.total,1),6);
+  if(reached(4))h+=sep()+chip("add",no(4)+"Transformation",sgn(trans),4)+chip("base","Year 1 team",fmt(R.total,1),4);
+  if(reached(7))h+=sep()+chip("base",`${no(7)}${R.term}-yr avg`,fmt(R.termRows[R.term-1].avg,1),7)+chip("add","vs 1-year",R.term>1?"−"+fmt(R.termRows[R.term-1].vs1*100,0)+"%":"–",7);
+  if(reached(8)){const exTot=EX_TIERS.reduce((x,[q])=>x+Math.max(0,+(S.ex||{})[q]||0),0);h+=sep()+chip("base",no(8)+"vs existing",exTot>0?sgn((R.total-exTot)/exTot*100,0)+"%":"–",8);}
+  if(reached(10)&&R.fin.on)h+=sep()+chip("risk",no(10)+"Commercial",sgn(R.fin.total-R.total),10)+chip("base","Final Year 1",fmt(R.fin.total,1),10);
   if(whole)h+=sep()+chip("round","Rounding",sgn(roundAdd));
   const nxt=ORDER[pos+1];
   if(nxt)h+=sep()+chip("todo",`Step ${STEPNO[nxt]} next`,"—");
@@ -3650,13 +3670,14 @@ function renderBar(){
   const tot=Math.max(sn.people,sn.fte,0.0001);
   const seg=(v,c,t)=>`<span style="width:${Math.max(0,v)/tot*100}%;background:${c}" title="${t}"></span>`;
   let st;
-  if(cur===1)st=seg(R.roster,"var(--accent)","Roster")+seg(R.utilAdd,"var(--accent-soft)","Utilisation")+seg(R.leaveAdd,"var(--add)","Leave backfill")+seg(R.risk1Add,"var(--risk)","Step 1 risk");
+  if(cur===1)st=seg(Rr.roster,"var(--accent)","Roster")+seg(Rr.utilAdd,"var(--accent-soft)","Utilisation")+seg(Rr.leaveAdd,"var(--add)","Leave backfill")+seg(Rr.risk1Add,"var(--risk)","Step 1 risk");
   else{
-    st=seg(R.added,"#6B7C93","Towers")+seg(R.leave2,"var(--add)","Towers leave backfill")+seg(R.risk2Add,"var(--risk)","Towers risk")+seg(R.ai2,"#5B6BC0","AI engineers (AIOps)")+seg(P.lift,"var(--accent)","Lift to base team");
+    st=seg(Rr.added,"#6B7C93","Towers")+seg(Rr.leave2,"var(--add)","Towers leave backfill")+seg(Rr.risk2Add,"var(--risk)","Towers risk")+seg(P.lift,"var(--accent)","Lift to base team");
     if(reached(5))st+=seg(P.sdm,"#9B7B3F","SDM");
     if(reached(3))st+=seg(B.d3,"#3F8C9B","Skill cover");
-    if(reached(4))st+=seg(B.d4,"#8C5FA8","Transformation");
-    if(reached(6))st+=seg(B.d5,"#9B7B3F","SDM re-based")+seg(R.s6,"#B0476F","Contingency");
+    if(reached(12))st+=seg(B.d5,"#9B7B3F","SDM re-based");
+    if(reached(6))st+=seg(Rr.s6,"#B0476F","Contingency");
+    if(reached(4))st+=seg(trans,"#8C5FA8","Transformation capacity");
   }
   if(whole)st+=seg(roundAdd,"var(--round)","Rounding");
   $("barStack").innerHTML=st;
@@ -3668,60 +3689,69 @@ function renderBar(){
 
 /* ---------- stage results and final summary ---------- */
 function buildRows(){
-  const sn=R.snaps, P=R.p1, B=R.bridge, whole=S.rounding!=="none";
+  const Rr=R.run, sn=Rr.snaps, P=Rr.p1, B=Rr.bridge, whole=S.rounding!=="none";
   const ppl=x=>whole?` · ${fmt(x.people,0)} people`:"";
+  const trans=R.total-Rr.total;
   return [
-    ["Part 1 · Base team",`Coverage ${covLabel()}, ${R.blocks.length} location window${R.blocks.length===1?"":"s"}, ${S.perShift.L2} L2 + ${S.perShift.L3} L3 on duty. Roster ${fmt(R.roster,2)} ÷ ${S.util1}% utilisation, leave backfill, ${fmt(R.rp1*100,1)}% risk`,R.s1,sn[1]],
-    ["Part 1 · Service towers",`${R.towers.length} tower${R.towers.length===1?"":"s"}, ${fmt(R.towers.reduce((x,t)=>x+t.tickets,0),0)} tickets a month → ${fmt(R.demand,2)} FTE of effort${R.leave2>0?`, +${fmt(R.leave2,2)} leave backfill`:""}, ${fmt(R.rp2*100,1)}% risk${R.ai2>0?`, AI engineers (AIOps) ${fmt(R.ai2,2)} at 1:${R.ratio}`:""}. Team is the larger of base ${fmt(R.s1,2)} and work ${fmt(R.s2,2)}`,R.s2,sn[2]],
-    ["Part 1 · Reconcile & SDM",`${P.lift>0?`Work team ${fmt(P.run,2)} lifted to base ${fmt(R.s1,2)} (+${fmt(P.lift,2)})`:`Work team ${fmt(P.run,2)} kept over base ${fmt(R.s1,2)}`}${R.ai2>0?` + ${fmt(R.ai2,2)} AI engineers`:""}; SDM ${fmt(P.deliv,2)} ÷ ${R.sdmRatio}. This is the Stage 1 team`,P.sdm,P],
-    ["Part 2 · Skill coverage",`Specialist cover for ${R.covSkills.length} skill set${R.covSkills.length===1?"":"s"} (on call ${S.onCallPct}%), ${fmt(R.rp3*100,1)}% risk: needs ${fmt(R.s3,2)}; the Stage 1 team has ${fmt(B.spare,2)} spare, so ${B.d3>0?`${fmt(B.d3,2)} FTE of headcount is added`:"nothing is added"}`,B.d3,sn[3]],
-    ["Part 2 · Transformation",`Scenario ${R.sc}: POD ${R.transPct}% of ${fmt(R.runTeam,2)}${R.ai2>0?` less ${fmt(R.ai2,2)} AI engineers already added`:""}, ${fmt(R.rp4*100,1)}% risk, after any spare capacity in the base team`,B.d4,sn[4]],
-    ["Part 2 · SDM re-based",`SDM ${fmt(R.sub4,2)} ÷ ${R.sdmRatio} on the final delivery team, against ${fmt(P.sdm,2)} in Stage 1`,B.d5,sn[5]],
-    ["Part 2 · Contingency",`${R.CX.name} complexity: ${R.contPct}% contingency; pyramid ${R.pyr.join(" : ")} (grade mix only)`,R.s6,sn[6]]
+    ["Stage 1 · Base team",`Coverage ${covLabel()}, ${Rr.blocks.length} location window${Rr.blocks.length===1?"":"s"}, ${S.perShift.L2} L2 + ${S.perShift.L3} L3 on duty. Roster ${fmt(Rr.roster,2)} ÷ ${S.util1}% utilisation, leave backfill, ${fmt(Rr.rp1*100,1)}% risk`,Rr.s1,sn[1]],
+    ["Stage 1 · Service towers",`${Rr.towers.length} tower${Rr.towers.length===1?"":"s"}, ${fmt(Rr.towers.reduce((x,t)=>x+t.tickets,0),0)} tickets a month → ${fmt(Rr.demand,2)} FTE of effort${Rr.leave2>0?`, +${fmt(Rr.leave2,2)} leave backfill`:""}, ${fmt(Rr.rp2*100,1)}% risk. Team is the larger of this and the base team`,sn[2].fte-sn[1].fte,sn[2]],
+    ["Stage 1 · Required team size",`${P.lift>0?`Work team ${fmt(P.run,2)} lifted to base ${fmt(Rr.s1,2)} (+${fmt(P.lift,2)})`:`Work team ${fmt(P.run,2)} kept over base ${fmt(Rr.s1,2)}`}; SDM ${fmt(P.deliv,2)} ÷ ${Rr.sdmRatio}. This is the Stage 1 team`,P.sdm,P],
+    ["Stage 2 · Skill type",`Specialist cover for ${Rr.covSkills.length} skill set${Rr.covSkills.length===1?"":"s"} (on call ${S.onCallPct}%), ${fmt(Rr.rp3*100,1)}% risk: needs ${fmt(Rr.s3,2)}; the Stage 1 team has ${fmt(B.spare,2)} spare, so ${B.d3>0?`${fmt(B.d3,2)} FTE of headcount is added`:"nothing is added"}`,B.d3,sn[3]],
+    ["Stage 2 · Managerial capacity",`SDM ${fmt(Rr.sub4,2)} ÷ ${Rr.sdmRatio} on the delivery team, against ${fmt(P.sdm,2)} in Stage 1`,B.d5,sn[5]],
+    ["Stage 2 · Contingency",`${Rr.CX.name} complexity: ${Rr.contPct}% contingency; pyramid ${Rr.pyr.join(" : ")} (grade mix only)`,Rr.s6,sn[6]],
+    ["Stage 2 · Run team",`Stage 1 and Stage 2 together: the team that runs the service, before any transformation capacity`,null,sn[6]],
+    ["Stage 3 · Transformation capacity",`Scenario ${R.sc}: POD ${R.transPct}% of ${fmt(R.runTeam,2)}${R.ai2>0?`, including ${fmt(R.ai2,2)} AI engineers (AIOps) at 1:${R.ratio}`:""}, ${fmt(R.rp4*100,1)}% risk, after any spare capacity in the base team; SDM and contingency follow`,trans,R.snaps[6]]
   ].map(r=>({stage:r[0],what:r[1],add:r[2],snap:r[3],ppl:ppl(r[3])}));
 }
 let RES_TEXT={};
 function updateResults(){
-  const sn=R.snaps, whole=S.rounding!=="none";
+  const Rr=R.run, sn=Rr.snaps, whole=S.rounding!=="none";
   RES_TEXT={};
   const ppl=x=>whole?`<small>FTE · ${fmt(x.people,0)} people</small>`:"<small>FTE</small>";
-  const P=R.p1, B=R.bridge, PREV={1:null,2:1,5:2,3:5,4:3,6:4};
+  const P=Rr.p1, B=Rr.bridge, PREV={1:null,2:1,5:2,3:5,6:3};
   const snOf=n=>n===5?P:sn[n];
+  const trans=R.total-Rr.total;
+  const exRef=()=>{const ex=S.ex||{}, e=["L2","L3","trans"].reduce((x,k)=>x+Math.max(0,+ex[k]||0),0), t=(+S.exTol||0)/100;if(!(e>0))return "";const sup=P.deliv,lo=e*(1-t),hi=e*(1+t);return ` Today's support team is a reference range of ${fmt(lo,1)} to ${fmt(hi,1)} FTE and ours is ${fmt(sup,1)}: ${sup<lo?"below":sup>hi?"above":"inside"} it.`};
   const msg={
     1:`Base team from coverage. This is the floor: step 2 builds a team from the work and the larger one is used.`,
-    2:(sn[2].lift>0?`The tower support team (${fmt(R.s2run,2)}) is below the base team, so the base team still sets the size.`:`The tower support team (${fmt(R.s2run,2)}) is above the base team (${fmt(R.s1,2)}), so the work now sets the size.`)+(R.ai2>0?` ${fmt(R.ai2,2)} AI engineers (AIOps) are added on top.`:""),
-    5:`Delivery team ${fmt(P.deliv,2)} plus ${fmt(P.sdm,2)} SDM. This is the Stage 1 team; Stage 2 tests whether it is enough.`,
-    3:B.d3>0?`Specialist shift cover needs ${fmt(R.s3,2)} but the Stage 1 team has ${fmt(B.spare,2)} spare, so ${fmt(B.d3,2)} FTE of headcount is added.`:`Specialist shift cover needs ${fmt(R.s3,2)} and the Stage 1 team has ${fmt(B.spare,2)} spare: no headcount is added.`,
-    4:`Transformation adds ${fmt(B.d4,2)} after any spare capacity in the base team. Work team ${fmt(R.runWork,2)}${R.ai2>0?" (without AI engineers)":""} vs base ${fmt(R.s1,2)}.`,
-    6:`Contingency adds ${fmt(R.s6,2)} and the SDM is re-based on the final delivery team (${sgn(B.d5,2)}). This is the Year 1 team.`
+    2:sn[2].lift>0?`The tower support team (${fmt(Rr.s2run,2)}) is below the base team, so the base team still sets the size.`:`The tower support team (${fmt(Rr.s2run,2)}) is above the base team (${fmt(Rr.s1,2)}), so the work now sets the size.`,
+    5:`${P.lift>0?"Coverage is the binding dimension":"Ticket volume is the binding dimension"}: delivery team ${fmt(P.deliv,2)} plus ${fmt(P.sdm,2)} SDM.${exRef()} This is the Stage 1 team; Stage 2 tests whether it is enough.`,
+    3:B.d3>0?`Specialist shift cover needs ${fmt(Rr.s3,2)} but the Stage 1 team has ${fmt(B.spare,2)} spare, so ${fmt(B.d3,2)} FTE of headcount is added.`:`Specialist shift cover needs ${fmt(Rr.s3,2)} and the Stage 1 team has ${fmt(B.spare,2)} spare: no headcount is added.`,
+    6:`Contingency adds ${fmt(Rr.s6,2)} and the SDM is re-based on the final delivery team (${sgn(B.d5,2)}). This is the run team; Stage 3 adds transformation capacity on top.`
   };
-  for(const n of [1,2,5,3,4,6]){
+  for(const n of [1,2,5,3,6]){
     const el=$("res-"+n);if(!el)continue;
     const cur=snOf(n), d=PREV[n]!=null?cur.fte-snOf(PREV[n]).fte:null;
-    RES_TEXT[n]=`${n===5?"Stage 1 team":"Team after this step"}: ${fmt(cur.fte,2)} FTE${whole?`, ${fmt(cur.people,0)} people`:""}. ${d!=null?`${sgn(d,2)} FTE vs the previous step. `:""}${msg[n]}`;
-    el.innerHTML=`<div><div class="rl">${n===5?"Stage 1 team":n===6?"Year 1 team":"Team after this step"}</div><div class="rv">${fmt(cur.fte,2)}${ppl(cur)}</div></div><div class="rd">${d!=null?`<b>${sgn(d,2)} FTE</b> vs the previous step. `:""}${esc(msg[n])}</div>`;
+    const lbl=n===5?"Stage 1 team":n===6?"Run team":"Team after this step";
+    RES_TEXT[n]=`${lbl}: ${fmt(cur.fte,2)} FTE${whole?`, ${fmt(cur.people,0)} people`:""}. ${d!=null?`${sgn(d,2)} FTE vs the previous step. `:""}${msg[n]}`;
+    el.innerHTML=`<div><div class="rl">${lbl}</div><div class="rv">${fmt(cur.fte,2)}${ppl(cur)}</div></div><div class="rd">${d!=null?`<b>${sgn(d,2)} FTE</b> vs the previous step. `:""}${esc(msg[n])}</div>`;
+  }
+  {
+    const el=$("res-4"), txt=`Transformation capacity adds ${fmt(trans,2)} FTE to the ${fmt(Rr.total,2)} FTE run team, giving a Year 1 team of ${fmt(R.total,2)} FTE.${R.ai2>0?` ${fmt(R.ai2,2)} of the POD is AI engineers (AIOps).`:""}`;
+    RES_TEXT[4]=txt;
+    if(el)el.innerHTML=`<div><div class="rl">Year 1 team</div><div class="rv">${fmt(R.total,2)}${ppl(R.snaps[6])}</div></div><div class="rd"><b>${sgn(trans,2)} FTE</b> of transformation capacity on the ${fmt(Rr.total,2)} FTE run team. ${R.ai2>0?esc(`${fmt(R.ai2,2)} of the POD is AI engineers (AIOps).`):""}</div>`;
   }
   const T=R.term, tr=R.termRows[T-1];
   RES_TEXT[7]=`${T}-year average: ${fmt(tr.avg,2)} FTE a year, ${T>1?"−"+fmt(tr.vs1*100,1)+"% vs a 1-year contract":"1-year term"}. Year 1 ${fmt(R.total,2)} FTE; Year ${T} ${fmt(R.years[T-1].fte,2)} FTE.`;
   if($("res-7"))$("res-7").innerHTML=`<div><div class="rl">${T}-year average</div><div class="rv">${fmt(tr.avg,2)}<small>FTE / yr</small></div></div><div class="rd"><b>${T>1?"−"+fmt(tr.vs1*100,1)+"%":"no change"}</b> vs a 1-year contract. Year 1 team ${fmt(R.total,2)} FTE; Year ${T} ${fmt(R.years[T-1].fte,2)} FTE.</div>`;
   const exTot=EX_TIERS.reduce((x,[q])=>x+Math.max(0,+(S.ex||{})[q]||0),0);
   const trF=R.termRows[T-1];
-  RES_TEXT[8]=`Final Year 1 team: ${fmt(R.total,2)} FTE${whole?`, ${fmt(sn[6].people,0)} people`:""}. ${exTot>0?`${sgn((R.total-exTot)/exTot*100,0)}% against today's team of ${fmt(exTot,1)} FTE.`:""}`;
-  if($("res-8"))$("res-8").innerHTML=`<div><div class="rl">Final Year 1 team</div><div class="rv">${fmt(R.total,2)}${ppl(sn[6])}</div></div><div class="rd">${exTot>0?`<b>${sgn((R.total-exTot)/exTot*100,0)}%</b> against today's team of ${fmt(exTot,1)} FTE. `:""}Fact check only: this stage does not change the team.</div>`;
+  RES_TEXT[8]=`Final Year 1 team: ${fmt(R.total,2)} FTE${whole?`, ${fmt(R.snaps[6].people,0)} people`:""}. ${exTot>0?`${sgn((R.total-exTot)/exTot*100,0)}% against today's team of ${fmt(exTot,1)} FTE.`:""}`;
+  if($("res-8"))$("res-8").innerHTML=`<div><div class="rl">Final Year 1 team</div><div class="rv">${fmt(R.total,2)}${ppl(R.snaps[6])}</div></div><div class="rd">${exTot>0?`<b>${sgn((R.total-exTot)/exTot*100,0)}%</b> against today's team of ${fmt(exTot,1)} FTE. `:""}Fact check only: this stage does not change the team.</div>`;
   /* final panel */
-  const last=sn[6];
+  const last=R.snaps[6];
   $("finalKpis").innerHTML=[
-    ["Year 1 team",`${fmt(R.total,1)}`,"FTE","main"],
+    ["Year 1 team",`${fmt(R.total,1)}`,`FTE · run ${fmt(R.run.total,1)} + transformation ${fmt(R.total-R.run.total,1)}`,"main"],
     ["Rostered people",whole?fmt(last.people,0):"–",whole?`${fmt(last.L2p,0)} L2 · ${fmt(last.L3p,0)} L3 · ${fmt(last.Gp,0)} SDM`:"no rounding",""],
     [`${T}-year average`,fmt(tr.avg,1),`FTE a year · ${T>1?"−"+fmt(tr.vs1*100,0)+"% vs 1-year":"1-year term"}`,""],
     ["Confidence",R.conf?fmt(R.conf.score,0):"–",R.conf?`${R.conf.band} · range ${fmt(R.conf.lo,1)}–${fmt(R.conf.hi,1)} FTE`:"",""]
   ].map(k=>`<div class="kpi ${k[3]}"><span>${k[0]}</span><b>${k[1]}</b><em>${esc(k[2])}</em></div>`).join("");
   const rows=buildRows();
-  $("finalBuild").innerHTML=rows.map(r=>`<tr><td class="loc-name">${r.stage}</td><td class="hint">${esc(r.what)}</td><td class="r num">${sgn(r.add,2)}</td><td class="r num"><b>${fmt(r.snap.fte,2)}</b>${esc(r.ppl)}</td></tr>`).join("")
+  $("finalBuild").innerHTML=rows.map(r=>`<tr><td class="loc-name">${r.stage}</td><td class="hint">${esc(r.what)}</td><td class="r num">${r.add==null?"–":sgn(r.add,2)}</td><td class="r num"><b>${fmt(r.snap.fte,2)}</b>${esc(r.ppl)}</td></tr>`).join("")
     +(whole?`<tr><td class="loc-name">Rounding</td><td class="hint">${({cell:"Up per location and tier; SDM to nearest",loc:"Up per location",total:"Total rounded up"})[S.rounding]}</td><td class="r num">${sgn(R.roundAdd,2)}</td><td class="r num"><b>${fmt(R.people,0)} people</b></td></tr>`:"")
-    +`<tr><td class="loc-name">Part 2 · Term</td><td class="hint">${R.savePct}% YoY savings from Y2, contingency ${R.contPct}% → ${R.cont2}%</td><td class="r num">–</td><td class="r num"><b>${fmt(tr.avg,2)}</b> avg</td></tr>`
+    +`<tr><td class="loc-name">Stage 3 · Term</td><td class="hint">${R.savePct}% YoY savings from Y2, contingency ${R.contPct}% → ${R.cont2}%</td><td class="r num">–</td><td class="r num"><b>${fmt(tr.avg,2)}</b> avg</td></tr>`
     +(R.trans.ktW+R.trans.parW?`<tr><td class="loc-name">Transition</td><td class="hint">One-off before service start: ${R.trans.ktW} weeks KT + ${R.trans.parW} weeks parallel run; average ${fmt(R.trans.avg,1)} FTE</td><td class="r num">–</td><td class="r num"><b>${fmt(R.trans.total,1)}</b> FTE-months</td></tr>`:"")
-    +`<tr><td class="loc-name">Part 2 · Final fact check</td><td class="hint">${exTot>0?`Existing team ${fmt(exTot,1)} FTE`:"No existing team entered"}</td><td class="r num">–</td><td class="r num">${exTot>0?sgn((R.total-exTot)/exTot*100,0)+"%":"–"}</td></tr>`;
+    +`<tr><td class="loc-name">Review · Final fact check</td><td class="hint">${exTot>0?`Existing team ${fmt(exTot,1)} FTE`:"No existing team entered"}</td><td class="r num">–</td><td class="r num">${exTot>0?sgn((R.total-exTot)/exTot*100,0)+"%":"–"}</td></tr>`;
   if(S.active===8)renderDeskViews();
 }
 function renderDeskViews(){
@@ -3848,7 +3878,7 @@ function buildReport(){
   const exTot=EX_TIERS.reduce((x,[q])=>x+Math.max(0,+(S.ex||{})[q]||0),0);
   const date=new Date().toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"});
   const rows=buildRows();
-  const build=rows.map(r=>`<tr><td><b>${r.stage}</b></td><td>${esc(r.what)}</td><td class="r">${sgn(r.add,2)}</td><td class="r"><b>${fmt(r.snap.fte,2)}</b>${esc(r.ppl)}</td></tr>`).join("")
+  const build=rows.map(r=>`<tr><td><b>${r.stage}</b></td><td>${esc(r.what)}</td><td class="r">${r.add==null?"–":sgn(r.add,2)}</td><td class="r"><b>${fmt(r.snap.fte,2)}</b>${esc(r.ppl)}</td></tr>`).join("")
     +(whole?`<tr><td><b>Rounding</b></td><td>${({cell:"Up per location and tier; SDM to nearest person",loc:"Up per location",total:"Total rounded up"})[S.rounding]}</td><td class="r">${sgn(R.roundAdd,2)}</td><td class="r"><b>${fmt(R.people,0)} people</b></td></tr>`:"")
     `<tr class="final"><td><b>Year 1 team</b></td><td>Final estimate</td><td></td><td class="r"><b>${fmt(R.total,2)} FTE${whole?` · ${fmt(R.people,0)} people`:""}</b></td></tr>`;
   const locRows=last.cells.filter(c=>c.a2+c.a3+c.g>0).map(c=>`<tr><td>${esc(c.name)}</td><td class="r">${fmt(c.a2,2)}</td><td class="r">${fmt(c.a3,2)}</td><td class="r">${fmt(c.g,2)}</td><td class="r"><b>${whole&&S.rounding!=="total"?fmt(c.people,0):fmt(c.a2+c.a3+c.g,2)}</b></td></tr>`).join("");
