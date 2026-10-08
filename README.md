@@ -19,7 +19,7 @@ Values not taken from either source are marked `proposed`.
 
 Step 1 opens with a working base-team example (24×5 laid out over India and Romania) so the coverage maths is visible at once. From step 2 onward nothing is pre-filled. The deal team supplies every input:
 
-- **Step 2:** no towers. A new tower has no name, unanswered questions, blank numbers and no skill sets. Until a tower's questions are answered it adds nothing.
+- **Step 2:** no towers. A new tower has no name, unanswered questions, blank numbers and no special roles. Until a tower's questions are answered it adds nothing.
 - **Step 5:** no live windows picked.
 - **Step 10:** AI adoption not chosen (Low is used until it is).
 - **Step 8:** complexity not chosen (no contingency until it is).
@@ -55,7 +55,7 @@ So `delivery team = max(work team, base team)`, and `Stage 1 team = delivery tea
 |---|---|---|---|
 | 0 | | Documents: upload RFP, incident dump, meeting notes, others; Claude proposes inputs | Built |
 | 1 | 1 · Size the team | Coverage: support window, customer time zone, each location's working and on-call windows: the base team | Built |
-| 2 | 1 | Service towers (AMS, IMS, DMS, AI platforms): volumetrics or thin slices per tower, skill sets, AIOps scope | Built |
+| 2 | 1 | Service towers (AMS, IMS, DMS, AI platforms): volumetrics or thin slices per tower, L1.5, SRE and AIOps scope | Built |
 | 3 | 1 | Current team: today's team as a reference range against ticket volume and the base team | Built |
 | 4 | 1 | Required team size: work team vs base team (larger wins), SDM 1:12, binding dimension: the **Stage 1 team** | Built |
 | 5 | 2 · Qualify the team | Skill type: is the Stage 1 team enough, or is headcount added? | Built |
@@ -91,7 +91,7 @@ Step 3 shows today's team as a range (today ± the tolerance, default 10%). It n
 
 The DAMO roles guidance map turns the team into an indicative shape, on its own screens: **Step 9, Year 1** (the run team beside the Year 1 team including transformation capacity; the screen a solution architect reviews) and **Step 12, by year** (Year 1 is the full team; later years scale every role with the year's team, except the AI engineers (AIOps), who stay).
 
-The shape groups the same FTE, so no total moves. **Towers are staffed L2 then L3:** AMS is System Support Engineer (L2) and Developer (L3); IMS is Infra Support Engineer and Infra Engineer; DMS is Data Support Engineer and Data Engineer; an agentic (AI platform) tower is AI Ops Engineer and AI Engineer. Each tower's FTE (its core support role and the skill sets added in Step 5) is split into L2 and L3 and goes to those two roles. Every skill set is staffed this way whatever its share of the tower: a Mobile dev or QA skill set does not create a Mobile Developer or Quality Analyst row. Only what you type creates other roles: the SRE and Product Support Engineer FTE on a tower, and the special roles (Quality Analyst, Business Analyst, Solution Architect, Mobile Developer) added in Step 5. Shift cover added to reach the base team is spread over the core-stream roles. **Roles appear only where they are in scope, sized by what you type:** each tower asks whether **L1.5** is in scope (then you type the Product Support Engineer FTE for that tower, carved out of its L2), whether **SRE** is in scope (then you type the SRE FTE, carved out of its L3) and whether **AIOps** is in scope (the AI Engineer). The Transformation POD's automation and CI/CD work shows as its own Transformation engineers row. Nothing is assumed: a Yes with no FTE typed shows no role. The Solution Architect is 10% of an FTE once per deal (0.8 hours of an 8-hour day), carved out of the core-stream roles (capped at 60% of them). **Special roles** (Quality Analyst, Business Analyst, Solution Architect, Mobile Developer) are added by hand on a tower, under its skill sets, with the FTE you want: they are added on top of the tower, count in the team, and show under their own role. The SDM ratio default is 1 per 12 FTE, as in the map.
+The shape groups the same FTE, so no total moves. **Each tower has one default role** that takes its FTE: System Support Engineer (AMS), Infra Support Engineer (IMS), Data Ops Engineer (DMS) and AIOps Engineer (agentic, which also holds the AI engineers where AIOps is in scope). Everything else is a **special role** typed in Step 5: Developer (AMS), Infra Engineer (IMS), Data Engineer (DMS) and AI/ML Engineer (agentic) come out of the tower's own L3 effort, so the total does not change; Quality Analyst, Business Analyst, Solution Architect and Mobile Developer are added on top. Shift cover added to reach the base team is spread over the default and carved-out roles. **Roles appear only where they are in scope, sized by what you type:** each tower asks whether **L1.5** is in scope (then you type the Product Support Engineer FTE for that tower, carved out of its L2), whether **SRE** is in scope (then you type the SRE FTE, carved out of its L3) and whether **AIOps** is in scope (the AI engineers at the AIOps ratio). The Transformation POD's automation and CI/CD work shows as its own Transformation engineers row. Nothing is assumed: a Yes with no FTE typed shows no role. The Solution Architect is 10% of an FTE once per deal (0.8 hours of an 8-hour day), carved out of the default roles (capped at 60% of them). The SDM ratio default is 1 per 12 FTE, as in the map.
 
 ## Step 0: documents and AI extraction
 
@@ -210,7 +210,7 @@ B          = A × 25% (modern) or 35% (complex legacy)
 tower FTE  = (A + B) ÷ 160 hours a month, keeping the L2/L3 split from the effort
 ```
 
-**Skill sets** form the bottom layer. They are added in **step 5 (Skill type)**, per tower, picked from a grouped dropdown; every tower also has a **core support role** (Systems Support Engineer for AMS, Infra support engineer for IMS, Data Support Engineer for DMS, AI platform engineering for AI) that takes the share the added skill sets do not, and that the base team always has. **Application and infrastructure:** Systems Support Engineer (L2/L3; listed first on AMS towers), Full stack developer, Backend API dev, Front end dev, Mobile dev (Native / Android / iOS), Infra support engineer, Service Reliability Engineer, QA, L1 support engineer. **Data:** Data Support Engineer, Database, Data engineering. **AI platforms** (listed first on AI platform towers): AI Engineer, Prompt Engineer, MLOps Engineer, LLMOps / Agent Ops Engineer, AI Evaluation & Guardrails Engineer, Data Scientist. **Other:** Niche skill (name it) for a specific skill the deal team names (more than one can be added). Each has a share %, and the tower's FTE is split by those shares with the core role taking the rest (scaled to 100% if the added shares exceed it). Towers start with no added skill sets.
+**Special roles** form the bottom layer, entered in **step 5 (Skill type)** per tower. Every tower has one default role that takes its FTE and that the base team has on every shift (System Support Engineer for AMS, Infra Support Engineer for IMS, Data Ops Engineer for DMS, AIOps Engineer for agentic). A special role has a typed FTE: Developer (AMS), Infra Engineer (IMS), Data Engineer (DMS) and AI/ML Engineer (agentic) are carved out of the tower's L3 (capped at what is there after any SRE), and Quality Analyst, Business Analyst, Solution Architect and Mobile Developer are added on top as L3 specialist effort. Skill sets with shares no longer exist: an estimate saved with them opens with them removed (a note says how many) and each tower's default role takes its whole FTE.
 
 The tower team is built from the work alone. It does **not** sit on top of the base team:
 
@@ -221,7 +221,7 @@ support FTE        = tower FTE × backfill factor × (1 + Σ active stage 2 risk
 
 Leave and holiday backfill is applied to the tower team the same way as to the base team, weighted by where the tower FTE sits, so the two teams are compared like for like at step 4. Step 5 compares each specialist's floor with its backfilled FTE for the same reason.
 
-"Base has skill" (on by default for Systems Support Engineer, Full stack developer, Backend API dev, Front end dev and Infra support engineer) means the skill set is covered on every shift by the base roster. Other skill sets get their own shift cover in step 5. Tower FTE is spread across locations in the same proportion as the step 1 roster.
+Tower FTE is spread across locations in the same proportion as the step 1 roster.
 
 **SRE.** Every tower asks whether SRE (reliability engineering) is in scope. If yes, you type the SRE FTE for that tower; it is carved out of the tower's L3 (capped at the L3 FTE) and the tower's other skill sets share the rest. It changes the role mix, not the headcount. Extraction proposes it when the documents name SRE, SLOs or error budgets.
 
@@ -318,7 +318,7 @@ The generated verdict says **which view sets the number** (the support window or
 
 ## Stage 2 · Step 5: skill type, is the Stage 1 team enough?
 
-Skill sets marked **Base has skill** are on every shift through the step 1 roster, so they add nothing here. For every other skill set, a **shift matrix** asks what is required on each shift: one row per working window from step 1, one column per specialist skill set, and the number of people who must be **live** in that cell (blank = on call; "All live" and "Clear" fill a column). Special roles are also added here. Estimates saved before the matrix keep their live windows and head count. In the remaining windows it is **on call**, counted as 15% of a staffed shift (`proposed`, editable).
+Each tower's default role is on every shift through the step 1 roster, so it adds nothing here. For each **special role** a **shift matrix** asks what is required on each shift: one row per working window from step 1, one column per special role, and the number of people who must be **live** in that cell (blank = on call; "All live" and "Clear" fill a column). A special role with no entry in any window is not tested for cover. In the remaining windows a role that is in use is **on call**, counted as 15% of a staffed shift (`proposed`, editable). Estimates saved before the matrix keep their live windows and head count.
 
 ```
 floor(skill, loc) = (live window hours at loc × people + other window hours at loc × on-call %) × days ÷ b ÷ 85% utilisation

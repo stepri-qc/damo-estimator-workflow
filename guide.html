@@ -267,7 +267,7 @@ quiz:[
 <li><div>Review <span class="ui">Proposed inputs</span>, grouped by stage. Untick anything you don't agree with, then <span class="ui">Apply selected and go to Step 1</span>.</div></li>
 </ol>
 <h2>What Claude can propose</h2>
-<p>Deal name; coverage window and P1s a month; towers with who provides L1/L2/L3, SLAs, priority mix, ticket volumes (and where they're counted) or estate size, enhancements, SRE and AIOps scope, skill sets; AI adoption; complexity; term; existing team; assumptions, risks and open questions for the client.</p>
+<p>Deal name; coverage window and P1s a month; towers with who provides L1/L2/L3, SLAs, priority mix, ticket volumes (and where they're counted) or estate size, enhancements, L1.5, SRE and AIOps scope, special roles; AI adoption; complexity; term; existing team; assumptions, risks and open questions for the client.</p>
 <div class="note"><b>Where the inputs came from</b> Every applied input keeps its source and quote. It shows under the coverage window, on each tower card, and in Step 13's <span class="ui">Where the inputs came from</span> table. If someone edits it later it's flagged <i>edited since</i>.</div>
 <div class="warn"><b>Always check the proposals</b> Claude only proposes what the documents support, but it can misread a table. Applied risks arrive switched off at 0%, and open questions become Step 1 assumptions to confirm with the client.</div>
 ${tryTool(0,"Drop in an RFP and see what it proposes.")}
@@ -316,8 +316,8 @@ quiz:[
 
 {id:"s2",grp:"Stage 1 · Size the team",t:"Step 2 · Service towers",html:()=>`
 <span class="eyebrow">Stage 1 · Step 2</span>
-<h1>Service towers: demand, service levels and skill sets</h1>
-<p class="lead">Add an <b>AMS</b>, <b>IMS</b>, <b>DMS</b> or <b>AI platforms</b> tower for each estate in scope. Each tower turns demand into effort and FTE. Skill sets and special roles are added in Step 5; until then the tower's core support role takes all of its FTE.</p>
+<h1>Service towers: demand and service levels</h1>
+<p class="lead">Add an <b>AMS</b>, <b>IMS</b>, <b>DMS</b> or <b>AI platforms</b> tower for each estate in scope. Each tower turns demand into effort and FTE. Special roles are added in Step 5; until then the tower's default role takes all of its FTE.</p>
 <h2>For each tower, top to bottom</h2>
 <p>AMS and DMS towers first ask <b>Proceed with volumetrics or thin slices?</b> Thin slices size the tower from its applications (AMS) or data products (DMS) by criticality: Critical, Important and Standard, each carrying a fixed FTE per slice from Benchmarks (<code>proposed</code>, editable). The basis you choose drives the number; if you fill in the other as well, it shows as a cross-check and is flagged when it is more than 25% away. IMS and AI towers use volumetrics only. A tower sized from thin slices does not count towards volumetrics being available for the transformation scenario.</p>
 <ol class="steps">
@@ -326,9 +326,9 @@ quiz:[
 <li><div><b>Demand, in order.</b> Ticket history if the client has it: <b>incidents, service requests and change requests a month</b>. Incidents are split by <b>severity</b> (P1 to P4, counts or %; with counts at L1 the mix sends P1/P2 straight to L2/L3) and counted at L1, L2 or L3. Service requests and change requests are each split by <b>complexity</b> (Low / Medium / High, counts or %): SRs are costed by complexity and done by L1 (Low), L2 (Medium) or L3 (High); CRs are planned engineering work on L3 (or L2). The AREs are in the Benchmarks panel. If not, the estate's structural complexity (T-shirt sizing for apps, environments/DBs for IMS, pipelines for DMS, agents/models for AI). If not even that, monthly active users.</div></li>
 <li><div><b>Enhancement pool</b> (optional hours a month, separate from change requests) and <b>estate</b> (modern or complex legacy: 25% or 35% non-ticketing effort).</div></li>
 <li><div><b>L1.5, SRE and AIOps</b>: each tower asks whether they are in scope. SRE (any tower kind): you type the SRE FTE, carved out of that tower's L3, a role-mix change, not extra headcount. L1.5: you type the Product Support Engineer FTE, carved out of that tower's L2.  AIOps brings the AI engineers.</div></li>
-<li><div><b>Skill sets and special roles</b> are no longer entered on the tower: they live in Step 5 (Skill type), together with the skills required on each shift.</div></li>
+<li><div><b>Special roles</b> are not entered on the tower: they live in Step 5 (Skill type), together with the skills required on each shift.</div></li>
 <li><div><b>AIOps</b>: if in scope, AI engineers are added at 1 per 4 support FTE (low AI adoption) or 1 per 8 (moderate; 1:6 above 20 FTE).</div></li>
-<li><div><b>Core support role</b>: every tower has one (Systems Support Engineer for AMS, Infra support engineer for IMS, Data Support Engineer for DMS, AI platform engineering for AI). It takes the share of the tower that added skill sets do not, and the base roster covers it on every shift.</div></li>
+<li><div><b>Default role</b>: every tower has one and it takes the tower's FTE: System Support Engineer for AMS, Infra Support Engineer for IMS, Data Ops Engineer for DMS, AIOps Engineer for agentic (AI platform). The base roster covers it on every shift.</div></li>
 </ol>
 <div class="flow"><span>Tickets a month</span><i>→</i><span>L1 30% resolved · L2 70% · L3 = L2 × 20%</span><i>→</i><span>hours: L1 0.25 · L2 3 · L3 10, + SLA, + coordination</span><i>→</i><span>÷ 85% utilisation</span><i>→</i><span>+ B non-ticketing 25/35%</span><i>→</i><span>÷ 160 h = FTE</span></div>
 <div class="calc" id="calcTw">
@@ -390,10 +390,10 @@ ${tryTool(5,"See the comparison bars and the verdict sentence.")}`},
 {id:"s3",grp:"Stage 2 · Qualify the team",t:"Step 5 · Skill type",html:()=>`
 <span class="eyebrow">Stage 2 · Step 5</span>
 <h1>Skill coverage: is the Stage 1 team enough?</h1>
-<p class="lead">Specialist skill sets (anything not marked <span class="ui">Base has skill</span>) need their own cover. You say which skills are required on which shift, based on the working windows from Step 1; elsewhere they're on call. The step then says whether the Stage 1 team can carry that or needs more headcount.</p>
+<p class="lead">Each tower's default role is on every shift through the base roster. Anything else is a <b>special role</b> you type. You say which special roles are required on which shift, based on the working windows from Step 1; elsewhere they are on call. The step then says whether the Stage 1 team can carry that or needs more headcount.</p>
 <ol class="steps">
-<li><div>Add the <b>skill sets and special roles</b> for each tower: a skill set takes a share of the tower and says whether the base team has it; a special role (Quality Analyst, Business Analyst, Solution Architect, Mobile Developer) adds FTE on top of the tower.</div></li>
-<li><div>In the <b>skills required on each shift</b> table, each row is a working window and each column a specialist skill set. Enter how many people must be <b>live</b> in that window; leave it blank for on call.</div></li>
+<li><div>Add the <b>special roles</b> for each tower and type their FTE. Developer (AMS), Infra Engineer (IMS), Data Engineer (DMS) and AI/ML Engineer (agentic) come out of the tower's own L3 effort, so the total does not change. Quality Analyst, Business Analyst, Solution Architect and Mobile Developer are added on top of the tower.</div></li>
+<li><div>In the <b>skills required on each shift</b> table, each row is a working window and each column a special role. Enter how many people must be <b>live</b> in that window; leave it blank for on call. A role with no entry is not tested for cover.</div></li>
 <li><div>In the other windows it's <b>on call</b>, counted at 15% of a staffed window (editable).</div></li>
 <li><div>The tool compares that <b>coverage floor</b> with the FTE the skill already has from step 2 and tops up only the gap.</div></li>
 <li><div>The verdict card then compares the top-up with the <b>spare capacity</b> in the Stage 1 team (the base team above the work team). Spare capacity is used first; <b>additional headcount</b> is added only for what is still missing.</div></li>
@@ -452,7 +452,7 @@ quiz:[
 <p class="lead">The Year 1 team by role, from the DAMO roles guidance map. This is the screen where a solution architect reviews the team overall. It groups the same FTE by role; it never changes the number.</p>
 <ol class="steps">
 <li><div>Read the <b>team by role</b> table: the run team that Stages 1 and 2 qualified, beside the Year 1 team once Stage 3's transformation capacity is added, with each role's description and guidance from the map.</div></li>
-<li><div>Core-stream roles come from the estimate, staffed L2 then L3 by tower: <b>AMS</b> System Support Engineer and Developer; <b>IMS</b> Infra Support Engineer and Infra Engineer; <b>DMS</b> Data Support Engineer and Data Engineer; <b>agentic (AI platform)</b> AI Ops Engineer and AI Engineer. A skill set's share only drives skill cover; whatever its share, its FTE is staffed by the tower's L2 and L3 roles. Mobile Developer, Quality Analyst, Business Analyst and extra Solution Architect come only from the special roles you type in Step 5.</div></li>
+<li><div>Each tower has <b>one default role</b>: <b>AMS</b> System Support Engineer; <b>IMS</b> Infra Support Engineer; <b>DMS</b> Data Ops Engineer; <b>agentic (AI platform)</b> AIOps Engineer (also the AI engineers where AIOps is in scope). Developer, Infra Engineer, Data Engineer and AI/ML Engineer appear only as special roles you type on a tower, carved out of its L3. Mobile Developer, Quality Analyst, Business Analyst and an extra Solution Architect are special roles added on top.</div></li>
 <li><div>The <b>Solution Architect</b> is 10% of an FTE once per deal (0.8 hours of an 8-hour day), editable here, carved out of the core-stream roles (capped at 60% of them), so the total never changes.</div></li>
 <li><div><b>Roles appear only where they are in scope, sized by what you type</b>: the Product Support Engineer FTE on a tower with L1.5 in scope (carved out of its L2), the SRE FTE on a tower with SRE in scope (carved out of its L3), the AI Engineer where AIOps is in scope. A Yes with no FTE typed shows no role. The transformation POD's automation and CI/CD work is its own Transformation engineers row. Quality Analyst, Business Analyst, Solution Architect and Mobile Developer come from the <b>Special roles</b> you add in Step 5.</div></li>
 </ol>
@@ -516,7 +516,7 @@ ${tryTool(14,"Read the team by role for every year of the term.")}`},
 <h2>In the Overall estimate panel</h2>
 <div class="tbl"><table><thead><tr><th>View</th><th>What to look for</th></tr></thead><tbody>
 <tr><td>How each step built the team</td><td>The build-up from the base team to the Stage 1 team, then what skill cover, transformation, the SDM re-base and contingency added, with rounding and transition</td></tr>
-<tr><td>Year 1 team by role</td><td>Every FTE traced to a skill set, tower or step; rows add up to the total</td></tr>
+<tr><td>Year 1 team by role</td><td>Every FTE traced to a role, tower or step; rows add up to the total</td></tr>
 <tr><td>Allowances</td><td>Productive need → utilisation, leave, contingency, risk. The buffer % is what a deal desk asks about</td></tr>
 <tr><td>Assumptions register</td><td>Every assumption from every step, grouped by category. Edit them in the step they belong to</td></tr>
 <tr><td>Where the inputs came from</td><td>Document sources and quotes; anything edited after import</td></tr>
@@ -562,13 +562,13 @@ ${tryTool(10,"Set a proposed Year 1 team and read the risks and the commercial o
 <h2>The brief</h2>
 <ul>
 <li>24×5 support, customer clock UTC+0, starting 00:00. Use <span class="ui">Lay out evenly</span>: India gets two 8-hour windows and Romania the third. Romania's window is <b>on call for P1s only</b>: switch it to <span class="ui">On-call (P1)</span>.</li>
-<li><b>AMS</b>: 400 incidents a month from the client's ITSM export. Client keeps L1; we provide L2 + L3. <b>Silver</b> SLA, modern estate, <b>AIOps in scope</b>. Skill sets: Systems Support Engineer 70%, Front end dev 30%.</li>
-<li><b>IMS</b>: no ticket history. 4 environments, 2 hosting platforms, 3 databases, security operations in scope. Client L1, us L2 + L3, complex legacy, <b>SRE in scope</b>, no AIOps. Skill set: Infra support engineer 100%.</li>
+<li><b>AMS</b>: 400 incidents a month from the client's ITSM export. Client keeps L1; we provide L2 + L3. <b>Silver</b> SLA, modern estate, <b>AIOps in scope</b>. Default role only (no special roles).</li>
+<li><b>IMS</b>: no ticket history. 4 environments, 2 hosting platforms, 3 databases, security operations in scope. Client L1, us L2 + L3, complex legacy, <b>SRE in scope</b>, no AIOps. Default role only; 0.75 FTE of SRE typed.</li>
 <li>Client AI adoption <b>Low</b>; complexity <b>Medium</b>; <b>3-year</b> term; scenario YoY savings.</li>
 </ul>
 <h2>Check your numbers</h2>
 <div class="tbl"><table id="exTbl"><thead><tr><th>Checkpoint</th><th class="r">Expected</th><th>Why</th><th>Got it?</th></tr></thead><tbody></tbody></table></div>
-<div class="tip"><b>If a number is off</b> The usual suspects: the counts level on AMS (should be all tickets, L1), the ownership preset (click it even if it looks selected), share % on skill sets, and Romania's window set to On-call (P1).</div>
+<div class="tip"><b>If a number is off</b> The usual suspects: the counts level on AMS (should be all tickets, L1), the ownership preset (click it even if it looks selected), the SRE FTE on the IMS tower, and Romania's window set to On-call (P1).</div>
 ${tryTool(1,"Start at step 1 with a fresh estimate (Reset in the header).")}`},
 
 {id:"faq",grp:"Reference",t:"FAQ",html:()=>`
