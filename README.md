@@ -128,12 +128,13 @@ Netlify installs `package.json` dependencies (`@anthropic-ai/sdk`, `@netlify/blo
 ## Stage 1 · Step 1: coverage and base team
 
 Inputs:
-- **Support window:** days a week and hours a day, with presets from 8×5 to 24×7, the time it **starts**, and the **customer's time zone** as a UTC offset. The window is on the customer's clock.
+- **Where the opportunity is from:** the region (Europe, APAC, North America, India and Middle East), the customer location and the customer's **time zone** as a UTC offset (filled from the location, editable). The region decides which delivery locations are offered and selects its defaults.
+- **Support window:** days a week and hours a day, with presets from 8×5 to 24×7, and the time it **starts**. The window is on the customer's clock.
 - **Contracted hours per FTE a week:** 40 by default.
 - **Utilisation per resource:** 85% by default ([F] G6). Each person is productive 85% of contracted hours.
 - **Minimum L2 and L3 people on duty in every staffed hour.**
-- **Delivery locations:** each has its own UTC offset, leave days and public holidays.
-- **Working windows by location:** each location has one or more windows in its own local time. A window is **Active** (fully staffed, real FTE) or **On-call (P1)**, where people are reachable for P1 incidents only. **Lay out evenly** cuts the support window into slices of at most 8 hours and hands them to the locations in order. For 6- or 7-day coverage, weekends can be Active (as per the windows) or On-call all day.
+- **Delivery locations:** ticked from the region's list (Europe: EU onshore, Romania nearshore, India offshore; APAC: Singapore, Australia, China, India offshore; North America: LATAM, Ecuador, Brazil nearshore, India offshore; IME: India only). Each has its own UTC offset, leave days and public holidays. Changing the selection re-lays out the windows.
+- **Working windows by location:** each location has one or more windows in its own local time. A window is **Active** (fully staffed, real FTE) or **On-call (P1)**, where people are reachable for P1 incidents only. **Best fit to local daytime** hands each half hour of the support window to the selected location where it is closest to 13:00 local (a window that follows the sun); **Best fit, nights on call** also makes hours outside 07:00–20:00 local P1 on call; each location has Day, Late and Night preset buttons; **Lay out evenly** cuts the support window into slices of at most 8 hours and hands them to the locations in order. For 6- or 7-day coverage, weekends can be Active (as per the windows) or On-call all day.
 
 A compact **live coverage strip** is pinned (sticky, below the step navigation) at the top of the step 1 inputs and redraws on every change, so a gap or overlap shows up while you edit a window, without scrolling to the full timeline below. The **coverage timeline** puts the customer's clock across the top and one row per location below, each cell showing that location's local time. Green is active, orange is on call, red is uncovered. It reports how many support-window hours have someone active, how many are covered on call only, any hours nobody covers (with the time ranges), the overlap hours where two locations are active at once, and any hours worked outside the support window. Uncovered hours raise a warning on the step.
 

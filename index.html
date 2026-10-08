@@ -633,6 +633,18 @@ tr.sel td{background:var(--accent-soft)}
         <div class="stickhost"><div class="tlmini" id="tlMini" aria-live="polite"></div><div class="fgrid">
 
         <div class="field">
+          <div class="lbl">Where is the opportunity from? <span class="tag">customer location</span></div>
+          <div class="seg" id="regionSeg" role="group" aria-label="Customer region"></div>
+          <div class="row">
+            <label class="inline" for="custLoc">Customer location <select id="custLoc"></select></label>
+            <label class="inline" for="custTz">Customer time zone, UTC offset <input id="custTz" type="number" min="-12" max="14" step="0.5" style="width:84px"></label>
+          </div>
+          <div class="hint" id="regionHint"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="field">
           <div class="lbl">Support window <span class="tag">[F] 1.1 C · Coverage model</span></div>
           <div class="seg" id="covPresets"></div>
           <div id="provCov"></div>
@@ -640,7 +652,6 @@ tr.sel td{background:var(--accent-soft)}
             <label class="inline" for="days">Days a week <select id="days"><option>5</option><option>6</option><option>7</option></select></label>
             <label class="inline" for="hours">Hours a day <input id="hours" type="number" min="1" max="24" step="1"></label>
             <label class="inline" for="winStart">Starts at <input id="winStart" type="time" step="900"></label>
-            <label class="inline" for="custTz">Customer time zone, UTC offset <input id="custTz" type="number" min="-12" max="14" step="0.5" style="width:84px"></label>
           </div>
           <div class="hint">The window is on the customer's clock. Each delivery location below works its own hours, in its own time zone, and the timeline shows how they line up. A live strip pinned above these inputs redraws as you change them; the full timeline is below.</div>
         </div>
@@ -669,6 +680,8 @@ tr.sel td{background:var(--accent-soft)}
 
         <div class="field">
           <div class="lbl">Delivery locations <span class="tag">[F] G3 · Follow-the-sun</span></div>
+          <div class="seg" id="dlocChips" role="group" aria-label="Delivery locations for this region"></div>
+          <div class="hint" id="dlocHint"></div>
           <div class="loc-table">
             <table>
               <thead><tr><th>Location</th><th class="r">UTC offset</th><th class="r">Leave days</th><th class="r">Public holidays</th><th class="r">Available</th><th></th></tr></thead>
@@ -676,8 +689,8 @@ tr.sel td{background:var(--accent-soft)}
             </table>
           </div>
           <div class="addrow">
-            <select id="locAdd" aria-label="Add a location"></select>
-            <button class="btn sm" type="button" id="locAddBtn">Add location</button>
+            <select id="locAdd" aria-label="Add a location outside this region's list"></select>
+            <button class="btn sm" type="button" id="locAddBtn">Add another location</button>
           </div>
           <div class="hint">Leave and holiday days are proposed defaults. Change them to match the delivery centre's policy.</div>
         </div>
@@ -685,7 +698,7 @@ tr.sel td{background:var(--accent-soft)}
         <div class="field">
           <div class="lbl">Working windows by location <span class="tag">local time</span></div>
           <div id="winEditor"></div>
-          <div class="row"><button class="btn sm" type="button" data-winlayout="1">Lay out evenly</button><span class="hint" style="margin:0">Replaces every window with equal slices of the support window, in location order.</span></div>
+          <div class="row"><button class="btn sm" type="button" data-winfit="day">Best fit to local daytime</button><button class="btn sm" type="button" data-winfit="night">Best fit, nights on call</button><button class="btn sm" type="button" data-winlayout="1">Lay out evenly</button><span class="hint" style="margin:0">Each replaces every window. Best fit hands each half hour of the support window to the selected location where it is closest to 13:00 local; with nights on call, hours outside 07:00–20:00 local are P1 on call. Evenly cuts equal slices in location order.</span></div>
           <div class="row" id="weekendRow"></div>
           <div class="row" id="oncallRow">
             <span class="lbl" style="margin:0">On-call allowance</span>
@@ -1676,8 +1689,18 @@ const LOC_CATALOG=[
   {id:"ec",name:"Ecuador",kind:"Nearshore NA",leave:15,hol:11,utc:-5},
   {id:"us",name:"United States",kind:"Onshore NA",leave:15,hol:10,utc:-5},
   {id:"cn",name:"China",kind:"APAC",leave:10,hol:11,utc:8},
-  {id:"au",name:"Australia",kind:"APAC",leave:20,hol:10,utc:10}
+  {id:"au",name:"Australia",kind:"APAC",leave:20,hol:10,utc:10},
+  {id:"sg",name:"Singapore",kind:"APAC",leave:14,hol:11,utc:8},
+  {id:"la",name:"Latin America (LATAM)",kind:"Nearshore NA",leave:15,hol:12,utc:-5},
+  {id:"br",name:"Brazil",kind:"Nearshore NA",leave:30,hol:12,utc:-3}
 ];
+/* where the opportunity is from: the customer's location and time zone, then the delivery locations offered for that region */
+const REGIONS={
+  eu:{name:"Europe (EU)",cust:[["c_uk","United Kingdom",0],["c_de","Germany / Central Europe",1],["c_ee","Eastern Europe",2]],del:[["eu","Onshore"],["ro","Nearshore"],["in","Offshore"]],def:["eu","ro","in"]},
+  apac:{name:"APAC",cust:[["c_sg","Singapore",8],["c_au","Australia (Sydney)",10],["c_cn","China",8],["c_jp","Japan",9]],del:[["sg","Singapore"],["au","Australia"],["cn","China"],["in","Offshore"]],def:["sg","in"]},
+  na:{name:"North America (NA)",cust:[["c_use","US Eastern",-5],["c_usc","US Central",-6],["c_usw","US Pacific",-8]],del:[["la","Nearshore"],["ec","Nearshore"],["br","Nearshore"],["in","Offshore"]],def:["ec","in"]},
+  ime:{name:"India and Middle East (IME)",cust:[["c_in","India",5.5],["c_ae","UAE",4],["c_sa","Saudi Arabia",3]],del:[["in","Onshore"]],def:["in"]}
+};
 const LOC_COLORS=["var(--accent)","var(--round)","var(--add)","var(--risk)","#6B7C93","#8C5FA8","#3F8C9B","#9B7B3F"];
 const WORK_DAYS=260;
 /* skill sets; absorb = base L2/L3 roster usually has this skill (proposed) */
@@ -1806,7 +1829,7 @@ function defaults(){
 function defaultsRaw(){
   return {
     deal:"",active:0,
-    days:5,hours:24,start:0,tz:0,fteHours:40,util1:85,minSenior:1,weekendMode:"active",oncall1:15,ocMode:"flat",p1PerMonth:null,p1Hours:3,standby:10,
+    region:"eu",custLoc:"c_uk",days:5,hours:24,start:0,tz:0,fteHours:40,util1:85,minSenior:1,weekendMode:"active",oncall1:15,ocMode:"flat",p1PerMonth:null,p1Hours:3,standby:10,
     perShift:{L2:1,L3:1},
     locations:[pickLoc("in"),pickLoc("ro")],
     backfill:true,
@@ -1850,6 +1873,28 @@ function autoLayout(st,modes){
     l.win.push({id:uid(),m:(modes&&modes[i])==="oncall"?"oncall":"active",s,e:s+len});
   }
 }
+/* best fit to local daytime: each half hour of the support window goes to the selected location whose local time is closest to 13:00,
+   so the window follows the sun. With nightsOnCall, hours outside 07:00–20:00 local are on call (P1 only) instead of active. */
+function bestFitLayout(st,nightsOnCall){
+  const L=st.locations, hrs=Math.min(24,Math.max(1,+st.hours||24)), start=hmod(+st.start||0), N=Math.round(hrs*2);
+  L.forEach(l=>{l.win=[]});
+  if(!L.length)return;
+  const key=[];
+  for(let k=0;k<N;k++){
+    const c=start+k/2;let best=0,bd=99,loc=0;
+    L.forEach((l,i)=>{const x=hmod(toLocal(st,l,c)-13),d=Math.min(x,24-x);if(d<bd-1e-9){bd=d;best=i}});
+    loc=toLocal(st,L[best],c);
+    key.push(best*2+(nightsOnCall&&(loc<7||loc>=20)?1:0));
+  }
+  /* a full 24 hours is a cycle: start at a change of owner so a run that wraps past midnight is one window */
+  let r0=0;if(N>=48){for(let i=0;i<N;i++)if(key[i]!==key[(i+N-1)%N]){r0=i;break}}
+  const kr=key.map((_,i)=>key[(i+r0)%N]);
+  let k=0;
+  while(k<N){let e=k;while(e<N&&kr[e]===kr[k])e++;
+    const l=L[kr[k]>>1], s=toLocal(st,l,start+(k+r0)/2);
+    l.win.push({id:uid(),m:kr[k]&1?"oncall":"active",s,e:s+(e-k)/2});k=e}
+}
+const WIN_PRESETS=[["Day","09:00–17:00",9,17],["Late","13:00–21:00",13,21],["Night","21:00–05:00",21,29]];
 /* hour-by-hour picture on the customer clock: who is active, who is on call, where the window is uncovered and where two locations overlap */
 function coverageOf(st){
   const hrs=Math.min(24,Math.max(0,+st.hours||0)), start=hmod(+st.start||0), NB=48;
@@ -1905,6 +1950,7 @@ function migrate(p){
       if(Array.isArray(p.risks))p.risks={s1:p.risks};
       const st=Object.assign(d,p);
       st.life=Object.assign({stage:null,appetite:null,pathway:null},p.life||{});
+      if(p.region===undefined){st.region=null;st.custLoc=null}
       st.shape=Object.assign({pse:1,sa:10},p.shape||{});
       st.assumptions=Object.assign(defaults().assumptions,p.assumptions||{});
       /* assumptions saved as plain text become {t, c} with the step's default category */
@@ -2745,6 +2791,13 @@ function runSelfTests(){
   withState(testState(st=>{st.towers=[amsTower(300,{aiops:true,l15:true,sre:true,skills:[mkSkill("sse",100)]})]}),R=>{const sf=shapeOf(R.roles,R), g=i=>(sf.rows.find(r=>r.id===i)||{fte:0}).fte, t=R.towers[0];add("L1.5, SRE and AIOps in scope bring in their roles; SRE on an AMS tower takes 78% of its L3","PSE, SRE and AI Engineer present; SRE = 78% of L3",`PSE ${fmt(g("pse"),2)}, SRE ${fmt(g("sre"),2)}, AI ${fmt(g("aie"),2)}; tower L3 ${fmt(t.fte3,2)}`,g("pse")>0&&g("aie")>0&&Math.abs(t.sreF-t.fte3*SRE_SHARE)<1e-9&&g("sre")>=t.sreF-1e-9,"proposed")});
   {const base=withState(testState(st=>{st.towers=[amsTower(300,{skills:[mkSkill("sse",100)]})]}),R=>R.total);
    withState(testState(st=>{st.towers=[amsTower(300,{skills:[mkSkill("sse",100)],special:[{id:"x1",role:"qa",fte:1.5},{id:"x2",role:"mob",fte:0.5}]})]}),R=>{const sf=shapeOf(R.roles,R), g=i=>(sf.rows.find(r=>r.id===i)||{fte:0}).fte;add("Special roles add their FTE on top of the tower and show under their own role","Quality Analyst 1.50 and Mobile Developer 0.50 more than without",`QA ${fmt(g("qa"),2)}, Mobile ${fmt(g("mob"),2)}, total ${fmt(R.total,2)} vs ${fmt(base,2)}`,Math.abs(g("qa")-1.5)<0.2&&g("mob")>0.3&&R.total>base+1.9,"proposed")})}
+  {const k=clone(defaults());const kS=S;S=k;try{
+    const cov=()=>coverageOf(S), want={eu:["eu","ro","in"],apac:["sg","in"],na:["ec","in"],ime:["in"]}, ok=Object.keys(want).every(r=>{setRegion(r);return S.region===r&&S.locations.map(l=>l.id).join()===want[r].join()&&S.tz===REGIONS[r].cust[0][2]&&cov().gapH===0});
+    add("Choosing a region selects its delivery locations and customer time zone, with no coverage gap","EU, APAC, NA and IME defaults; every hour of 24x5 covered",ok?"all four regions covered":"a region left a gap or the wrong locations",ok,"agreed");
+    setRegion("eu");bestFitLayout(S,true);const c2=cov();
+    add("Best fit with nights on call covers the window and marks night hours as on call","no gap; some on-call hours",`${fmt(c2.gapH,1)} h gap, ${fmt(c2.onCallH,1)} h on call`,c2.gapH===0&&c2.onCallH>0,"proposed");
+    add("Region lists: IME offers India only; APAC offers Singapore, Australia, China and India; NA offers LATAM, Ecuador, Brazil and India","as listed",Object.entries(REGIONS).map(([r,v])=>r+":"+v.del.map(x=>x[0]).join("/")).join(" · "),REGIONS.ime.del.length===1&&REGIONS.apac.del.map(x=>x[0]).join()==="sg,au,cn,in"&&REGIONS.na.del.map(x=>x[0]).join()==="la,ec,br,in","agreed");
+  }finally{S=kS}}
   withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>{const rr=runCompute(), tr=R.total-rr.total;add("Run team excludes AI engineers and the transformation POD","run team has 0 AI engineers; Year 1 = run team + transformation",`AI ${fmt(rr.ai2,2)} · ${fmt(rr.total,2)} + ${fmt(tr,2)} = ${fmt(R.total,2)}`,rr.ai2===0&&tr>0&&Math.abs(rr.total+tr-R.total)<1e-9&&rr.total<R.total,"proposed")});
   withState(testState(st=>{st.towers=[amsTower(300,{})];st.transPct=0}),R=>{const rr=runCompute();add("With no transformation and no AIOps the run team is the whole team","run team = Year 1 team",`${fmt(rr.total,3)} vs ${fmt(R.total,3)}`,Math.abs(rr.total-R.total)<1e-9,"proposed")});
   withState(testState(st=>{st.aiMaturity="low";st.towers=[amsTower(300,{aiops:true})]}),R=>add("AIOps ratio, low AI adoption","1 : 4",`1 : ${R.ratio}`,R.ratio===4,"[F] Part 3"));
@@ -2932,6 +2985,7 @@ const listNames=arr=>arr.length?arr.map(t=>t.name).join(", "):"none";
 function stepStatus(id){
   if(!R)return ["ok",""];
   const ex=S.ex||{}, hasEx=Object.values(ex).some(v=>+v>0);
+  if(id===1&&!S.region)return ["todo","Choose where the opportunity is from"];
   if(id===1)return R.warnings.length?["warn",R.warnings[0]]:["ok","Ready"];
   if(id===2)return !S.towers.length?["todo","Add at least one tower"]:R.warnings2.length?["warn",R.warnings2[0]]:["ok","Ready"];
   if(id===5)return ["ok","Ready"];
@@ -2990,6 +3044,13 @@ function renderRail(){
 function go(n){S.active=n;if(R)renderBar();if(n===3){renderS3();update();}if(n===4){renderS4();update();}if(n===5){renderS5();update();}if(n===6){renderS6();update();}if(n===7){renderS7();update();}if(n===8||n===9||n===10){renderS8();update();}if(n===11||n===12){renderS5();update();}if(n===13||n===14){update();}renderRail();save();window.scrollTo({top:0,behavior:"auto"})}
 
 /* ---------- stage 1 static render ---------- */
+/* choosing a region sets the customer location and time zone, offers that region's delivery locations and selects its defaults */
+function setRegion(k){
+  const RG=REGIONS[k];if(!RG)return;
+  S.region=k;S.custLoc=RG.cust[0][0];S.tz=RG.cust[0][2];
+  S.locations=RG.def.map(id=>S.locations.find(l=>l.id===id)||pickLoc(id));
+  bestFitLayout(S,false);
+}
 function renderS1(){
   $("dealName").value=S.deal||"";
   $("covPresets").innerHTML=COV_PRESETS.map(([k,d,h])=>`<button type="button" data-cov="${k}" aria-pressed="${S.days===d&&S.hours===h}">${k}</button>`).join("");
@@ -3012,8 +3073,15 @@ function renderS1(){
   $("locAdd").innerHTML=avail.map(c=>`<option value="${c.id}">${esc(c.name)} · ${esc(c.kind)}</option>`).join("");
   $("locAdd").disabled=$("locAddBtn").disabled=!avail.length;
   $("winStart").value=clock(S.start);$("custTz").value=S.tz;
+  const RG=REGIONS[S.region];
+  $("regionSeg").innerHTML=Object.entries(REGIONS).map(([k,r])=>`<button type="button" data-region="${k}" aria-pressed="${S.region===k}">${r.name}</button>`).join("");
+  $("custLoc").innerHTML=RG?RG.cust.map(([id,n,u])=>`<option value="${id}" ${S.custLoc===id?"selected":""}>${esc(n)} · ${utcLabel(u)}</option>`).join("")+`<option value="" ${S.custLoc?"":"selected"}>Other (set the time zone)</option>`:`<option value="">Choose a region first</option>`;
+  $("custLoc").disabled=!RG;
+  $("regionHint").textContent=RG?`${RG.name} deal. Choosing a region offers its delivery locations below. The customer time zone sets the clock for the support window and the timeline.`:"Choose the region first: it decides which delivery locations are offered.";
+  $("dlocChips").innerHTML=RG?RG.del.map(([id,tag])=>{const c=LOC_CATALOG.find(x=>x.id===id);return `<button type="button" data-dloc="${id}" aria-pressed="${S.locations.some(l=>l.id===id)}">${esc(c.name)}<small style="display:block;font-weight:400">${esc(RG.name==="India and Middle East (IME)"?"India only":tag)} · ${utcLabel(c.utc)}</small></button>`}).join(""):"";
+  $("dlocHint").textContent=RG?(RG.del.length>1?`Tick every location that will deliver from this list. Changing the selection re-lays out the working windows to follow the sun.`:"India is the only delivery location for IME deals."):"Choose where the opportunity is from to see the delivery locations for that region.";
   $("winEditor").innerHTML=S.locations.map(l=>`<div class="wloc" data-wloc="${l.id}">
-    <div class="whead"><span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${locColor(l.id)};margin-right:6px"></i><b>${esc(l.name)}</b><small>${utcLabel(+l.utc||0)}</small></span><button type="button" class="btn sm" data-addwin="${l.id}">Add window</button></div>
+    <div class="whead"><span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${locColor(l.id)};margin-right:6px"></i><b>${esc(l.name)}</b><small>${utcLabel(+l.utc||0)}</small></span><span class="row" style="gap:6px">${WIN_PRESETS.map(([n,t],i)=>`<button type="button" class="btn sm" data-wpre="${l.id}:${i}" title="Add a ${t} local window">${n} ${t}</button>`).join("")}<button type="button" class="btn sm" data-addwin="${l.id}">Add window</button></span></div>
     ${(l.win||[]).map(w=>`<div class="wrow" data-win="${w.id}"><div class="seg" role="group" aria-label="Window type">${[["active","Active"],["oncall","On-call (P1)"]].map(([k,t])=>`<button type="button" data-wm="${w.id}:${k}" aria-pressed="${(w.m==="oncall"?"oncall":"active")===k}">${t}</button>`).join("")}</div>
       <label for="ws-${w.id}">From <input type="time" step="900" id="ws-${w.id}" data-wt="s" value="${clock(w.s)}"></label>
       <label for="we-${w.id}">To <input type="time" step="900" id="we-${w.id}" data-wt="e" value="${clock(w.e)}"></label>
@@ -4276,6 +4344,11 @@ document.addEventListener("click",e=>{
   else if(d.addwin){const l=S.locations.find(x=>x.id===d.addwin);if(l){const s=toLocal(S,l,+S.start||0);l.win.push({id:uid(),m:"active",s,e:s+Math.min(8,Math.max(1,+S.hours||8))});renderS1();update();}}
   else if(d.rmwin){S.locations.forEach(l=>{l.win=(l.win||[]).filter(w=>w.id!==d.rmwin)});renderS1();update();}
   else if(d.winlayout){autoLayout(S);renderS1();update();}
+  else if(d.winfit){bestFitLayout(S,d.winfit==="night");renderS1();update();}
+  else if(d.wpre){const [lid,i]=d.wpre.split(":"),l=S.locations.find(x=>x.id===lid),pr=WIN_PRESETS[+i];if(l&&pr){l.win=l.win||[];l.win.push({id:uid(),m:"active",s:pr[2],e:pr[3]});renderS1();update();}}
+  else if(d.region){setRegion(d.region);renderS1();update();}
+  else if(d.dloc){const on=S.locations.some(l=>l.id===d.dloc);if(on&&S.locations.length>1)S.locations=S.locations.filter(l=>l.id!==d.dloc);else if(!on)S.locations.push(pickLoc(d.dloc));else return;
+    const RGd=REGIONS[S.region];if(RGd)S.locations.sort((a,b)=>RGd.del.findIndex(x=>x[0]===a.id)-RGd.del.findIndex(x=>x[0]===b.id));bestFitLayout(S,false);renderS1();update();}
   else if(d.wmode){S.weekendMode=d.wmode;renderS1();update();}
   else if(d.step){const [k,dv]=d.step.split(":");S.perShift[k]=Math.max(0,Math.min(9,S.perShift[k]+(+dv)));$("out"+k).textContent=S.perShift[k];update();}
   else if(d.rmloc){S.locations=S.locations.filter(l=>l.id!==d.rmloc);renderS1();update();}
@@ -4348,6 +4421,7 @@ document.addEventListener("input",e=>{
   if(t.id==="mPrep"){S.meta.preparedBy=t.value;save();return}
   if(t.id==="mAppr"){S.meta.approvedBy=t.value;updateMeta();save();return}
   if(t.id==="winStart"){if(/^\d\d:\d\d$/.test(t.value)){const [h,m]=t.value.split(":").map(Number);S.start=h+m/60;update()}return}
+  if(t.id==="custLoc"){const RGc=REGIONS[S.region],c=RGc&&RGc.cust.find(x=>x[0]===t.value);S.custLoc=t.value||null;if(c){S.tz=c[2]}renderS1();update();return}
   if(t.id==="custTz"){const v=+t.value;if(t.value!==""&&v>=-12&&v<=14){S.tz=v;update()}return}
   if(d.lutc){const v=+t.value;if(t.value!==""&&v>=-12&&v<=14){S.locations.find(x=>x.id===t.closest("tr").dataset.loc).utc=v;update()}return}
   if(d.wt){if(/^\d\d:\d\d$/.test(t.value)){const [h,m]=t.value.split(":").map(Number), id=t.closest("[data-win]").dataset.win;S.locations.forEach(l=>(l.win||[]).forEach(w=>{if(w.id!==id)return;const v=h+m/60,pr=d.wt==="s"?normWin(v,w.e):normWin(w.s,v);w.s=pr[0];w.e=pr[1]}));update()}return}
