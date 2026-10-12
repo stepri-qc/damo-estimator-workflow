@@ -93,6 +93,17 @@ The DAMO roles guidance map turns the team into an indicative shape, on its own 
 
 The shape groups the same FTE, so no total moves. **Each tower has one default role** that takes its FTE: System Support Engineer (AMS), Infra Support Engineer (IMS), Data Ops Engineer (DMS) and AIOps Engineer (agentic, which also holds the AI engineers where AIOps is in scope). Everything else is a **special role** typed in Step 5: Developer (AMS), Infra Engineer (IMS), Data Engineer (DMS) and AI/ML Engineer (agentic) come out of the tower's own L3 effort, so the total does not change; Quality Analyst, Business Analyst, Solution Architect and Mobile Developer are added on top. Shift cover added to reach the base team is spread over the default and carved-out roles. **Roles appear only where they are in scope, sized by what you type:** each tower asks whether **L1.5** is in scope (then you type the Product Support Engineer FTE for that tower, carved out of its L2), whether **SRE** is in scope (then you type the SRE FTE, carved out of its L3) and whether **AIOps** is in scope (the AI engineers at the AIOps ratio). The Transformation POD's automation and CI/CD work shows as its own Transformation engineers row. Nothing is assumed: a Yes with no FTE typed shows no role. The Solution Architect is 10% of an FTE once per deal (0.8 hours of an 8-hour day), carved out of the default roles (capped at 60% of them). The SDM ratio default is 1 per 12 FTE, as in the map.
 
+## Usage and cost logging
+
+The extraction function writes one small record per run to a Netlify Blobs store (`damo-workflow-usage`): time, outcome, model, input and output tokens, cost, run time, and the number, type and size of the documents. It never stores document text or the answer. `usage.html` (on the same site) shows the report, and `/.netlify/functions/extract-usage` returns it as JSON or, with `&format=csv`, one row per run.
+
+Two costs are reported separately:
+
+- **AI extraction cost:** tokens times the list price of the model that answered (`lib/usage.mjs`, `PRICES`). Set `PRICE_MULTIPLIER` (for example `0.8`) for a contract discount.
+- **Tool usage cost:** extraction requests, function run time and estimated status checks (the page polls every 2 seconds), priced from your own rates: `HOSTING_MONTHLY_USD` (a flat monthly platform fee, prorated to the period), `USD_PER_FUNCTION_SECOND` and `USD_PER_THOUSAND_INVOCATIONS`. With none set, usage is shown and no tool cost is calculated.
+
+Site settings: `USAGE_ADMIN_KEY` turns the report on (it is off without it) and is the key `usage.html` asks for. A wrong passphrase is logged as a run with no tokens, so abuse shows up in the report.
+
 ## Step 0: documents and AI extraction
 
 The tool opens on an optional **Documents** page. Add what you have for the deal, run **Extract with AI**, and Claude proposes inputs for every stage. You tick what to apply; nothing changes until you do. **Skip to step 1** ignores the page.

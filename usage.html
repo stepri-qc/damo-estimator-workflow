@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>DAMO Workflow usage</title>
+<style>
+:root{--bg:#F4F5F8;--surface:#FFFFFF;--ink:#18202B;--muted:#5A6472;--line:#DCE0E7;--accent:#9B2F66;--accent-ink:#FFFFFF;--soft:#F7E8F0;--warn:#B3261E;--mono:ui-monospace,"SFMono-Regular",Menlo,monospace;--body:system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10141A;--surface:#181E27;--ink:#E7EBF0;--muted:#A0A9B6;--line:#2B333F;--accent:#E27AAF;--accent-ink:#1A0E14;--soft:#3A1F2D;--warn:#F08A80;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10141A;--surface:#181E27;--ink:#E7EBF0;--muted:#A0A9B6;--line:#2B333F;--accent:#E27AAF;--accent-ink:#1A0E14;--soft:#3A1F2D;--warn:#F08A80;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);padding-inline:16px}
+main{max-width:980px;margin:0 auto;padding-block:28px 48px;display:grid;gap:20px}
+h1{margin:0;font-size:24px}
+.sub{color:var(--muted);margin:4px 0 0}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+input,select{padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font:inherit}
+button{padding:8px 14px;border:1px solid var(--accent);border-radius:6px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600;cursor:pointer}
+button.ghost{background:transparent;color:var(--accent)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:8px;min-width:0}
+.card h2{margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.big{font:700 34px var(--mono);color:var(--accent)}
+.card dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:13.5px}
+.card dt{color:var(--muted)}
+.card dd{margin:0;font-family:var(--mono);text-align:right}
+.note{font-size:12.5px;color:var(--muted)}
+.tot{background:var(--soft);border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tot b{font-family:var(--mono)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid var(--line)}
+td.r,th.r{text-align:right;font-family:var(--mono)}
+.err{color:var(--warn)}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Extraction usage and cost</h1>
+    <p class="sub">AI extraction (tokens) and tool usage (running the tool) are reported separately. No document text or answers are stored, only counts, sizes, the model and the outcome.</p>
+  </header>
+  <form class="bar" id="f">
+    <label for="key">Admin key <input id="key" type="password" autocomplete="off" style="width:220px"></label>
+    <label for="days">Period <select id="days"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 12 months</option></select></label>
+    <button type="submit">Show usage</button>
+    <button type="button" class="ghost" id="csv">Download runs (CSV)</button>
+  </form>
+  <div id="msg" class="note" aria-live="polite"></div>
+  <section id="out" hidden>
+    <div class="cards">
+      <div class="card" id="ai"></div>
+      <div class="card" id="tool"></div>
+    </div>
+    <div class="tot" id="tot" style="margin-top:16px"></div>
+    <h2 style="font-size:15px;margin:20px 0 8px">By day</h2>
+    <div class="scroll"><table><thead><tr><th>Date</th><th class="r">Runs</th><th class="r">AI cost</th><th class="r">Function time</th></tr></thead><tbody id="days-body"></tbody></table></div>
+    <h2 style="font-size:15px;margin:20px 0 8px">Outcomes</h2>
+    <div class="scroll"><table><thead><tr><th>Outcome</th><th class="r">Runs</th></tr></thead><tbody id="oc-body"></tbody></table></div>
+  </section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const usd=x=>"$"+(+x).toFixed(x<10?3:2);
+const n=x=>(+x).toLocaleString();
+const endpoint="/.netlify/functions/extract-usage";
+try{$("key").value=sessionStorage.getItem("damo-usage-key")||""}catch(e){}
+async function load(fmt){
+  const key=$("key").value.trim(); if(!key){$("msg").innerHTML='<span class="err">Enter the admin key.</span>';return null}
+  try{sessionStorage.setItem("damo-usage-key",key)}catch(e){}
+  const r=await fetch(`${endpoint}?days=${$("days").value}${fmt?"&format="+fmt:""}`,{headers:{"x-usage-key":key}});
+  if(!r.ok){let m="";try{m=(await r.json()).error}catch(e){} $("msg").innerHTML=`<span class="err">${m||"Could not load usage ("+r.status+")."}</span>`;return null}
+  $("msg").textContent="";return r;
+}
+$("f").addEventListener("submit",async e=>{
+  e.preventDefault(); const r=await load(); if(!r)return; const d=await r.json(), a=d.aiExtraction, t=d.toolUsage;
+  $("out").hidden=false;
+  $("ai").innerHTML=`<h2>AI extraction cost</h2><div class="big">${usd(a.costUsd)}</div>
+    <dl><dt>Runs sent to the model</dt><dd>${n(a.runs)}</dd><dt>Succeeded / failed</dt><dd>${n(a.succeeded)} / ${n(a.failed)}</dd><dt>Average per run</dt><dd>${usd(a.avgRunUsd)}</dd><dt>Most expensive run</dt><dd>${usd(a.maxRunUsd)}</dd><dt>Input tokens</dt><dd>${n(a.inputTokens)}</dd><dt>Output tokens</dt><dd>${n(a.outputTokens)}</dd></dl>
+    <div class="note">Priced at list rates for the model that answered${a.unpricedRuns?`; ${a.unpricedRuns} run(s) used a model with no price on file and count as $0`:""}. Set PRICE_MULTIPLIER on the site for a contract discount.</div>`;
+  $("tool").innerHTML=`<h2>Tool usage cost</h2><div class="big">${t.estimatedUsd==null?"not priced":usd(t.estimatedUsd)}</div>
+    <dl><dt>Extraction requests</dt><dd>${n(t.extractionRuns)}</dd><dt>Function run time</dt><dd>${(t.functionSeconds/60).toFixed(1)} min</dd><dt>Status checks (estimated)</dt><dd>${n(t.estimatedStatusPolls)}</dd><dt>Function calls (estimated)</dt><dd>${n(t.estimatedInvocations)}</dd></dl>
+    <div class="note">${t.note}</div>`;
+  $("tot").innerHTML=`<span>Total for the period (AI extraction + tool usage)</span><b>${usd(d.totalEstimatedUsd)}</b>`;
+  $("days-body").innerHTML=d.byDay.map(x=>`<tr><td>${x.date}</td><td class="r">${n(x.runs)}</td><td class="r">${usd(x.aiCostUsd)}</td><td class="r">${(x.functionSeconds/60).toFixed(1)} min</td></tr>`).join("")||'<tr><td colspan="4" class="note">No runs in this period.</td></tr>';
+  $("oc-body").innerHTML=Object.entries(a.byOutcome).map(([k,v])=>`<tr><td>${k}</td><td class="r">${n(v)}</td></tr>`).join("")||'<tr><td colspan="2" class="note">No runs in this period.</td></tr>';
+});
+$("csv").addEventListener("click",async()=>{
+  const r=await load("csv"); if(!r)return; const b=await r.blob(), u=URL.createObjectURL(b), a=document.createElement("a"); a.href=u; a.download="extraction-usage.csv"; a.click(); URL.revokeObjectURL(u);
+});
+</script>
+</body>
+</html>
