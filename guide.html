@@ -327,7 +327,7 @@ quiz:[
 <li><div><b>Enhancement pool</b> (optional hours a month, separate from change requests) and <b>estate</b> (modern or complex legacy: 25% or 35% non-ticketing effort).</div></li>
 <li><div><b>L1.5, SRE and AIOps</b>: each tower asks whether they are in scope. SRE (any tower kind): you type the SRE FTE, carved out of that tower's L3, a role-mix change, not extra headcount. L1.5: you type the Product Support Engineer FTE, carved out of that tower's L2.  AIOps brings the AI engineers.</div></li>
 <li><div><b>Special roles</b> are not entered on the tower: they live in Step 5 (Skill type), together with the skills required on each shift.</div></li>
-<li><div><b>AIOps</b>: if in scope, AI engineers are added at 1 per 4 support FTE (low AI adoption) or 1 per 8 (moderate; 1:6 above 20 FTE).</div></li>
+<li><div><b>AIOps</b>: if in scope, AI engineers are added at 1 per 4 support FTE (low AI adoption) or 1 per 8 (moderate; 1:6 above 20 FTE). They are counted in Stage 3 as transformation capacity, inside the POD.</div></li>
 <li><div><b>Default role</b>: every tower has one and it takes the tower's FTE: System Support Engineer for AMS, Infra Support Engineer for IMS, Data Ops Engineer for DMS, AIOps Engineer for agentic (AI platform). The base roster covers it on every shift.</div></li>
 </ol>
 <div class="flow"><span>Tickets a month</span><i>→</i><span>L1 30% resolved · L2 70% · L3 = L2 × 20%</span><i>→</i><span>hours: L1 0.25 · L2 3 · L3 10, + SLA, + coordination</span><i>→</i><span>÷ 85% utilisation</span><i>→</i><span>+ B non-ticketing 25/35%</span><i>→</i><span>÷ 160 h = FTE</span></div>
@@ -373,18 +373,17 @@ quiz:[
 {id:"s5",grp:"Stage 1 · Size the team",t:"Step 4 · Required team size",html:()=>`
 <span class="eyebrow">Stage 1 · Step 4</span>
 <h1>Required team size: reconcile and SDM</h1>
-<p class="lead">This is where the two teams meet. The larger one is kept, AI engineers stay on top, and Service Delivery Managers are added at 1 per 8 delivery FTE. The result is the <b>Stage 1 team</b>: the number Stage 2 tests. The step also states the <b>binding dimension</b>: coverage when the support window sets the size, ticket volume when the work does.</p>
+<p class="lead">This is where the two teams meet. The larger one is kept and Service Delivery Managers are added at 1 per 12 delivery FTE. The result is the <b>Stage 1 team</b>: the number Stage 2 tests. The step also states the <b>binding dimension</b>: coverage when the support window sets the size, ticket volume when the work does.</p>
 <div class="calc" id="calcRe">
   <h3>Try it: base vs work</h3>
   <div class="grid">
     <label>Base team (Step 1)<input id="reB" type="number" min="0" step="0.1" value="8.65"></label>
-    <label>Work team without AI engineers<input id="reW" type="number" min="0" step="0.1" value="5.5"></label>
-    <label>AI engineers<input id="reA" type="number" min="0" step="0.1" value="1"></label>
+    <label>Work team from the towers<input id="reW" type="number" min="0" step="0.1" value="5.5"></label>
     <label>SDM ratio (1 per)<input id="reS" type="number" min="1" value="12"></label>
   </div>
   <div class="out" id="reOut"></div>
 </div>
-<div class="note"><b>Why AI engineers stay on top</b> They build automation; they don't staff shifts. So the base team can't stand in for them when it's the larger team.</div>
+<div class="note"><b>AI engineers come later</b> The AI engineers for towers with AIOps in scope build automation and don't staff shifts, so they are not part of the Stage 1 team. They join as transformation capacity in Stage 3 (Step 10).</div>
 ${tryTool(5,"See the comparison bars and the verdict sentence.")}`},
 
 {id:"s3",grp:"Stage 2 · Qualify the team",t:"Step 5 · Skill type",html:()=>`
@@ -470,17 +469,17 @@ ${tryTool(13,"Review the Year 1 team by role.")}`},
     <label>Client AI adoption<select id="scA"><option value="low">Low</option><option value="moderate">Moderate</option></select></label>
     <label>Tower FTE from ticket history<select id="scV"><option value="0">Under 50%</option><option value="1">50% or more</option></select></label>
     <label>Support team from the work (FTE)<input id="scR" type="number" min="0" value="20"></label>
-    <label>AI engineers already added in Step 2<input id="scAi" type="number" min="0" step="0.1" value="0"></label>
+    <label>AI engineers (AIOps in scope)<input id="scAi" type="number" min="0" step="0.1" value="0"></label>
   </div>
   <div class="out" id="scOut"></div>
 </div>
 <p>Three answers move the result, all <code>proposed</code> and editable under Benchmarks. <b>Application life stage</b> and the client's <b>appetite</b> scale the POD share (growth 125%, steady 100%, sunset 50%; low appetite 50%, medium 100%, high 125%). <b>Clarity of improvement pathways</b> sets how much of the Year 2+ savings target is credited (clear 100%, partial 75%, unclear 50%). Unanswered means 100%, so nothing moves until you answer. A POD share typed by hand overrides the first two.</p>
-<p>The Transformation POD covers SRE, automation, CI/CD and AI adoption. AI engineers from Step 2 sit inside the POD, so Step 10 adds only the part they don't already cover. AIOps is never counted twice.</p>
+<p>The Transformation POD covers SRE, automation, CI/CD and AI adoption. The AI engineers for towers with AIOps in scope (set in Step 2) sit inside the POD, so Step 10 adds only the part they don't already cover. AIOps is never counted twice.</p>
 ${tryTool(4,"Choose the client's AI adoption.")}
 <div class="quiz" data-quiz="s4"></div>`,
 quiz:[
  {q:"Moderate AI adoption, and 70% of tower FTE is from ticket history. Scenario?",o:["1","2","3","4"],a:3,why:"Moderate AI + volumetrics available = Scenario 4 (POD 20%+, AIOps 1:8)."},
- {q:"POD is 2.5 FTE and Step 2 already added 4 AI engineers. What does Step 10 add?",o:["2.5","6.5","0"],a:2,why:"AI engineers sit inside the POD; they already exceed it, so nothing more is added."}
+ {q:"POD is 2.5 FTE and 4 AI engineers are already in it (AIOps in scope). What does Step 10 add?",o:["2.5","6.5","0"],a:2,why:"AI engineers sit inside the POD; they already exceed it, so nothing more is added."}
 ]},
 
 {id:"s7",grp:"Stage 3 · Transformation and productivity",t:"Step 11 · Capacity ramp and savings",html:()=>`
@@ -623,7 +622,7 @@ const GLOSS=[
  ["Thin slice","A small unit of scope sized by criticality: an application for AMS, a data product for DMS. Critical, Important or Standard, each with a fixed FTE per slice (proposed, editable)."],
  ["Binding dimension","What sets the Stage 1 number: coverage (the support window) or ticket volume (the work)."],
  ["Reference range","Today's team ± the tolerance. A cross-check on the Stage 1 number, never an input."],
- ["Delivery team","The larger of the base team and the work team (without AI engineers), plus AI engineers."],
+ ["Delivery team","The larger of the base team and the work team. AI engineers are not in it: they join in Stage 3."],
  ["Pass-through","Share of tickets passed to the next level: L1→L2 70%, L2→L3 20% ([F] 1.4)."],
  ["ARE","Average resolution effort per ticket: L1 0.25 h, L2 3 h, L3 10 h."],
  ["A, B, C effort","A: ticket effort; B: non-ticketing effort (automation, patching, governance) at 25% or 35% of A; C: enhancement hours."],
@@ -681,10 +680,9 @@ function calcSc(){
    <div class="row tot"><span>Step 10 adds</span><span>${fmt(add,2)} FTE</span><div class="f">POD ${fmt(P,2)} − AI engineers ${fmt(ai,2)}${ai>=P&&ai>0?": the AI engineers already cover the POD":""}</div></div>`;
 }
 function calcRe(){
-  const B=Math.max(0,+$("reB").value||0), W=Math.max(0,+$("reW").value||0), A=Math.max(0,+$("reA").value||0), r=Math.max(1,+$("reS").value||12);
-  const del=Math.max(W,B)+A, sdm=del/r;
+  const B=Math.max(0,+$("reB").value||0), W=Math.max(0,+$("reW").value||0), r=Math.max(1,+$("reS").value||12);
+  const del=Math.max(W,B), sdm=del/r;
   $("reOut").innerHTML=`<div class="row"><span>${W>=B?"Work team is larger: kept":"Base team is larger: team lifted to it"}</span><span>${fmt(Math.max(W,B),2)}</span>${W<B?`<div class="f">${fmt(B-W,2)} FTE of spare time for enhancements or transformation</div>`:""}</div>
-   <div class="row"><span>+ AI engineers</span><span>${fmt(A,2)}</span></div>
    <div class="row"><span>Delivery team</span><span>${fmt(del,2)}</span></div>
    <div class="row"><span>+ SDM (1 per ${r})</span><span>${fmt(sdm,2)}</span></div>
    <div class="row tot"><span>Team after Step 4</span><span>${fmt(del+sdm,2)} FTE</span></div>`;
