@@ -1,4 +1,6 @@
-# DAMO Estimation Workflow
+# DAMO Lodestar
+
+*Estimation as a Service. Formerly the DAMO Estimation Workflow.*
 
 A step-by-step version of the DAMO estimator for deal reviews. It shows management how the estimate is built, one step at a time, in three stages and a review: **Stage 1** sizes the team (coverage, volumetrics or thin slices, the current team as a reference range); **Stage 2** qualifies it (skill type, location, managerial capacity, complexity, seniority and contingency) to give the **run team**; **Stage 3** adds transformation capacity and productivity. Year 1 shows two lines: the run team and the transformation capacity. Each step adds inputs, shows its working with the deal's own numbers, and records assumptions and risks. The fixed FTE bar at the bottom shows how each stage changes the team.
 
