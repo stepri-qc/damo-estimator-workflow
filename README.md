@@ -1,4 +1,4 @@
-# DAMO Lodestar
+# DAMO Prism
 
 *Estimation as a Service. Formerly the DAMO Estimation Workflow.*
 
