@@ -550,6 +550,7 @@ ${tryTool(10,"Set a proposed Year 1 team and read the risks and the commercial o
 <tr><td><span class="ui">Customer summary</span></td><td>The client</td><td>Coverage in plain words, scope and SLAs, team by role and location, year by year, transition, what we need from them. <b>No</b> contingency, risk, rounding or framework working</td></tr>
 <tr><td><span class="ui">Export Excel</span></td><td>Pricing sheet</td><td>13 sheets of plain numbers: towers, roles, locations, years, allowances, confidence …</td></tr>
 <tr><td><span class="ui">Save file</span></td><td>Colleagues, the deal folder</td><td>Every input, approval and saved scenarios; <span class="ui">Open file</span> reloads it exactly</td></tr>
+<tr><td><span class="ui">Add to Prism Library</span></td><td>SAs, the solution library</td><td>Opens the Library with the scale, team by role, years, AIOps use cases and assumptions filled in; you add industry, region and an anonymised description</td></tr>
 <tr><td><span class="ui">Copy summary</span></td><td>Slides, notes</td><td>The working as Markdown text</td></tr>
 </tbody></table></div>
 <div class="warn"><b>Before sending the customer summary</b> It includes your own assumptions as written, so phrase them for the client. Roles are in FTE and locations in people, so the totals differ by rounding; the total row explains it.</div>`},
@@ -607,6 +608,7 @@ const FAQ=[
  ["Should I use flat YoY savings or AIOps use cases?","When AIOps is in scope, use cases are the default: they show what the AI engineers would actually build, from which year, and how much effort it removes, so the savings are backed. Flat YoY follows the framework's scenario targets and applies whenever AIOps is not in scope, or if you switch to it."],
  ["Is transition in the Year 1 team?","No. It's a one-off effort before service start, shown in FTE-months in Step 11, the Overall estimate and the customer summary."],
  ["How do I share an estimate with a colleague?","Save file, send the .damo.json, and they use Open file. Saved scenarios travel inside the file."],
+ ["How do I add an estimate to the solution library?","After the estimate is approved, File, then Add to Prism Library. The Library opens in a new tab with the form filled in. Add the industry, region and an anonymised description, then submit. Do not put the customer name in the description: the Library refuses it."],
  ["What does 'Changed since approval' mean?","Someone edited an input after the estimate was approved. Approve again or set the status back to Draft."],
  ["Extract with AI says the passphrase is wrong.","Ask the tool owner for the current passphrase; it's set on the Netlify project as INTAKE_PASSPHRASE."],
  ["Where are my estimates stored?","In your browser only, until you Save file. Clearing browser data or using another browser starts fresh."],

@@ -548,6 +548,7 @@ tr.sel td{background:var(--accent-soft)}
         <div class="menupop" id="fileMenu" role="menu" hidden>
           <button type="button" role="menuitem" id="openBtn">Open file…<small>Replaces the estimate on screen</small></button>
           <button type="button" role="menuitem" id="saveBtn">Save file<small>Every input, to reopen or share</small></button>
+          <button type="button" role="menuitem" id="libBtn">Add to Prism Library…<small>Opens the Library with this estimate</small></button>
           <hr>
           <button type="button" role="menuitem" class="danger" id="resetBtn"><span class="r1">Reset estimate…<small>Clears every input</small></span><span class="r2" aria-hidden="true">Click again to clear everything</span></button>
         </div>
@@ -2940,6 +2941,11 @@ function runSelfTests(){
   add("This estimate: allowances add up to the Year 1 team",fmt(R.total,2),fmt(A.core+A.util+A.leave+A.cont+A.risk,2),near(A.core+A.util+A.leave+A.cont+A.risk,R.total),"invariant");
   add("This estimate: Year 1 of the term is the Year 1 team",fmt(R.total,2),fmt(R.years[0].fte,2),near(R.years[0].fte,R.total),"invariant");
   add("This estimate: bottom bar after Step 8 is the Year 1 team",fmt(R.total,2),fmt(R.snaps[6].fte,2),near(R.snaps[6].fte,R.total),"invariant");
+  /* the Prism Library hand-off */
+  const LB=libraryBlock(), lbSum=LB?Object.values(LB.team).reduce((x,v)=>x+v,0):NaN;
+  add("This estimate: the Library summary team adds up to the Year 1 team",fmt(R.total,2),LB?fmt(lbSum,2):"no summary",LB&&Math.abs(lbSum-R.total)<=0.05*Math.max(1,Object.keys(LB.team).length),"invariant");
+  const probe={v:1,deny:["Société Ñandú – 日本"],library:{team:{"System Support Engineer":1.5}}}, dec=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(encodeHandoff(probe).replace(/-/g,"+").replace(/_/g,"/")),c=>c.charCodeAt(0))));
+  add("The Library hand-off link keeps names with accents and other scripts intact","Société Ñandú – 日本",dec.deny[0],dec.deny[0]===probe.deny[0]&&!encodeHandoff(probe).match(/[+\/=]/),"hand-off");
   return out;
 }
 function renderTests(){
@@ -4371,9 +4377,49 @@ async function saveOut(name,data,type,okMsg){
   toast(okMsg);
 }
 const slug=()=>(S.deal||"DAMO").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"")||"DAMO";
+/* A short, anonymisable summary of the estimate for the Prism Library: scale, team by role, years, AIOps use cases and assumptions.
+   The Library reads this block instead of re-running the engine. It carries no customer name. */
+function libraryBlock(){
+  try{
+    const nm=Object.fromEntries(GROLES.map(r=>[r[0],r[1]])), Y=R.shapeY;
+    const team={};Object.entries(Y.years[0].by).forEach(([id,v])=>{if(v>0.005)team[nm[id]||id]=Math.round(v*100)/100});
+    const apps=S.towers.filter(t=>t.kind==="AMS").reduce((a,t)=>a+SIZES.reduce((s,z)=>s+(+(t.apps&&t.apps[z])||0),0),0);
+    const texts=[];Object.values(S.assumptions||{}).forEach(l=>(l||[]).forEach(a=>{if(a&&a.t&&a.t.trim())texts.push(a.t.trim())}));
+    return {v:1,towers:[...new Set(S.towers.map(t=>t.kind))],apps,tickets:Math.round(R.towers.reduce((a,t)=>a+(+t.tickets||0),0)),
+      coverage:Math.min(24,+S.hours||0)+"x"+(+S.days||0),term:+S.term||0,team,years:Y.years.slice(0,Math.max(1,+S.term||3)).map(y=>Math.round(y.total*100)/100),
+      confidence:Math.round(R.conf?R.conf.score:0),
+      aiops:R.pf&&R.pf.active?R.pf.items.filter(i=>i.on).map(i=>({uc:i.u.n,from:i.startY,deflection:i.c.defl})):[],
+      assumptions:texts};
+  }catch(e){return null}
+}
 function saveEstimate(){
-  const data=JSON.stringify({app:"damo-estimation-workflow",format:1,savedAt:new Date().toISOString(),state:S,scenarios:scnLoad()},null,1);
+  const data=JSON.stringify({app:"damo-estimation-workflow",format:1,savedAt:new Date().toISOString(),state:S,scenarios:scnLoad(),library:libraryBlock()},null,1);
   saveOut(`${slug()}-v${S.meta.version}.damo.json`,data,"application/json",`Estimate saved as version ${S.meta.version}`);
+}
+/* Hands the estimate to the Prism Library in a link. The summary rides in the part of the address after "#", which the browser never sends
+   to any server; the Library reads it, fills its Add a deal form and removes it from the address bar. Nothing is stored by this step. */
+const LIBRARY_URL="https://prism-library-beta.netlify.app";
+function encodeHandoff(obj){
+  const bytes=new TextEncoder().encode(JSON.stringify(obj));let bin="";bytes.forEach(c=>{bin+=String.fromCharCode(c)});
+  return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+function handoffPayload(){
+  const b=libraryBlock();
+  if(!b||!b.team||!Object.keys(b.team).length)return null;
+  const m=S.meta||{};
+  return {v:1,library:b,status:m.status||"draft",version:m.version||1,deny:[S.deal,m.preparedBy,m.approvedBy].filter(Boolean)};
+}
+function addToLibrary(){
+  const p=handoffPayload();
+  if(!p){toast("Add a team to the estimate first, then add it to the Library.");return}
+  const url=LIBRARY_URL+"/#import="+encodeHandoff(p);
+  const w=window.open(url,"_blank");
+  if(w){try{w.opener=null}catch(e){}toast(p.status==="approved"?"Opening the Prism Library with this estimate.":"Opening the Prism Library. This estimate is not approved yet, so it will go in as a draft.")}
+  else{
+    const done=()=>toast("Your browser blocked the new tab. The link is copied: paste it into a new tab.");
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(done,()=>toast("Your browser blocked the new tab. Allow pop-ups for this site and try again."));
+    else toast("Your browser blocked the new tab. Allow pop-ups for this site and try again.");
+  }
 }
 async function openEstimate(file){
   try{
@@ -4459,6 +4505,7 @@ document.addEventListener("click",e=>{
   else if(t.id==="copyBtn"||t.id==="copyBtn2"){copySummary();}
   else if(t.id==="dlBtn"||t.id==="dlBtn2"){downloadReport();}
   else if(t.id==="saveBtn"){saveEstimate();}
+  else if(t.id==="libBtn"){addToLibrary();}
   else if(t.id==="custBtn"||t.id==="mCust"){downloadCustomer();}
   else if(t.id==="xlsBtn"||t.id==="mXls"){exportExcel();}
   else if(t.id==="testBtn"){renderTests();}

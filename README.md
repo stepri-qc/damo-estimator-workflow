@@ -502,7 +502,7 @@ Assumptions are grouped by category wherever they are shown: coverage and locati
 
 ## Header and navigation
 
-- **Header actions** are grouped in two menus. **File:** Open file, Save file, Reset estimate (asks for a second click). **Export** (primary): Download summary, Customer summary, Excel workbook, Copy summary. **Guide** opens the user guide.
+- **Header actions** are grouped in two menus. **File:** Open file, Save file, Add to Prism Library, Reset estimate (asks for a second click). **Export** (primary): Download summary, Customer summary, Excel workbook, Copy summary. **Guide** opens the user guide.
 - **Two-tier navigation**, sticky at the top while you scroll. The tabs are *Documents*, *Stage 1 · The Year 1 number* (showing the Stage 1 team in FTE) and *Stage 2 · Validate and finalise* (showing the Year 1 team). Under them are the steps of the part you are in, with Previous and Next arrows. A step's dot shows what it needs: green ready, amber needs a choice (hover for what: add a tower, choose AI adoption, complexity or term; or a warning such as an uncovered hour), blue skill cover adds headcount, hollow optional (the existing team). Stage 2 says which Stage 1 team it starts from.
 - On small screens the tabs shrink to the part and its figure, and the step chips scroll sideways.
 
@@ -539,6 +539,8 @@ Inputs applied from the Documents page keep their source and quote: shown under 
 The panel also holds version, prepared by, status (Draft / Submitted for approval / Approved), approver and approval date. Approving stores a fingerprint of every input. If any input changes afterwards, the header badge, the panel and both summaries say **Changed since approval** until it is approved again or set back to Draft.
 
 **Save file** writes every input and the approval block to `<deal>-v<version>.damo.json`. **Open file** loads one back (it replaces the estimate on screen), so an estimate can be shared, archived with the deal and reopened exactly as approved. Browser storage is still used between visits.
+
+**Add to Prism Library** opens the Prism Library in a new tab with a short summary of the estimate (scale, team by role, years, AIOps use cases and the assumptions) in the link, after the `#`, so it is not sent to any server. The Library's Add a deal form opens filled in; the user adds industry, region, SLA tier and an anonymised description and submits it for review. The customer name travels in the same link only so the Library can refuse it in free text, and is not saved. The saved file also carries the same summary under `library`. The Library address is `LIBRARY_URL` in `index.html`.
 
 ## Scenarios
 
