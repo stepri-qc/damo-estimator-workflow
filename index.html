@@ -647,6 +647,9 @@ tr.sel td{background:var(--accent-soft)}
 
         <div class="field">
           <div class="lbl">Support window <span class="tag">[F] 1.1 C · Coverage model</span></div>
+          <div class="row" style="margin-bottom:6px"><span class="lbl" style="margin:0">Support asked for</span>
+            <div class="seg" id="supportSeg" role="group" aria-label="Support model the customer asks for"></div></div>
+          <div class="hint" id="supportHint" style="margin-bottom:8px"></div>
           <div class="seg" id="covPresets"></div>
           <div id="provCov"></div>
           <div class="row">
@@ -1851,7 +1854,7 @@ function defaultsRaw(){
   return {
     aiopsPf:{mode:"portfolio",from:1},
     deal:"",active:0,
-    region:"eu",custLoc:"c_uk",days:5,hours:24,start:0,tz:0,fteHours:40,util1:85,minSenior:1,weekendMode:"active",oncall1:15,ocMode:"flat",p1PerMonth:null,p1Hours:3,standby:10,
+    region:"eu",custLoc:"c_uk",days:5,hours:24,start:0,tz:0,fteHours:40,util1:85,minSenior:1,weekendMode:"active",support:"active",oncall1:15,ocMode:"flat",p1PerMonth:null,p1Hours:3,standby:10,
     perShift:{L2:1,L3:1},
     locations:[pickLoc("in"),pickLoc("ro")],
     backfill:true,
@@ -1991,6 +1994,8 @@ function migrate(p){
       st.adj=Object.assign(defaults().adj,(p.adj&&typeof p.adj==="object")?p.adj:{});if(!Array.isArray(st.adj.y))st.adj.y=[];if(!st.adj.mit||typeof st.adj.mit!=="object")st.adj.mit={};if(!Array.isArray(st.adj.extra))st.adj.extra=[];
       st.cm=Object.assign(defaults().cm,(p.cm&&typeof p.cm==="object")?p.cm:{});["histMonths","ceiling"].forEach(k=>{if(st.cm[k]===""||st.cm[k]===undefined||isNaN(+st.cm[k]))st.cm[k]=null});if(["unknown","yes","no"].indexOf(st.cm.baseline)<0)st.cm.baseline="unknown";if(["low","medium","high"].indexOf(st.cm.pressure)<0)st.cm.pressure="medium";
       migrateCoverage(st,p);
+      /* estimates saved before the support model was an input: read it from the windows they already have */
+      if(p.support!=="active"&&p.support!=="passive")st.support=st.locations.some(l=>(l.win||[]).some(w=>w.m==="oncall"))?"passive":"active";
       return st;
     }
   }
@@ -2495,7 +2500,7 @@ function ownedText(t){const o=ownOf(t);const k=["L1","L2","L3"].filter(x=>o[x]==
 const TOWER_KEYS=["sre","vol","inc","sr","cr","srMix","crMix","tktLevel","levels","own","sla","avail","mix","cpx","apps","env","host","db","sec","dp","pipe","integ","up","down","agents","models","tools","ksrc","hiRisk","mau","estate","aiops","enh","basis","thin","l15","l15Fte","sreFte","special"];
 function provVal(key){
   if(key==="client")return S.deal;
-  if(key==="coverage")return `${S.hours}x${S.days}|${S.locations.flatMap(l=>(l.win||[]).map(w=>w.m)).join(",")}|${S.weekendMode}`;
+  if(key==="coverage")return `${S.hours}x${S.days}|${S.locations.flatMap(l=>(l.win||[]).map(w=>w.m)).join(",")}|${S.weekendMode}|${S.support}`;
   if(key==="p1")return String(S.p1PerMonth);
   if(key==="ai")return S.aiMaturity;
   if(key==="cplx")return S.cplx;
@@ -2941,6 +2946,16 @@ function runSelfTests(){
   add("This estimate: allowances add up to the Year 1 team",fmt(R.total,2),fmt(A.core+A.util+A.leave+A.cont+A.risk,2),near(A.core+A.util+A.leave+A.cont+A.risk,R.total),"invariant");
   add("This estimate: Year 1 of the term is the Year 1 team",fmt(R.total,2),fmt(R.years[0].fte,2),near(R.years[0].fte,R.total),"invariant");
   add("This estimate: bottom bar after Step 8 is the Year 1 team",fmt(R.total,2),fmt(R.snaps[6].fte,2),near(R.snaps[6].fte,R.total),"invariant");
+  /* support model: active-active staffs every hour, active-passive puts the off-hours on call */
+  {const mk=night=>{const st=defaults();st.hours=24;st.days=5;st.start=0;st.tz=0;st.locations=[pickLoc("in"),pickLoc("ro")];bestFitLayout(st,night);return coverageOf(st)}, aa=mk(false), ap=mk(true);
+   add("Active-active has no on-call-only hours in a 24-hour window",`0 h on call, ${fmt(aa.reqH,0)} h active`,`${fmt(aa.onCallH,1)} h on call, ${fmt(aa.activeH,1)} h active`,aa.onCallH===0&&aa.gapH===0,"support model");
+   add("Active-passive puts the hours outside local daytime on call, with no gap",`some on-call hours, no uncovered hour`,`${fmt(ap.onCallH,1)} h on call, ${fmt(ap.gapH,1)} h uncovered`,ap.onCallH>0&&ap.gapH===0&&ap.activeH<aa.activeH,"support model")}
+  /* the Library reference sheet is read directly */
+  {const ref="# Reference: Sample (L-0120)\n\nSource: Prism Library. Reviewed. Outcome: Open.\n\n## Profile\n- Industry: Insurance\n- Towers: AMS\n- Applications: 5\n- Tickets a month: 200\n- Coverage: 24x5\n- Term: 5 years\n\n## Assumptions\n- Service desk (L1) is provided by the client. (Not yet tested)\n- Volume stays within 10%. (Broken)\n\n## AIOps pack\n- Other: from year 1, planned deflection 3%\n";
+   const r=parseLibraryReference(ref), t=r.towers&&r.towers[0];
+   add("A Library reference sheet gives its tower, tickets, coverage and term without the AI","AMS, 200 tickets, 24x5, 5 years",`${t?t.kind:"no tower"}, ${t&&t.volumetrics?t.volumetrics.incidentsPerMonth:"?"} tickets, ${r.coverage?r.coverage.hoursPerDay+"x"+r.coverage.daysPerWeek:"no coverage"}, ${r.termYears?r.termYears.value:"?"} years`,!!t&&t.kind==="AMS"&&t.volumetrics.incidentsPerMonth===200&&r.coverage.hoursPerDay===24&&r.coverage.daysPerWeek===5&&r.termYears.value===5&&t.aiopsInScope===true,"library reference");
+   add("Assumptions the reference deal found broken are left out, and the status text is removed","1 assumption, no status suffix",`${(r.assumptions||[]).length} assumption: ${(r.assumptions||[])[0]&&r.assumptions[0].text}`,(r.assumptions||[]).length===1&&!/\(Not yet tested\)/.test(r.assumptions[0].text),"library reference");
+   add("A pasted reference sheet is recognised, other text is not","true / false",`${isLibRef(ref)} / ${isLibRef("Notes from a meeting about the RFP")}`,isLibRef(ref)&&!isLibRef("Notes from a meeting about the RFP"),"library reference")}
   /* the Prism Library hand-off */
   const LB=libraryBlock(), lbSum=LB?Object.values(LB.team).reduce((x,v)=>x+v,0):NaN;
   add("This estimate: the Library summary team adds up to the Year 1 team",fmt(R.total,2),LB?fmt(lbSum,2):"no summary",LB&&Math.abs(lbSum-R.total)<=0.05*Math.max(1,Object.keys(LB.team).length),"invariant");
@@ -3109,10 +3124,12 @@ function setRegion(k){
   const RG=REGIONS[k];if(!RG)return;
   S.region=k;S.custLoc=RG.cust[0][0];S.tz=RG.cust[0][2];
   S.locations=RG.def.map(id=>S.locations.find(l=>l.id===id)||pickLoc(id));
-  bestFitLayout(S,false);
+  bestFitLayout(S,S.support==="passive");
 }
 function renderS1(){
   $("dealName").value=S.deal||"";
+  $("supportSeg").innerHTML=[["active","Active–active"],["passive","Active–passive (P1 on call)"]].map(([k,t])=>`<button type="button" data-support="${k}" aria-pressed="${(S.support||"active")===k}">${t}</button>`).join("");
+  $("supportHint").textContent=S.support==="passive"?"Each location is staffed in its own daytime. The hours outside 07:00–20:00 local are covered on call for P1 incidents only, and count as the on-call allowance. Change any window below if the customer's ask is different.":"Every hour of the support window is staffed, in each location's working hours. Nobody is on call only.";
   $("covPresets").innerHTML=COV_PRESETS.map(([k,d,h])=>`<button type="button" data-cov="${k}" aria-pressed="${S.days===d&&S.hours===h}">${k}</button>`).join("");
   $("days").value=String(S.days);
   $("hours").value=S.hours;
@@ -4458,20 +4475,21 @@ document.addEventListener("click",e=>{
   else if(t.id==="xRun"){runExtraction();}
   else if(t.id==="xStop"){XCTL&&XCTL.abort();}
   else if(t.id==="xCopy"){const X=window.DamoExtract;if(!X){xStatus("The extraction module didn't load. Open the tool from a web address, not a local file.",true);return}const pr=X.buildExtractionPrompt(okDocs());const box=$("xPromptBox");const fb=()=>{box.hidden=false;box.value=pr;box.focus();box.select();xStatus("Copying was blocked. Select the prompt below and copy it by hand.")};try{navigator.clipboard.writeText(pr).then(()=>xStatus("Prompt copied. Paste it into a Claude chat, then paste the reply below."),fb)}catch(e){fb()}$("xManual").open=true;}
-  else if(t.id==="xUsePaste"){const X=window.DamoExtract;if(!X){xStatus("The extraction module didn't load.",true);return}try{showProposals(X.sanitizeExtraction(X.parseJsonReply($("xPaste").value)));xStatus("Reply read. Review the proposals, then apply.")}catch(e){xStatus("That reply isn't valid JSON. Paste Claude's whole reply.",true)}}
+  else if(t.id==="xUsePaste"){const X=window.DamoExtract;if(!X){xStatus("The extraction module didn't load.",true);return}try{showProposals(mergeExtractions(X.sanitizeExtraction(X.parseJsonReply($("xPaste").value)),libraryRefProposals(X,okDocs())));xStatus("Reply read. Review the proposals, then apply.")}catch(e){xStatus("That reply isn't valid JSON. Paste Claude's whole reply.",true)}}
   else if(t.id==="xApply"){applyProposals();}
   else if(t.id==="xAll"||t.id==="xNone"){document.querySelectorAll("[data-xkey]").forEach(c=>c.checked=t.id==="xAll");}
   else if(d.go){go(+d.go)}
-  else if(d.cov){const p=COV_PRESETS.find(x=>x[0]===d.cov);S.days=p[1];S.hours=p[2];S.start=p[2]>=24?0:9;autoLayout(S);renderS1();update();}
+  else if(d.support){S.support=d.support;bestFitLayout(S,d.support==="passive");renderS1();update();}
+  else if(d.cov){const p=COV_PRESETS.find(x=>x[0]===d.cov);S.days=p[1];S.hours=p[2];S.start=p[2]>=24?0:9;if(S.support==="passive")bestFitLayout(S,true);else autoLayout(S);renderS1();update();}
   else if(d.wm){const [id,m]=pair(d.wm);S.locations.forEach(l=>(l.win||[]).forEach(w=>{if(w.id===id)w.m=m}));renderS1();update();}
   else if(d.addwin){const l=S.locations.find(x=>x.id===d.addwin);if(l){const s=toLocal(S,l,+S.start||0);l.win.push({id:uid(),m:"active",s,e:s+Math.min(8,Math.max(1,+S.hours||8))});renderS1();update();}}
   else if(d.rmwin){S.locations.forEach(l=>{l.win=(l.win||[]).filter(w=>w.id!==d.rmwin)});renderS1();update();}
   else if(d.winlayout){autoLayout(S);renderS1();update();}
-  else if(d.winfit){bestFitLayout(S,d.winfit==="night");renderS1();update();}
+  else if(d.winfit){S.support=d.winfit==="night"?"passive":"active";bestFitLayout(S,d.winfit==="night");renderS1();update();}
   else if(d.wpre){const [lid,i]=d.wpre.split(":"),l=S.locations.find(x=>x.id===lid),pr=WIN_PRESETS[+i];if(l&&pr){l.win=l.win||[];l.win.push({id:uid(),m:"active",s:pr[2],e:pr[3]});renderS1();update();}}
   else if(d.region){setRegion(d.region);renderS1();update();}
   else if(d.dloc){const on=S.locations.some(l=>l.id===d.dloc);if(on&&S.locations.length>1)S.locations=S.locations.filter(l=>l.id!==d.dloc);else if(!on)S.locations.push(pickLoc(d.dloc));else return;
-    const RGd=REGIONS[S.region];if(RGd)S.locations.sort((a,b)=>RGd.del.findIndex(x=>x[0]===a.id)-RGd.del.findIndex(x=>x[0]===b.id));bestFitLayout(S,false);renderS1();update();}
+    const RGd=REGIONS[S.region];if(RGd)S.locations.sort((a,b)=>RGd.del.findIndex(x=>x[0]===a.id)-RGd.del.findIndex(x=>x[0]===b.id));bestFitLayout(S,S.support==="passive");renderS1();update();}
   else if(d.wmode){S.weekendMode=d.wmode;renderS1();update();}
   else if(d.step){const [k,dv]=d.step.split(":");S.perShift[k]=Math.max(0,Math.min(9,S.perShift[k]+(+dv)));$("out"+k).textContent=S.perShift[k];update();}
   else if(d.rmloc){S.locations=S.locations.filter(l=>l.id!==d.rmloc);renderS1();update();}
@@ -4842,6 +4860,42 @@ async function addFiles(type,files){
   }
 }
 function okDocs(){return DOCS.filter(d=>d.text&&!d.err).map(d=>({type:d.type,name:d.name,text:d.text}))}
+/* A Prism Library reference sheet is already structured, so its profile is read directly instead of by the AI: the same fields, no cost, no guessing.
+   Assumptions the reference deal found broken or at risk are left out. The sheet describes another deal, so the summary says so. */
+const isLibRef=t=>/^\s*#\s*Reference:/m.test(t)&&/Source:\s*Prism Library/i.test(t);
+function parseLibraryReference(text){
+  const sec={};let cur="";
+  String(text).split(/\r?\n/).forEach(line=>{const h=line.match(/^##\s+(.+?)\s*$/);if(h){cur=h[1].toLowerCase();sec[cur]=[];return}if(cur&&line.trim())sec[cur].push(line.trim())});
+  const id=(String(text).match(/^#\s*Reference:.*\(([A-Z]-\d+)\)\s*$/m)||[])[1]||"", src="Prism Library reference"+(id?" "+id:"");
+  const kv={};(sec.profile||[]).forEach(l=>{const m=l.match(/^-\s*([^:]+):\s*(.+)$/);if(m)kv[m[1].trim().toLowerCase()]=m[2].trim()});
+  const aip=(sec["aiops pack"]||[]).filter(l=>l.startsWith("-"));
+  const kinds=(kv.towers||"").split(/[,\s]+/).filter(k=>["AMS","IMS","DMS","AI"].includes(k));
+  const tix=parseInt(String(kv["tickets a month"]||"").replace(/[^\d]/g,""),10)||0;
+  const out={docSummary:`Read from a Prism Library reference sheet${id?` (${id})`:""} without the AI. It describes another deal, not this client's documents, so check every proposal before you apply it.`+(kinds.length>1&&tix?" The ticket volume is for the whole deal, so set it for each tower in Step 2.":"")+(aip.length?` The sheet lists ${aip.length} AIOps use case${aip.length>1?"s":""}; choose them in Step 11.`:"")};
+  const cov=String(kv.coverage||"").match(/^(\d{1,2})x(\d)$/);
+  if(cov)out.coverage={daysPerWeek:+cov[2],hoursPerDay:+cov[1],evidence:`Coverage: ${kv.coverage}`,source:src};
+  if(kinds.length)out.towers=kinds.map(kind=>({kind,volumetrics:kinds.length===1&&tix>0?{incidentsPerMonth:tix}:undefined,aiopsInScope:aip.length?true:undefined,evidence:`Towers: ${kv.towers}${tix?` · Tickets a month: ${tix}`:""}`,source:src}));
+  const yrs=parseInt(kv.term,10);if(yrs>=1)out.termYears={value:yrs,evidence:`Term: ${kv.term}`,source:src};
+  const as=(sec.assumptions||[]).filter(l=>l.startsWith("-")).map(l=>{const t=l.replace(/^-\s*/,""),m=t.match(/\s*\((Held|At risk|Broken|Not yet tested)\)\s*$/);return {status:m?m[1]:"",text:(m?t.slice(0,m.index):t).trim()}}).filter(a=>a.text&&a.status!=="At risk"&&a.status!=="Broken").map(a=>({stage:2,text:a.text,source:src}));
+  if(as.length)out.assumptions=as;
+  return out;
+}
+/* two extractions into one: the first wins where only one value is allowed; towers are added only for kinds not already there */
+function mergeExtractions(a,b){
+  if(!b)return a;if(!a)return b;
+  const o={...a};
+  o.docSummary=[a.docSummary,b.docSummary].filter(Boolean).join(" ");
+  o.coverage=a.coverage||b.coverage;o.termYears=a.termYears||b.termYears;
+  const have=new Set((a.towers||[]).map(t=>t.kind)), tw=[...(a.towers||[]),...(b.towers||[]).filter(t=>!have.has(t.kind))];
+  if(tw.length)o.towers=tw;
+  const as=[...(a.assumptions||[]),...(b.assumptions||[])];if(as.length)o.assumptions=as;
+  Object.keys(o).forEach(k=>{if(o[k]===undefined)delete o[k]});
+  return o;
+}
+function libraryRefProposals(X,docs){
+  const refs=docs.filter(d=>isLibRef(d.text));
+  return refs.length?X.sanitizeExtraction(refs.map(d=>parseLibraryReference(d.text)).reduce((acc,x)=>mergeExtractions(acc,x))):null;
+}
 function xStatus(msg,err){const el=$("xStatus");el.textContent=msg;el.className="xstatus"+(err?" err":"")}
 async function detectRoute(){
   const inViewer=!!(window.claude&&typeof window.claude.use==="function");
@@ -4860,9 +4914,11 @@ async function detectRoute(){
   if(XROUTE==="manual"){$("xRun").hidden=true;$("xManual").open=true}
 }
 async function runExtraction(){
-  const docs=okDocs();if(!docs.length)return;
+  const all=okDocs();if(!all.length)return;
   const X=window.DamoExtract;
   if(!X){xStatus("The extraction module didn't load. Open the tool from a web address, not a local file.",true);return}
+  const refJson=libraryRefProposals(X,all), docs=all.filter(d=>!isLibRef(d.text));
+  if(!docs.length){showProposals(refJson);xStatus("Read directly from the Library reference, with no AI. Review the proposals, then apply.");return}
   const chars=docs.reduce((n,d)=>n+d.text.length,0);
   $("xRun").disabled=true;$("xStop").hidden=false;XCTL=new AbortController();
   const t0=Date.now();const tick=setInterval(()=>{xStatus(`Claude is reading ${docs.length} document${docs.length>1?"s":""}… ${Math.round((Date.now()-t0)/1000)} s`)},1000);
@@ -4887,7 +4943,7 @@ async function runExtraction(){
       }
       if(!json)throw {code:"timeout",message:"No answer after 6 minutes. Try fewer or shorter documents."};
     }
-    showProposals(X.sanitizeExtraction(json));
+    showProposals(mergeExtractions(X.sanitizeExtraction(json),refJson));
     xStatus(`Done in ${Math.round((Date.now()-t0)/1000)} s. Review the proposals, then apply.`);
   }catch(e){
     const code=e&&e.code;
@@ -4956,7 +5012,7 @@ function applyProposals(){
     const c=j.coverage;
     if(c.daysPerWeek)S.days=c.daysPerWeek;
     if(c.hoursPerDay){S.hours=c.hoursPerDay;S.start=S.hours>=24?0:9}
-    if(c.hoursPerDay||c.outOfHours)autoLayout(S,Array.from({length:12},(_,i)=>i===0||!c.outOfHours?"active":c.outOfHours));
+    if(c.hoursPerDay||c.outOfHours){S.support=c.outOfHours==="oncall"?"passive":"active";autoLayout(S,Array.from({length:12},(_,i)=>i===0||!c.outOfHours?"active":c.outOfHours))}
     if(c.weekends==="oncall")S.weekendMode="oncall";else if(c.weekends==="active")S.weekendMode="active";
     mark("coverage","Coverage window",c);
     if(c.p1PerMonth!=null){S.p1PerMonth=c.p1PerMonth;S.ocMode="p1";mark("p1","P1 incidents a month",{source:c.p1Source||c.source,evidence:c.p1Evidence||""})}
