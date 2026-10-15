@@ -489,7 +489,7 @@ quiz:[
 <h2>Two ways to work out savings</h2>
 <div class="cols2">
   <div class="card"><h3>Scenario YoY %</h3>A flat % a year from Year 2 (Scenario 1/3: 13.5%, 2: 11%, 4: 17.5%), applied above the coverage floor. Simple and framework-aligned.</div>
-  <div class="card"><h3>AIOps use cases</h3>Pick what the AI engineers build (14 use cases with build effort, deflection, start year and ramp). The panel shows FTE freed, net of the engineers, and whether they can build it in time.</div>
+  <div class="card"><h3>AIOps use cases</h3>The default when AIOps is in scope. Pick what the AI engineers build (14 use cases with build effort, deflection, start year and ramp); every use case goes live from Year 1 unless you change it for all or for one. The panel shows when each use case takes effect, a chart of the combined deflection over the years, and the FTE freed, net of the engineers and whether they can build it in time. If no tower has AIOps in scope, the scenario percentage is used instead.</div>
 </div>
 <div class="warn"><b>Heads-up</b> With the default seven use cases, the portfolio usually frees less than the scenario target, and can be less than the AI engineers it takes. The verdict panel shows the net figure; use it to challenge the AIOps ratio or the use-case list.</div>
 <h2>Transition (optional)</h2>
@@ -604,7 +604,7 @@ const FAQ=[
  ["The bar at the bottom shows a different number from the final estimate.","The bar shows the team after the stage you're on. It becomes the final Year 1 team once Stage 3 has added the transformation capacity (Step 13)."],
  ["Why is rounding adding so much?","People are rounded up in each location and tier (L2, L3, SDM). A small team spread over two locations can gain 2–3 people. Change rounding in Step 1 to see the effect."],
  ["We don't have ticket data. Can we still estimate?","Yes: use structural complexity (T-shirt sizing) or monthly active users. The confidence score will be lower and the range wider; list 'ticket history' as a due diligence item."],
- ["Should I use flat YoY savings or AIOps use cases?","Flat YoY follows the framework's scenario targets and is the default. Use cases show what the AI engineers would actually build; use them to test whether the savings claim is backed."],
+ ["Should I use flat YoY savings or AIOps use cases?","When AIOps is in scope, use cases are the default: they show what the AI engineers would actually build, from which year, and how much effort it removes, so the savings are backed. Flat YoY follows the framework's scenario targets and applies whenever AIOps is not in scope, or if you switch to it."],
  ["Is transition in the Year 1 team?","No. It's a one-off effort before service start, shown in FTE-months in Step 11, the Overall estimate and the customer summary."],
  ["How do I share an estimate with a colleague?","Save file, send the .damo.json, and they use Open file. Saved scenarios travel inside the file."],
  ["What does 'Changed since approval' mean?","Someone edited an input after the estimate was approved. Approve again or set the status back to Draft."],

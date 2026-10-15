@@ -444,7 +444,7 @@ Default example (3-year term): 11.7 → 11.2 → 11.0, averaging 11.31 FTE a yea
 
 ### Year 2+ savings from AIOps use cases
 
-Step 11 offers two ways to work out Year 2+ savings: the **scenario YoY %** (as before) or the **AIOps use-case portfolio**. The portfolio is the damo-estimator catalogue (14 use cases, each with build person-weeks, deflection %, level, prerequisites; the seven core L2 ones on by default), with a start year (default: the scenario's AIOps timeline, Year 1 for Scenarios 2 and 4, Year 2 for 1 and 3) and a ramp in months:
+Step 11 offers two ways to work out Year 2+ savings: the **scenario YoY %** or the **AIOps use-case portfolio**. **The portfolio is the default for a new estimate, and it applies once a tower has AIOps in scope**; with no AIOps in scope the scenario percentage is used and a note says so. An estimate saved before this default keeps its own method. The portfolio is the damo-estimator catalogue (14 use cases, each with build person-weeks, deflection %, level and prerequisites; the seven core L2 ones on by default). **All use cases go live from Year 1 by default**; a selector changes the start year for all of them (or sets the scenario's own AIOps timeline: Year 1 for Scenarios 2 and 4, Year 2 for 1 and 3), and each use case can override it. The panel shows **when each use case takes effect** (a use-case by year grid of the deflection in that year's team) and a **chart of the combined L2 and L3 deflection** against the automation ceiling. A year's team uses the deflection reached by the end of the year before, so a use case live from Year 1 first shows in Year 2.
 
 ```
 tier FTE        = L2 (or L3) FTE of towers with AIOps in scope, after backfill and step 2 risk
