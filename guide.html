@@ -258,12 +258,13 @@ quiz:[
 
 {id:"docs",grp:"Start here",t:"Step 0 · Documents",html:()=>`
 <span class="eyebrow">Step 0 · optional</span>
-<h1>Start from documents with Extract with AI</h1>
+<h1>Start from documents with Extract inputs</h1>
 <p class="lead">Upload what you have and Claude proposes inputs for every stage, each with the quote it came from. Nothing changes until you choose what to apply.</p>
 <ol class="steps">
 <li><div>Add files to the four cards: <span class="ui">RFP</span>, <span class="ui">Incident dump</span>, <span class="ui">Meeting notes</span>, <span class="ui">Others</span>. PDF, Word, text, Excel and CSV work; you can also paste text.</div></li>
 <li><div>An incident dump (ITSM export) is <b>summarised in your browser</b>: tickets a month, priority mix, top groups. Only the summary is sent to Claude, not the raw export.</div></li>
-<li><div>Enter the <b>passphrase</b> (ask the tool owner) and click <span class="ui">Extract with AI</span>. It takes 30–90 seconds for a typical RFP.</div></li>
+<li><div>Enter the <b>passphrase</b> (ask the tool owner) and click <span class="ui">Extract inputs</span>. It takes 30–90 seconds for a typical RFP when the AI reads your documents; a Prism Library reference sheet is read instantly, with no passphrase.</div></li>
+<li><div>If a proposed tower is the same kind as one you already have, the proposal asks whether to <b>update</b> your tower (only the fields it lists change) or <b>add a new tower</b>. Update is the default. Choose a new tower only when the deal really has a second, separate estate of that kind.</div></li>
 <li><div>A pasted <b>Prism Library reference sheet</b> is read directly, without the AI: its tower, tickets, coverage, term and assumptions are proposed. It describes another deal, so check each proposal.</div></li>
 <li><div>Review <span class="ui">Proposed inputs</span>, grouped by stage. Untick anything you don't agree with, then <span class="ui">Apply selected and go to Step 1</span>.</div></li>
 </ol>
@@ -612,7 +613,7 @@ const FAQ=[
  ["How do I share an estimate with a colleague?","Save file, send the .damo.json, and they use Open file. Saved scenarios travel inside the file."],
  ["How do I add an estimate to the solution library?","After the estimate is approved, File, then Add to Prism Library. The Library opens in a new tab with the form filled in. Add the industry, region and an anonymised description, then submit. Do not put the customer name in the description: the Library refuses it."],
  ["What does 'Changed since approval' mean?","Someone edited an input after the estimate was approved. Approve again or set the status back to Draft."],
- ["Extract with AI says the passphrase is wrong.","Ask the tool owner for the current passphrase; it's set on the Netlify project as INTAKE_PASSPHRASE."],
+ ["Extract inputs says the passphrase is wrong.","Ask the tool owner for the current passphrase; it's set on the Netlify project as INTAKE_PASSPHRASE."],
  ["Where are my estimates stored?","In your browser only, until you Save file. Clearing browser data or using another browser starts fresh."],
  ["Does the SDM count as part of a tower?","No. Service Delivery Managers are sized in Step 4 at 1 per 12 delivery FTE and appear under Governance in the team by role."]
 ];

@@ -15,7 +15,7 @@ Values not taken from either source are marked `proposed`.
 
 - **Source:** `index.html`. It is one self-contained file with no build step. State is saved in the browser's localStorage.
 - **User guide:** `guide.html` (https://damo-estimation-workflow.netlify.app/guide.html): an interactive walk-through of every stage with calculators that use the tool's formulas, short quizzes, a worked example (`docs/example-acme-retail.damo.json`, open it with Open file), FAQ and glossary. Progress is kept in the reader's browser. The tool's header links to it, and the guide's "Open Stage N" buttons deep-link into the tool with `index.html#stage=N`.
-- **Deploy:** Netlify project `damo-estimation-workflow` (https://damo-estimation-workflow.netlify.app), linked to this repository: every push to `claude/estimation-workflow-tool-fpuoqu` redeploys it. Netlify serves the repo root and the extraction functions (`netlify.toml`); `ANTHROPIC_API_KEY` and `INTAKE_PASSPHRASE` are set as secrets on the project, so the site is open to view but Extract with AI needs the passphrase (ask the project owner). See [Documents and AI extraction](#stage-0-documents-and-ai-extraction).
+- **Deploy:** Netlify project `damo-estimation-workflow` (https://damo-estimation-workflow.netlify.app), linked to this repository: every push to `claude/estimation-workflow-tool-fpuoqu` redeploys it. Netlify serves the repo root and the extraction functions (`netlify.toml`); `ANTHROPIC_API_KEY` and `INTAKE_PASSPHRASE` are set as secrets on the project, so the site is open to view but Extract inputs needs the passphrase (ask the project owner). See [Documents and AI extraction](#stage-0-documents-and-ai-extraction).
 
 ## Inputs start blank from step 2
 
@@ -108,7 +108,7 @@ Site settings: `USAGE_ADMIN_KEY` turns the report on (it is off without it) and 
 
 ## Step 0: documents and AI extraction
 
-The tool opens on an optional **Documents** page. Add what you have for the deal, run **Extract with AI**, and Claude proposes inputs for every stage. You tick what to apply; nothing changes until you do. **Skip to step 1** ignores the page.
+The tool opens on an optional **Documents** page. Add what you have for the deal, run **Extract inputs**, and Claude proposes inputs for every stage. You tick what to apply; nothing changes until you do. **Skip to step 1** ignores the page.
 
 | Card | Accepts | What happens in the browser |
 |---|---|---|
@@ -116,6 +116,8 @@ The tool opens on an optional **Documents** page. Add what you have for the deal
 | Incident dump | CSV, XLSX, XLS | Summarised locally: date range, tickets a month, incidents vs requests, priority mix, top 20 groups, first rows. Only this summary is sent to Claude, not the raw export. |
 | Meeting notes | PDF, DOCX, TXT, MD, pasted text | Text extracted |
 | Others | PDF, DOCX, XLSX, CSV, TXT, MD, JSON, pasted text | Text extracted (spreadsheets as CSV per sheet) |
+
+When a proposed tower is the same kind as a tower you already have, the proposal shows a choice: **Update** that tower (only the fields the proposal lists are changed) or **Add as a new tower**. Updating is the default, so applying the same documents twice does not double the tower.
 
 A pasted **Prism Library reference sheet** (it starts with `# Reference:` and `Source: Prism Library`) is read directly, without the AI: its tower, tickets a month, coverage, term and assumptions become proposals, and assumptions the reference deal found broken or at risk are left out. The sheet describes another deal, so every proposal is for you to check. Mixed with other documents, the AI reads those and the two sets of proposals are combined.
 
