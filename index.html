@@ -549,6 +549,7 @@ tr.sel td{background:var(--accent-soft)}
           <button type="button" role="menuitem" id="openBtn">Open file…<small>Replaces the estimate on screen</small></button>
           <button type="button" role="menuitem" id="saveBtn">Save file<small>Every input, to reopen or share</small></button>
           <button type="button" role="menuitem" id="libBtn">Add to Prism Library…<small>Opens the Library with this estimate</small></button>
+          <button type="button" role="menuitem" id="freshBtn" aria-pressed="false">Start fresh on every visit<small></small></button>
           <hr>
           <button type="button" role="menuitem" class="danger" id="resetBtn"><span class="r1">Reset estimate…<small>Clears every input</small></span><span class="r2" aria-hidden="true">Click again to clear everything</span></button>
         </div>
@@ -1960,9 +1961,15 @@ const ACAT_OF={A1:"Coverage & locations",A2:"Effort benchmarks",A3:"Effort bench
 const ACAT_DEFAULT={s1:"Coverage & locations",s2:"Demand & volumes",s3:"Skills & specialists",s4:"Transformation & AIOps",s5:"Governance & SDM",s6:"Seniority & contingency",s7:"Term & savings",s8:"Triangulation & fact check",s9:"Triangulation & fact check"};
 /* ---------- state ---------- */
 const KEY="damo-workflow-v2";
+/* "Start fresh on every visit" (File menu, per browser): opening Prism from its address starts a new estimate instead of the last one.
+   Reloading the page keeps the estimate on screen, so a refresh never loses work; Save file is how work is kept. */
+const FRESH_KEY="damo-workflow-fresh";
+const freshOn=()=>{try{return localStorage.getItem(FRESH_KEY)==="1"}catch(e){return false}};
+const freshVisit=()=>{try{const n=performance.getEntriesByType("navigation")[0];return !!n&&n.type==="navigate"}catch(e){return false}};
 let S=null;
 S=load();
 function load(){
+  if(freshOn()&&freshVisit())return defaults();
   try{const raw=localStorage.getItem(KEY);if(raw)return migrate(JSON.parse(raw))}catch(e){}
   return defaults();
 }
@@ -4420,6 +4427,17 @@ function saveEstimate(){
 }
 /* Hands the estimate to the Prism Library in a link. The summary rides in the part of the address after "#", which the browser never sends
    to any server; the Library reads it, fills its Add a deal form and removes it from the address bar. Nothing is stored by this step. */
+function updateFreshLabel(){
+  const b=$("freshBtn");if(!b)return;const on=freshOn();
+  b.setAttribute("aria-pressed",on);b.firstChild.textContent="Start fresh on every visit: "+(on?"On":"Off");
+  b.querySelector("small").textContent=on?"Opening Prism from its address starts a new estimate":"Opening Prism continues the last estimate";
+}
+function toggleFresh(){
+  const on=!freshOn();
+  try{if(on)localStorage.setItem(FRESH_KEY,"1");else localStorage.removeItem(FRESH_KEY)}catch(e){toast("This browser won't store the setting.");return}
+  updateFreshLabel();
+  toast(on?"On. Opening Prism from its address starts a new estimate; reloading the page keeps the one on screen. Use Save file to keep work.":"Off. Prism continues the last estimate when you open it.");
+}
 const LIBRARY_URL="https://prism-library-beta.netlify.app";
 function encodeHandoff(obj){
   const bytes=new TextEncoder().encode(JSON.stringify(obj));let bin="";bytes.forEach(c=>{bin+=String.fromCharCode(c)});
@@ -4529,6 +4547,7 @@ document.addEventListener("click",e=>{
   else if(t.id==="dlBtn"||t.id==="dlBtn2"){downloadReport();}
   else if(t.id==="saveBtn"){saveEstimate();}
   else if(t.id==="libBtn"){addToLibrary();}
+  else if(t.id==="freshBtn"){toggleFresh();}
   else if(t.id==="custBtn"||t.id==="mCust"){downloadCustomer();}
   else if(t.id==="xlsBtn"||t.id==="mXls"){exportExcel();}
   else if(t.id==="testBtn"){renderTests();}
@@ -5071,6 +5090,7 @@ function renderAll(){renderMeta();renderRail();renderS0();renderS1();renderS2();
 /* deep link from the user guide: index.html#stage=3 opens that stage */
 {const m=/stage=(\d+)/.exec(location.hash);if(m&&+m[1]>=0&&+m[1]<=14)S.active=+m[1];}
 renderAll();
+updateFreshLabel();
 detectRoute();
 })();
 </script>
